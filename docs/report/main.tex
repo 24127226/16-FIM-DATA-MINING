@@ -1,0 +1,64 @@
+% =====================================================================
+% Báo cáo đồ án: Khai thác tập phổ biến bằng Eclat (Julia)
+% Mẫu: IEEE conference (IEEEtran). Biên dịch bằng XeLaTeX
+%   Overleaf: Menu -> Settings -> Compiler -> XeLaTeX
+% Bản PDF nộp bài đặt ở docs/Report.pdf.
+% =====================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Termes}          % font kiểu Times, có đủ dấu tiếng Việt
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setotherlanguage{english}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\title{Khai thác tập phổ biến bằng Eclat:\\ cài đặt, đánh giá hiệu năng và ứng dụng}
+
+\author{
+\IEEEauthorblockN{Phạm Trần Anh Quân}
+\IEEEauthorblockA{MSSV: ………}
+\and
+\IEEEauthorblockN{Nguyễn Tiến Cường}
+\IEEEauthorblockA{MSSV: ………}
+}
+
+\maketitle
+
+\begin{abstract}
+(Tóm tắt, tối đa 200 từ. Viết ở mốc M6.)
+\end{abstract}
+
+\begin{IEEEkeywords}
+khai thác tập phổ biến, Eclat, tidset, biểu diễn dọc, Julia
+\end{IEEEkeywords}
+
+% Dòng thử font tiếng Việt (xóa khi viết nội dung thật):
+% Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
+
+\input{sections/01_gioi_thieu}
+\input{sections/02_nen_tang}
+\input{sections/03_chuong1_cai_dat}
+\input{sections/04_chuong2_thuc_nghiem}
+\input{sections/05_chuong3_ung_dung}
+\input{sections/06_ket_luan}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\appendices
+\input{sections/07_phu_luc}
+
+\end{document}
