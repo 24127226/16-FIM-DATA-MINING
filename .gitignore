@@ -1,0 +1,29 @@
+# Dữ liệu lớn: tải lại bằng scripts/fetch_data.jl (nguồn và SHA-256 ở data/benchmark/README.md)
+data/benchmark/*.txt
+data/raw/
+data/synthetic/
+data/subsets/
+data/apps/groceries/*.csv
+data/apps/groceries/*.txt
+data/apps/caltech101/
+
+# Công cụ tải về (spmf.jar, Java...): tải lại bằng scripts/fetch_spmf.jl
+tools/
+*.jar
+
+# Output khai thác và file tạm của thực nghiệm
+output*.txt
+results/tmp/
+results/raw_outputs/
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Hệ điều hành, editor, notebook
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.ipynb_checkpoints/

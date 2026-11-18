@@ -1,0 +1,18 @@
+name = "EclatFIM"
+uuid = "97f89e27-ea80-4864-b048-f0050ead8967"
+authors = ["Phạm Trần Anh Quân", "Nguyễn Tiến Cường"]
+version = "0.1.0"
+
+[deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+
+[compat]
+DataStructures = "0.19"
+julia = "1.11"
+
+[extras]
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Random", "Test"]
