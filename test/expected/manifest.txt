@@ -1,0 +1,12 @@
+# tên | file input | minsup   (sinh bởi scripts/make_expected.jl)
+pasquier99_40 | data/toy/pasquier99.txt | 40%
+pasquier99_20 | data/toy/pasquier99.txt | 20%
+bookstore_50 | data/toy/bookstore.txt | 50%
+bookstore_30 | data/toy/bookstore.txt | 30%
+edge_identical_50 | test/data/edge_identical.txt | 50%
+edge_single_100 | test/data/edge_single.txt | 100%
+edge_sparse_ids_40 | test/data/edge_sparse_ids.txt | 40%
+edge_comments_40 | test/data/edge_comments.txt | 40%
+edge_none_50 | test/data/edge_none.txt | 50%
+edge_zero_40 | test/data/edge_zero.txt | 40%
+edge_unsorted_40 | test/data/edge_unsorted.txt | 40%

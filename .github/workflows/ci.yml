@@ -1,0 +1,29 @@
+# Chạy bộ kiểm thử trên mỗi lần push / pull request (KE_HOACH_DU_AN.md, mục 6.6 và 13.1).
+# Hai chế độ: kiểm tra chỉ số mặc định, và bắt buộc kiểm tra chỉ số (--check-bounds=yes)
+# để phát hiện lỗi vượt chỉ số mà @inbounds có thể che mất.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Julia 1.11.4, check-bounds=${{ matrix.check-bounds }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check-bounds: ['auto', 'yes']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11.4'
+      - uses: julia-actions/cache@v2
+      - name: Cài gói
+        run: julia --project -e 'using Pkg; Pkg.instantiate()'
+      - name: Tải dữ liệu benchmark (để chạy cả phần đối chiếu dấu vân tay)
+        run: julia --project scripts/fetch_data.jl benchmark
+      - name: Chạy kiểm thử
+        run: julia --project --check-bounds=${{ matrix.check-bounds }} test/runtests.jl

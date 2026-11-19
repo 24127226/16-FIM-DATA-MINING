@@ -1,5 +1,38 @@
-% Kiến thức nền và công trình liên quan (nội dung viết ở mốc M6)
+% II. Kiến thức nền và công trình liên quan (A viết)
 \section{Kiến thức nền và công trình liên quan}
-\label{sec:02_nen_tang}
+\label{sec:nen-tang}
 
-Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
+\subsection{Bài toán khai thác tập phổ biến}
+
+Cho tập item $\mathcal{I}$ với $m = |\mathcal{I}|$ và cơ sở dữ liệu (CSDL) giao dịch
+$\mathcal{D} = \{T_1, \dots, T_N\}$, trong đó mỗi giao dịch (transaction) $T_j \subseteq \mathcal{I}$ được định danh bởi mã giao dịch (transaction identifier, tid) $j$.
+Với một tập item (itemset) $X \subseteq \mathcal{I}$, tập mã giao dịch (tidset) của $X$ là
+\begin{equation}
+t(X) = \{\, j : X \subseteq T_j \,\},
+\label{eq:tidset}
+\end{equation}
+và độ hỗ trợ (support) của $X$ là $\sigma(X) = |t(X)|$; độ hỗ trợ tương đối là $s(X) = \sigma(X)/N$.
+Cho ngưỡng hỗ trợ tối thiểu (minimum support, minsup) $\mathrm{minsup} \in (0, 1]$, đổi sang ngưỡng dạng đếm $\sigma_{\min} = \lceil \mathrm{minsup} \cdot N \rceil$.
+Khai thác tập phổ biến (frequent itemset mining, FIM) là liệt kê mọi tập $X \neq \emptyset$ có $\sigma(X) \ge \sigma_{\min}$ cùng support của chúng; ta ký hiệu tập kết quả là $\mathcal{F}$ và $L$ là độ dài giao dịch trung bình.
+
+Không gian tìm kiếm có $2^m - 1$ tập ứng viên, nên mọi thuật toán FIM đều dựa vào tính chất phản đơn điệu (anti-monotone, còn gọi là tính chất Apriori): nếu $X \subseteq Y$ thì $t(Y) \subseteq t(X)$, do đó $\sigma(Y) \le \sigma(X)$; mọi tập con của tập phổ biến đều phổ biến, và mọi tập cha của tập không phổ biến đều không phổ biến.
+
+Từ tập phổ biến có thể sinh luật kết hợp (association rule) $X \Rightarrow Y$ với $X \cap Y = \emptyset$~\cite{agrawal1993mining}:
+\begin{equation}
+\mathrm{conf}(X \Rightarrow Y) = \frac{\sigma(X \cup Y)}{\sigma(X)}, \qquad
+\mathrm{lift}(X \Rightarrow Y) = \frac{\mathrm{conf}(X \Rightarrow Y)}{s(Y)},
+\label{eq:rule}
+\end{equation}
+trong đó độ tin cậy (confidence) là xác suất có $Y$ khi đã có $X$, còn độ nâng (lift) so sánh xác suất đó với xác suất có $Y$ nói chung; $\mathrm{lift} > 1$ nghĩa là $X$ và $Y$ đi cùng nhau nhiều hơn mức ngẫu nhiên~\cite{brin1997dynamic}.
+
+\subsection{Các hướng tiếp cận}
+
+\textbf{Biểu diễn ngang (horizontal layout), duyệt theo mức (level-wise).} Apriori~\cite{agrawal1994fast} sinh ứng viên kích thước $k$ từ các tập phổ biến kích thước $k-1$, cắt tỉa ứng viên có tập con không phổ biến, rồi quét lại CSDL để đếm. Số lần quét bằng độ dài tập phổ biến dài nhất, và số ứng viên có thể bùng nổ ở mức 2.
+
+\textbf{Cây tiền tố.} FP-Growth~\cite{han2000mining} nén CSDL vào một cây tiền tố (FP-tree) sau hai lần quét và khai thác đệ quy trên các cây điều kiện, không sinh ứng viên. Cây nén tốt trên dữ liệu dày nhưng kém trên dữ liệu thưa.
+
+\textbf{Biểu diễn dọc (vertical layout).} Eclat~\cite{zaki2000scalable}, thuật toán được chọn trong đồ án, lưu mỗi item kèm tidset và tính support của tập mới bằng phép giao tidset, không cần quét lại CSDL. Bài báo gốc chia dàn tập con (subset lattice) thành các lớp tương đương theo tiền tố (prefix-based equivalence class) giải độc lập trong bộ nhớ, đề xuất đếm tập 2 item bằng mảng tam giác (triangular array), và cho thấy Eclat thường nhanh hơn Apriori hơn một bậc độ lớn trên dữ liệu tổng hợp (§7). Hai biến thể biểu diễn tidset gắn liền với hướng này: mảng bit (bitset), như thuật toán DLG~\cite{yen1996efficient} dùng một bit-vector cho mỗi item và tính support bằng phép AND; và tập hiệu (diffset) của dEclat~\cite{zaki2003fast}, chỉ lưu phần chênh lệch giữa tidset của tập con và tập cha, rất gọn trên dữ liệu dày.
+
+\textbf{Đánh giá cài đặt.} Hội thảo FIMI'03~\cite{goethals2004advances} chuẩn hóa bộ dữ liệu benchmark (Chess, Mushroom, Retail, Accidents, T10I4D100K) và cho thấy chất lượng cài đặt (cấu trúc dữ liệu, bộ nhớ đệm) ảnh hưởng tới hiệu năng không kém bản thân thuật toán. Thư viện SPMF~\cite{fournier2014spmf} cung cấp cài đặt tham chiếu (reference implementation) bằng Java cho hơn 200 thuật toán; đồ án dùng SPMF như một hộp đen để đối chiếu kết quả và hiệu năng.
+
+\textbf{Ứng dụng.} Phân tích giỏ hàng là ứng dụng kinh điển của luật kết hợp, với bộ dữ liệu Groceries của gói \texttt{arules}~\cite{hahsler2005arules}. Với ảnh, mô hình túi từ thị giác (bag of visual words, BoVW)~\cite{sivic2003video,csurka2004visual} lượng tử hóa bộ mô tả đặc trưng (descriptor) cục bộ, chẳng hạn SIFT~\cite{lowe2004distinctive} hay biểu đồ hướng gradient~\cite{dalal2005histograms}, thành các từ thị giác (visual word) bằng k-means~\cite{arthur2007kmeans}; mỗi ảnh khi đó tương đương một giao dịch. Mẫu nổi bật (emerging pattern)~\cite{dong1999efficient} là các tập phổ biến ở một lớp nhưng hiếm ở lớp khác, đo bằng tỉ lệ tăng $GR_c(X) = s_c(X)/s_{\neg c}(X)$.

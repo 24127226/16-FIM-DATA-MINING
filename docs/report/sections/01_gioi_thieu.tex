@@ -1,5 +1,15 @@
-% Giới thiệu (nội dung viết ở mốc M6)
+% I. Giới thiệu — cả hai cùng viết.
 \section{Giới thiệu}
-\label{sec:01_gioi_thieu}
+\label{sec:gioi-thieu}
 
-Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
+Khai thác tập phổ biến là bước nền của nhiều bài toán khai phá dữ liệu, từ luật kết hợp, phân tích giỏ hàng đến phát hiện mẫu trong dữ liệu sinh học, web và hình ảnh~\cite{agrawal1993mining,agrawal1994fast}. Khó khăn chính nằm ở quy mô: số tập ứng viên tăng theo hàm mũ của số item, và các thuật toán theo mức như Apriori phải quét lại toàn bộ cơ sở dữ liệu ở mỗi mức. Eclat~\cite{zaki2000scalable} giải quyết theo hướng khác: lưu dữ liệu ở dạng dọc, tính support bằng phép giao các tập mã giao dịch, và chia không gian tìm kiếm thành các lớp nhỏ giải độc lập trong bộ nhớ.
+
+Đồ án này cài đặt lại Eclat từ bài báo gốc bằng Julia~\cite{bezanson2017julia}, kiểm chứng với cài đặt tham chiếu SPMF~\cite{fournier2014spmf}, đánh giá trên 5 bộ benchmark phổ biến của cộng đồng~\cite{goethals2004advances} và áp dụng cho hai bài toán thực tế. Các đóng góp chính:
+\begin{itemize}
+\item \emph{Cài đặt và tối ưu có đo lường} (Chương~1): bảy phiên bản v0--v6 trên cùng một mã nguồn, mỗi phiên bản thêm đúng một tối ưu (thứ tự item, dùng lại bộ nhớ, phép giao thích nghi, tidset dạng mảng bit, mảng tam giác cho tập 2 item, biểu diễn lai), nên đo được tác dụng riêng của từng tối ưu. Ở minsup trung bình, phiên bản nhanh nhất trên mỗi bộ dữ liệu nhanh hơn bản cơ bản 32--75 lần; thí nghiệm cũng chỉ ra những chỗ một tối ưu có hại (giao thích nghi trên dữ liệu dày, mảng tam giác trên Accidents).
+\item \emph{Tính đúng}: 15.869 phép kiểm tra tự động trên ba tầng độc lập; cả 245 tổ hợp (bộ dữ liệu, minsup, phiên bản) khớp SPMF 100\%.
+\item \emph{Thực nghiệm} (Chương~2): thời gian, số tập, bộ nhớ, khả năng mở rộng và độ dài giao dịch trên 5 bộ benchmark, mỗi kết quả được dự đoán trước bằng phân tích độ phức tạp rồi đo để kiểm chứng. Về thời gian thuật toán, bản mặc định v6 nhanh hơn SPMF \texttt{Eclat} ở cả 35 mức minsup (2,7--285 lần) và nhanh hơn \texttt{Eclat\_bitset} ở 34/35 mức; ở thời gian tiến trình thì SPMF xong trước với các lần chạy ngắn, do Julia mất 4,5--6 giây khởi động.
+\item \emph{Ứng dụng} (Chương~3): luật kết hợp trên giỏ hàng Groceries kèm diễn giải kinh doanh và kiểm tra độ ổn định; mẫu trực quan trên ảnh Caltech-101 bằng túi từ thị giác, dùng để diễn giải dữ liệu và làm đặc trưng cho bộ phân lớp.
+\end{itemize}
+
+Mục~\ref{sec:nen-tang} trình bày kiến thức nền; mục~\ref{sec:cai-dat}, \ref{sec:thuc-nghiem}, \ref{sec:ung-dung} lần lượt là ba chương cài đặt, thực nghiệm và ứng dụng; mục~\ref{sec:ket-luan} kết luận. Mã nguồn, dữ liệu, notebook tái lập và số liệu thô nằm trong repo của nhóm (xem README).

@@ -1,0 +1,8 @@
+@FILETYPE="Frequent itemsets"
+@SOURCE="SPMF SOFTWARE https://philippe-fournier-viger.com/spmf/"
+0 #SUP: 4
+1 #SUP: 3
+2 #SUP: 3
+1 2 #SUP: 2
+1 0 #SUP: 2
+2 0 #SUP: 2

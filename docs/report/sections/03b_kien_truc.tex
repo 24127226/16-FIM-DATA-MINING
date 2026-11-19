@@ -1,0 +1,36 @@
+% III.C Kiến trúc phần mềm và vào/ra — phần B viết.
+\subsection{Kiến trúc phần mềm và vào/ra}
+\label{sec:kien-truc}
+
+Hình~\ref{fig:f02} cho thấy luồng dữ liệu của cài đặt. Phần thuật toán và phần vào/ra, kiểm thử, thực nghiệm được tách bởi một \emph{hợp đồng giao diện} đặt trong \texttt{structures.jl}: kiểu \texttt{TransactionDB} (các giao dịch đã đổi mã), \texttt{EclatConfig} (cấu hình của một phiên bản), \texttt{EclatStats} (bộ đếm nội bộ) và hàm \texttt{eclat!(sink, db, minsup, cfg)}. Thuật toán không tự ghi file mà gọi \texttt{sink(X, $\sigma$)} cho mỗi tập tìm được. Nhờ vậy cùng một mã khai thác phục vụ giao diện dòng lệnh (ghi file), kiểm thử và hai ứng dụng (gom vào một \texttt{Dict}), còn khi đo thời gian thì sink chỉ ghi file như SPMF. Vì \texttt{sink} là tham số có kiểu riêng, Julia biên dịch riêng mã khai thác cho từng loại sink (multiple dispatch), nên mỗi lời gọi sink rẻ như một lời gọi hàm thông thường.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize, x=1cm, y=1cm, >={Stealth[length=4pt]},
+  khoi/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=0.7cm},
+  phu/.style={draw, densely dotted, rounded corners=2pt, align=center, inner sep=3pt, minimum height=0.7cm}]
+\node[khoi] (in) at (0, 0) {File SPMF\\(\texttt{.txt})};
+\node[khoi] (doc) at (4.0, 0) {\texttt{read\_spmf} (\texttt{utils.jl}): đọc theo byte,\\bỏ chú thích, đổi mã item về $1..m$};
+\node[khoi] (db) at (4.0, -1.3) {\texttt{TransactionDB} (\texttt{structures.jl})};
+\node[phu] (cfg) at (0, -2.55) {\texttt{EclatConfig}\\(v0--v6)};
+\node[khoi] (alg) at (4.0, -2.55) {\texttt{eclat!(sink, db, minsup, cfg)}\\(\texttt{src/algorithm/})};
+\node[khoi] (w) at (1.6, -4.1) {\texttt{SPMFWriter} $\to$ file SPMF\\(\texttt{demo.jl}); so với SPMF\\bằng dấu vân tay (\texttt{test/})};
+\node[khoi] (r) at (5.85, -4.1) {\texttt{eclat} $\to$ \texttt{Dict}\\$\to$ luật (\texttt{rules.jl}),\\ứng dụng (\texttt{apps/})};
+\draw[->] (in) -- (doc);
+\draw[->] (doc) -- (db);
+\draw[->] (db) -- (alg);
+\draw[->] (cfg) -- (alg);
+\draw[->] (alg) -- node[left, font=\scriptsize\itshape] {sink$(X,\sigma)$} (w);
+\draw[->] (alg) -- (r);
+\end{tikzpicture}
+\caption{Kiến trúc và luồng dữ liệu. Thuật toán chỉ phụ thuộc vào \texttt{TransactionDB} và \texttt{EclatConfig}; mọi tập tìm được được đẩy ra qua hàm \texttt{sink}, nên việc ghi file, so sánh với SPMF và các ứng dụng không phải sửa mã khai thác.}
+\label{fig:f02}
+\end{figure}
+
+\emph{Đọc file.} Bộ đọc \texttt{read\_spmf} duyệt thẳng trên mảng byte của file, không tách chuỗi, nên chi phí tuyến tính theo số item và gần như không cấp phát bộ nhớ trung gian. Các quy tắc đọc được chốt bằng thí nghiệm hộp đen với SPMF (\texttt{results/spmf\_behavior.md}): bỏ dòng rỗng và dòng bắt đầu bằng \texttt{\#}, \texttt{\%}, \texttt{@} (nơi SPMF lưu metadata như tên item), và $N$ là số dòng còn lại, đúng như SPMF đếm. Item 0 và item chưa sắp xếp đều hợp lệ. SPMF báo lỗi khi gặp item trùng, dấu tab hay hai dấu cách liền nhau; bộ đọc của nhóm chấp nhận các trường hợp này (tự sắp xếp và bỏ item trùng) và chỉ báo lỗi, kèm số dòng, khi gặp ký tự không phải chữ số. Mã item gốc được đổi về $1..m$ theo thứ tự tăng dần, dùng mảng tra trực tiếp khi mã lớn nhất không quá $5 \cdot 10^7$ và dùng bảng băm khi lớn hơn. Nhờ vậy file có mã rời rạc như $10^6$ vẫn chạy được, trong khi SPMF \texttt{Eclat} hết bộ nhớ vì cấp phát theo mã lớn nhất.
+
+\emph{Ngưỡng.} Tham số \texttt{--minsup} nhận tỉ lệ (\texttt{0.01}) hoặc phần trăm (\texttt{1\%}). Ngưỡng đếm được tính bằng $\sigma_{\min} = \lceil \mathrm{minsup} \cdot N \rceil$ trên số thực dấu phẩy động, giống hệt SPMF. Điều này quan trọng: thí nghiệm hộp đen cho thấy với $N = 25$ và minsup $= 28\%$, SPMF dùng ngưỡng 8 chứ không phải giá trị toán học 7, vì $0{,}28 \cdot 25$ trên Float64 lớn hơn 7 một chút. Tính khác đi dù chỉ một đơn vị cũng làm kết quả lệch SPMF.
+
+\emph{Ghi kết quả.} Mỗi tập được ghi thành một dòng \texttt{i1 i2 ... \#SUP: s} theo mã gốc tăng dần. \texttt{SPMFWriter} chuyển sẵn mã item thành chuỗi byte và gom output vào một bộ đệm 1\,MiB, nên ghi hàng triệu dòng không tạo chuỗi tạm. SPMF không sắp xếp item trong mỗi dòng, nên mọi phép so sánh với SPMF đều không phụ thuộc thứ tự (mục~\ref{sec:kiem-thu}).
+
+\emph{Giao diện dòng lệnh.} \texttt{demo.jl} chạy đúng lệnh mẫu của đề, \texttt{julia --project=. demo.jl --minsup 0.01 data/benchmark.txt}, và ghi kết quả vào \texttt{output.txt}. Các tùy chọn khác gồm \texttt{-o} (file kết quả, \texttt{-} để in ra màn hình), \texttt{--variant} (chọn phiên bản v0--v6, mặc định là v6), \texttt{--maxlen} (giới hạn độ dài tập) và \texttt{--stats} (in bộ đếm nội bộ). Chương trình trả mã thoát 1 khi tham số sai và 2 khi dữ liệu lỗi, kèm thông báo tiếng Việt chỉ rõ chỗ sai.

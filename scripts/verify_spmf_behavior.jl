@@ -100,6 +100,30 @@ function main()
 - Thứ tự item trong dòng không ảnh hưởng kết quả của Eclat; bộ đọc của nhóm vẫn sắp xếp lại.
 - SPMF **báo lỗi** khi có item trùng, dấu tab, hai dấu cách liền nhau hoặc dấu cách đầu dòng. Bộ đọc của nhóm dễ tính hơn (chấp nhận mọi khoảng trắng, tự bỏ item trùng), nhưng **file dữ liệu dùng để so với SPMF phải sạch**: các script chuyển đổi dữ liệu luôn ghi đúng một dấu cách giữa các item.
 """)
+
+    # --- 3. Mã item rất lớn ---
+    println(report, "## 3. Mã item rất lớn và rời rạc\n")
+    println(report, "CSDL 5 giao dịch, minsup 40%, mã item lớn nhất 1.000.000 (đáp án đúng: 8 tập phổ biến; ca kiểm thử ",
+            "\"Mã item rất lớn và rời rạc\" trong `test/test_correctness.jl`).\n")
+    println(report, "| Thuật toán SPMF | Chạy được? | Số tập | Dòng lỗi đầu tiên | Dòng đầu của stack trace |")
+    println(report, "|---|---|---|---|---|")
+    big = ["7 20 35\n", "20 35\n", "7 20 1000000\n", "35 1000000\n", "20 35 1000000\n"]
+    for algo in ("Eclat", "Eclat_bitset")
+        inp = joinpath(dir, "probe_big.txt"); out = joinpath(dir, "probe_big_out.txt")
+        isfile(out) && rm(out)
+        write_db(inp, big)
+        r = run_spmf(algo, inp, out, "40%"; timeout = 120)
+        okrun = r.status == :ok
+        lines = split(r.output, '\n')
+        errs = filter(l -> occursin(r"Error|Exception", l), lines)
+        frames = filter(l -> startswith(strip(l), "at "), lines)        # dòng đầu của stack trace SPMF in ra
+        err = okrun ? "" : (isempty(errs) ? "(không có)" : first(errs))
+        frame = okrun || isempty(frames) ? "" : first(frames)
+        println(report, "| `$algo` | $(okrun ? "✅" : "❌ $(r.status)") | $(okrun ? r.n_itemsets : "—") | `",
+                replace(strip(err), "|" => "/"), "` | `", replace(strip(frame), "|" => "/"), "` |")
+    end
+    println(report, "\nDòng lỗi chỉ ghi lại thông báo SPMF in ra màn hình (kiểm chứng hộp đen); nhóm không đọc mã nguồn SPMF. ",
+            "Bộ đọc của nhóm đổi mã gốc về 1..m nên không bị ảnh hưởng bởi độ lớn của mã item.")
     mkpath(rootpath("results"))
     path = rootpath("results", "spmf_behavior.md")
     write(path, String(take!(report)))

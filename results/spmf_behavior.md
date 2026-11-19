@@ -44,3 +44,13 @@ là số k nhỏ nhất để item 1 được coi là phổ biến.
 - Thứ tự item trong dòng không ảnh hưởng kết quả của Eclat; bộ đọc của nhóm vẫn sắp xếp lại.
 - SPMF **báo lỗi** khi có item trùng, dấu tab, hai dấu cách liền nhau hoặc dấu cách đầu dòng. Bộ đọc của nhóm dễ tính hơn (chấp nhận mọi khoảng trắng, tự bỏ item trùng), nhưng **file dữ liệu dùng để so với SPMF phải sạch**: các script chuyển đổi dữ liệu luôn ghi đúng một dấu cách giữa các item.
 
+## 3. Mã item rất lớn và rời rạc
+
+CSDL 5 giao dịch, minsup 40%, mã item lớn nhất 1.000.000 (đáp án đúng: 8 tập phổ biến; ca kiểm thử "Mã item rất lớn và rời rạc" trong `test/test_correctness.jl`).
+
+| Thuật toán SPMF | Chạy được? | Số tập | Dòng lỗi đầu tiên | Dòng đầu của stack trace |
+|---|---|---|---|---|
+| `Eclat` | ❌ error | — | `Exception in thread "main" java.lang.OutOfMemoryError: Java heap space` | `at ca.pfv.spmf.datastructures.triangularmatrix.TriangularMatrix.<init>(TriangularMatrix.java:64)` |
+| `Eclat_bitset` | ❌ error | — | `Exception in thread "main" java.lang.OutOfMemoryError: Java heap space` | `at ca.pfv.spmf.datastructures.triangularmatrix.TriangularMatrix.<init>(TriangularMatrix.java:64)` |
+
+Dòng lỗi chỉ ghi lại thông báo SPMF in ra màn hình (kiểm chứng hộp đen); nhóm không đọc mã nguồn SPMF. Bộ đọc của nhóm đổi mã gốc về 1..m nên không bị ảnh hưởng bởi độ lớn của mã item.

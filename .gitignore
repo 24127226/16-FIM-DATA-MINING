@@ -1,5 +1,6 @@
 # Dữ liệu lớn: tải lại bằng scripts/fetch_data.jl (nguồn và SHA-256 ở data/benchmark/README.md)
 data/benchmark/*.txt
+data/benchmark.txt
 data/raw/
 data/synthetic/
 data/subsets/
@@ -15,6 +16,8 @@ tools/
 output*.txt
 results/tmp/
 results/raw_outputs/
+# Notebook Colab ở chế độ nhanh ghi vào đây để không ghi đè số liệu chính thức
+results_colab/
 
 # Julia
 *.jl.cov

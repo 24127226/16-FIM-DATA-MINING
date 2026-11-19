@@ -1,5 +1,169 @@
-% Phụ lục (không tính vào số trang)
-\section{Số liệu đầy đủ}
+% Phụ lục (không tính vào số trang) — cả hai cùng viết.
+\section{Số liệu bổ sung}
 \label{app:so-lieu}
 
-(Bảng số liệu đầy đủ, hình bổ sung, hướng dẫn tái lập.)
+\subsection*{Thời gian đầy đủ của E2}
+
+\begin{table*}[t]
+\caption{Toàn bộ số liệu E2 (giây, trung vị 3--5 lần). Thời gian thuật toán: đọc file, khai thác, ghi kết quả (với SPMF là thời gian SPMF tự in ra). Thời gian tiến trình: từ lúc khởi động đến lúc thoát, gồm khởi động JVM hoặc Julia và biên dịch JIT}
+\label{tab:e2-day-du}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrrrrrrr@{}}
+\toprule
+& & & \multicolumn{4}{c}{Thời gian thuật toán} & \multicolumn{2}{c}{Thời gian tiến trình} \\
+\cmidrule(lr){4-7} \cmidrule(l){8-9}
+Bộ & minsup & Số tập & v0 & v6 & SPMF \texttt{Eclat} & SPMF \texttt{Eclat\_bitset} & v6 & SPMF \texttt{Eclat\_bitset} \\
+\midrule
+Chess & 80\% & 8.227 & 0,196 & 0,015 & 1,35 & 0,155 & 6,19 & 0,846 \\
+ & 75\% & 20.993 & 0,440 & 0,027 & 2,76 & 0,207 & 5,89 & 0,895 \\
+ & 70\% & 48.731 & 1,02 & 0,039 & 5,51 & 0,299 & 6,08 & 1,12 \\
+ & 65\% & 111.239 & 2,00 & 0,076 & 11,7 & 0,410 & 5,86 & 1,13 \\
+ & 60\% & 254.944 & 3,76 & 0,165 & 30,1 & 0,682 & 6,26 & 1,60 \\
+ & 55\% & 574.998 & 8,08 & 0,384 & 50,9 & 0,980 & 6,27 & 1,87 \\
+ & 50\% & 1.272.932 & 15,3 & 0,981 & 107 & 1,62 & 7,07 & 2,33 \\
+\midrule
+Mushroom & 30\% & 2.735 & 0,122 & 0,014 & 0,786 & 0,155 & 5,76 & 0,885 \\
+ & 25\% & 5.545 & 0,294 & 0,015 & 1,22 & 0,173 & 5,90 & 0,906 \\
+ & 20\% & 53.583 & 0,947 & 0,099 & 5,06 & 0,303 & 7,27 & 1,21 \\
+ & 15\% & 98.575 & 1,68 & 0,091 & 4,26 & 0,697 & 6,71 & 1,84 \\
+ & 10\% & 574.431 & 7,72 & 0,415 & 12,5 & 0,951 & 6,68 & 1,81 \\
+ & 7,5\% & 932.181 & 10,6 & 0,581 & 11,0 & 0,747 & 5,54 & 1,32 \\
+ & 5\% & 3.755.511 & 20,6 & 1,79 & 26,0 & 1,80 & 5,76 & 2,33 \\
+\midrule
+Accidents & 80\% & 149 & 1,06 & 0,504 & 9,75 & 1,33 & 4,48 & 3,71 \\
+ & 75\% & 313 & 2,23 & 0,541 & 15,0 & 1,12 & 4,55 & 2,99 \\
+ & 70\% & 529 & 3,05 & 0,556 & 29,5 & 1,16 & 4,61 & 3,07 \\
+ & 65\% & 1.093 & 5,60 & 0,570 & 47,4 & 1,16 & 4,55 & 3,18 \\
+ & 60\% & 2.074 & 10,5 & 0,628 & 84,4 & 1,22 & 4,71 & 3,22 \\
+ & 55\% & 4.051 & 16,7 & 0,640 & 121 & 1,36 & 4,86 & 3,37 \\
+ & 50\% & 8.057 & 30,2 & 0,651 & 186 & 1,77 & 4,91 & 4,74 \\
+\midrule
+Retail & 1\% & 159 & 0,142 & 0,054 & 1,44 & 1,49 & 5,05 & 3,19 \\
+ & 0,5\% & 580 & 0,511 & 0,193 & 1,23 & 1,01 & 4,23 & 1,90 \\
+ & 0,2\% & 2.691 & 2,61 & 0,225 & 1,28 & 1,08 & 4,20 & 1,97 \\
+ & 0,1\% & 7.589 & 8,78 & 0,295 & 1,48 & 1,33 & 4,27 & 2,32 \\
+ & 0,05\% & 19.242 & 21,3 & 0,401 & 1,81 & 1,43 & 4,76 & 2,30 \\
+ & 0,02\% & 67.186 & 47,6 & 0,627 & 2,67 & 2,98 & 5,02 & 4,02 \\
+ & 0,01\% & 240.852 & 78,4 & 1,03 & 4,03 & 6,26 & 5,14 & 7,46 \\
+\midrule
+T10I4D100K & 1\% & 385 & 1,94 & 0,186 & 0,498 & 0,182 & 4,17 & 0,945 \\
+ & 0,5\% & 1.073 & 3,27 & 0,201 & 0,643 & 0,257 & 4,20 & 1,01 \\
+ & 0,2\% & 13.255 & 4,45 & 0,317 & 1,38 & 0,491 & 4,30 & 1,29 \\
+ & 0,1\% & 27.532 & 4,70 & 0,504 & 1,94 & 0,740 & 4,48 & 1,53 \\
+ & 0,05\% & 53.385 & 5,54 & 1,04 & 3,54 & 2,06 & 6,16 & 2,88 \\
+ & 0,02\% & 129.875 & 8,74 & 2,60 & 9,22 & 10,6 & 6,57 & 11,5 \\
+ & 0,01\% & 411.365 & 12,5 & 4,84 & 13,8 & 43,4 & 8,80 & 44,2 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F10_bo_nho_theo_tien_trinh}
+\caption{Tidset đang sống (MiB) theo thứ tự tập phổ biến được xuất (E10). Trái: Chess, minsup 65\%. Phải: T10I4D100K, minsup 0,1\%. Đường gần phẳng: không có đỉnh rõ ở lúc dựng các tập 2 item như Fig.~22 của bài báo.}
+\label{fig:f10}
+\end{figure}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{F09_so_voi_apriori_fpgrowth}
+\caption{E9: thời gian thuật toán của v6 so với SPMF \texttt{Eclat}, \texttt{FPGrowth\_itemsets} và \texttt{Apriori} theo minsup (thang log; mỗi mức SPMF chạy một lần, dừng khi quá 10 phút). Apriori quá giờ ở Retail 0,02\%, nên mức 0,01\% không chạy.}
+\label{fig:f09}
+\end{figure*}
+
+\subsection*{Ứng dụng 1: khảo sát ngưỡng, xếp theo confidence, độ ổn định}
+
+\begin{table}[h]
+\caption{Groceries: số tập phổ biến / số luật theo minsup và minconf}
+\label{tab:b08b}
+\centering
+\footnotesize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+minsup ($\sigma_{\min}$) & minconf 0,2 & 0,3 & 0,5 \\
+\midrule
+0,5\% (50) & 1.001 / 893 & 1.001 / 487 & \textbf{1.001 / 120} \\
+1\% (99) & 333 / 234 & 333 / 125 & 333 / 15 \\
+2\% (197) & 122 / 73 & 122 / 37 & 122 / 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\caption{Groceries: top-10 luật theo confidence; 9/10 luật có vế phải là \emph{whole milk}}
+\label{tab:b09b}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}rp{4.85cm}rrr@{}}
+\toprule
+\# & Luật $X \Rightarrow Y$ & $\sigma$ & Conf. & Lift \\
+\midrule
+1 & \{root vegetables, tropical fruit, yogurt\} $\Rightarrow$ \{whole milk\} & 56 & 0,700 & 2,740 \\
+2 & \{other vegetables, pip fruit, root vegetables\} $\Rightarrow$ \{whole milk\} & 54 & 0,675 & 2,642 \\
+3 & \{butter, whipped/sour cream\} $\Rightarrow$ \{whole milk\} & 66 & 0,660 & 2,583 \\
+4 & \{pip fruit, whipped/sour cream\} $\Rightarrow$ \{whole milk\} & 59 & 0,648 & 2,537 \\
+5 & \{butter, yogurt\} $\Rightarrow$ \{whole milk\} & 92 & 0,639 & 2,500 \\
+6 & \{butter, root vegetables\} $\Rightarrow$ \{whole milk\} & 81 & 0,638 & 2,496 \\
+7 & \{curd, tropical fruit\} $\Rightarrow$ \{whole milk\} & 64 & 0,634 & 2,480 \\
+8 & \{citrus fruit, root vegetables, whole milk\} $\Rightarrow$ \{other vegetables\} & 57 & 0,633 & 3,273 \\
+9 & \{other vegetables, pip fruit, yogurt\} $\Rightarrow$ \{whole milk\} & 50 & 0,625 & 2,446 \\
+10 & \{domestic eggs, pip fruit\} $\Rightarrow$ \{whole milk\} & 53 & 0,624 & 2,440 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\caption{Groceries: top-10 luật tìm trên 80\% hóa đơn (h.l.: huấn luyện), confidence và lift tính lại trên 20\% còn lại (k.t.: kiểm tra; seed 42); veg.\ là vegetables}
+\label{tab:b10}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}p{4.1cm}rrrr@{}}
+\toprule
+Luật & \multicolumn{2}{c}{Conf.} & \multicolumn{2}{c}{Lift} \\
+ & h.l. & k.t. & h.l. & k.t. \\
+\midrule
+\{root veg., tropical fruit, whole milk\} $\Rightarrow$ \{yogurt\} & 0,500 & 0,350 & 3,56 & 2,57 \\
+\{citrus fruit, root veg., whole milk\} $\Rightarrow$ \{other veg.\} & 0,649 & 0,562 & 3,36 & 2,89 \\
+\{pip fruit, root veg., whole milk\} $\Rightarrow$ \{other veg.\} & 0,634 & 0,529 & 3,28 & 2,72 \\
+\{root veg., tropical fruit, yogurt\} $\Rightarrow$ \{other veg.\} & 0,616 & 0,571 & 3,19 & 2,94 \\
+\{citrus fruit, root veg.\} $\Rightarrow$ \{other veg.\} & 0,610 & 0,500 & 3,16 & 2,57 \\
+\{root veg., tropical fruit, whole milk\} $\Rightarrow$ \{other veg.\} & 0,592 & 0,550 & 3,06 & 2,83 \\
+\{onions, root veg.\} $\Rightarrow$ \{other veg.\} & 0,589 & 0,650 & 3,05 & 3,34 \\
+\{root veg., tropical fruit\} $\Rightarrow$ \{other veg.\} & 0,587 & 0,571 & 3,04 & 2,94 \\
+\{fruit/vegetable juice, root veg.\} $\Rightarrow$ \{other veg.\} & 0,583 & 0,409 & 3,02 & 2,10 \\
+\{butter, whipped/sour cream\} $\Rightarrow$ \{other veg.\} & 0,583 & 0,536 & 3,02 & 2,75 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Hướng dẫn tái lập}
+\label{app:tai-lap}
+
+Toàn bộ số liệu, bảng và hình trong báo cáo được sinh từ repo bằng các lệnh dưới đây (chạy ở gốc repo, Julia 1.11, Java $\ge 25$); notebook \texttt{notebooks/demo.ipynb} chạy lại cùng các lệnh này trên Google Colab.
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true, columns=fullflexible]
+julia --project=. -e "using Pkg; Pkg.instantiate()"
+julia --project=. scripts/fetch_data.jl all
+julia --project=. scripts/fetch_spmf.jl
+julia --project test/runtests.jl
+julia --project=. scripts/subsample.jl retail
+julia --project=. scripts/subsample.jl accidents
+julia --project=. scripts/gen_synthetic.jl
+julia --project=. scripts/bench.jl all
+julia --project=. scripts/bench_cli.jl
+julia --project=. scripts/bench_ablation.jl
+julia --project=. scripts/bench_density.jl
+julia --project=. scripts/bench_memory_trace.jl
+julia --project=. apps/groceries/prepare.jl
+julia --project=. apps/groceries/analyze.jl
+julia --project=apps apps/bovw/prepare.jl
+julia --project=apps apps/bovw/analyze.jl
+julia --project=apps apps/bovw/figures.jl
+julia --project=scripts scripts/plots.jl
+julia --project=scripts scripts/plots_a.jl
+\end{lstlisting}
+
+Mọi phần ngẫu nhiên (lấy mẫu con, dữ liệu tổng hợp, chia tập huấn luyện/kiểm tra, k-means++) dùng seed cố định 42. Thời gian đo phụ thuộc máy, nhưng kết quả khai thác (tập phổ biến, luật, mẫu đặc trưng) không phụ thuộc máy.

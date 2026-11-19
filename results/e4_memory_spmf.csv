@@ -1,0 +1,6 @@
+experiment,dataset,kind,minsup,sigma,impl,variant,repeat,status,n_itemsets,t_read_s,t_algo_s,t_wall_s,maxrss_mb,heap_mb,commit,machine,date
+E4,chess,dày,65%,,spmf,Eclat,1,ok,111239,,8.877,9.5927971,,633.0553436279297,nogit,DESKTOP-LFG7EP1,1794970248
+E4,mushroom,dày,15%,,spmf,Eclat,1,ok,98575,,3.485,4.0167408,,259.6456527709961,nogit,DESKTOP-LFG7EP1,1794970299
+E4,accidents,dày,65%,,spmf,Eclat,1,ok,1093,,75.674,93.0746759,,6575.066986083984,nogit,DESKTOP-LFG7EP1,1794970471
+E4,retail,thưa,0.1%,,spmf,Eclat,1,ok,7589,,2.565,5.992905,,685.0669860839844,nogit,DESKTOP-LFG7EP1,1794970590
+E4,T10I4D100K,thưa,0.1%,,spmf,Eclat,1,ok,27532,,4.034,5.3070212,,246.17059326171875,nogit,DESKTOP-LFG7EP1,1794970690

@@ -1,0 +1,39 @@
+% III.E Kiểm thử và tỉ lệ khớp với SPMF — phần B viết.
+\subsection{Kiểm thử và tỉ lệ khớp với SPMF}
+\label{sec:kiem-thu}
+
+Nhóm đo tính đúng bằng \emph{tỉ lệ khớp}, định nghĩa chung cho README, báo cáo và notebook:
+\begin{equation}
+\text{tỉ lệ khớp} = \frac{|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}|}{|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}|},
+\label{eq:ti-le-khop}
+\end{equation}
+tức một tập chỉ được tính là khớp khi cả hai bên cùng tìm ra nó với cùng support; tập thiếu, tập thừa hay tập lệch support đều làm giảm tỉ lệ. Tính đúng được kiểm chứng qua ba tầng độc lập nhau.
+
+\emph{Tầng 1: oracle duyệt trâu (brute force).} Với 200 CSDL ngẫu nhiên (tối đa 12 item, 30 giao dịch, ngưỡng ngẫu nhiên), một hàm kiểm tra liệt kê đủ $2^m - 1$ tập con rồi đếm support trực tiếp. Tầng này không dùng SPMF, nên bắt được lỗi logic của thuật toán ngay cả khi SPMF cũng sai.
+
+\emph{Tầng 2: đáp án SPMF cố định.} Output của SPMF cho 11 ca được lưu sẵn trong \texttt{test/expected/}: dữ liệu ví dụ của SPMF, ví dụ hiệu sách của bài báo, và các ca biên (giao dịch giống hệt nhau, một giao dịch, không item nào đạt ngưỡng, item 0, mã item rời rạc, dòng chú thích, item chưa sắp xếp). Thêm vào đó là dấu vân tay output của SPMF trên cả 5 bộ benchmark ở một mức minsup. Tầng này bắt các lỗi về định dạng, cách làm tròn ngưỡng và cách đếm $N$.
+
+\emph{Tầng 3: thí nghiệm E1} so toàn bộ lưới minsup của Chương~2 (mục~\ref{sec:e1}). Output ở mức minsup thấp có hàng triệu dòng, nên hai bên được so bằng \emph{dấu vân tay} (fingerprint): mỗi dòng được chuẩn hóa (item tăng dần, kèm support) rồi băm thành 64 bit; dấu vân tay gồm số dòng và tổng các giá trị băm theo modulo $2^{64}$. Tổng không phụ thuộc thứ tự dòng, nên không cần sắp xếp hay nạp cả file vào bộ nhớ, và hai tập kết quả khác nhau chỉ trùng dấu vân tay với xác suất cỡ $2^{-64}$. Khi dấu vân tay lệch, \texttt{scripts/compare\_spmf.jl} so chi tiết từng tập và tính công thức~\eqref{eq:ti-le-khop}.
+
+Mọi phép kiểm tra về tính đúng đều chạy trên cả 7 phiên bản v0--v6 (mục~\ref{sec:toi-uu}), kể cả mọi tổ hợp tùy chọn hợp lệ của cấu hình. Riêng bản lai v6 được thử thêm với ngưỡng chuyển biểu diễn đặt cao, để chắc chắn nhánh chuyển từ mảng bit sang mảng chỉ số thực sự được chạy. Bảng~\ref{tab:b02} tóm tắt bộ test; lệnh \texttt{julia --project test/runtests.jl} pass toàn bộ 15.869 phép kiểm tra trong khoảng một phút, và GitHub Actions chạy lại bộ test ở mỗi lần đẩy code, một lần với \texttt{--check-bounds=yes} để bắt lỗi truy cập ngoài mảng mà \texttt{@inbounds} có thể che mất.
+
+\begin{table}[t]
+\caption{Bộ kiểm thử tự động (lần chạy cuối: 15.869/15.869 phép kiểm tra đạt)}
+\label{tab:b02}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{1.75cm}p{5.0cm}r@{}}
+\toprule
+Nhóm & Nội dung chính & Số phép \\
+\midrule
+Đọc/ghi, minsup & Đổi minsup giống hệt SPMF (10 ca đo bằng thí nghiệm hộp đen); dòng rỗng, chú thích, CRLF, item trùng, mã 0 và mã rất lớn; định dạng output; dấu vân tay & 51 \\
+Tính đúng & 11 đáp án SPMF và oracle trên 200 CSDL ngẫu nhiên, mỗi ca $\times$ 7 phiên bản; mọi tổ hợp cấu hình; \texttt{maxlen}; mỗi tập được báo đúng một lần; mã item $10^6$; CSDL rỗng & 5.276 \\
+Hàm lõi, hiệu năng & Ba kiểu giao tidset so với phép giao chuẩn trên dữ liệu ngẫu nhiên; ổn định kiểu; không cấp phát bộ nhớ trong vòng lặp nóng; dùng lại buffer giảm cấp phát (9,91\,MiB xuống 0,27\,MiB) & 10.006 \\
+Luật kết hợp & Luật trên ví dụ hiệu sách tính tay; số luật đúng định nghĩa; top-$k$ & 431 \\
+Benchmark & Dấu vân tay trên 5 bộ benchmark $\times$ 7 phiên bản, so với đáp án SPMF & 105 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Kết quả: tỉ lệ khớp đạt 100\% ở mọi tầng. Ở tầng 3, cả 245 tổ hợp (5 bộ dữ liệu $\times$ 7 mức minsup $\times$ 7 phiên bản) cho dấu vân tay trùng với SPMF \texttt{Eclat} (chi tiết ở mục~\ref{sec:e1}). Thí nghiệm hộp đen còn phát hiện một ca SPMF không chạy được mà cài đặt của nhóm chạy đúng: với mã item $10^6$, SPMF \texttt{Eclat} báo hết bộ nhớ, nên ca này được kiểm bằng đáp án tính tay thay vì đáp án SPMF.

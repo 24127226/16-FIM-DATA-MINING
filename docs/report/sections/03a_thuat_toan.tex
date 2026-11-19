@@ -1,0 +1,124 @@
+% III. Chương 1: Cài đặt — phần A viết: III.A (thuật toán theo bài báo), III.B (độ phức tạp).
+\section{Chương 1: Cài đặt}
+\label{sec:cai-dat}
+
+Chương này trình bày thuật toán Eclat như bài báo gốc mô tả và cách nhóm hiện thực nó (mục~\ref{sec:thuat-toan}), phân tích độ phức tạp dùng để giải thích các thực nghiệm ở Chương~2 (mục~\ref{sec:do-phuc-tap}), kiến trúc phần mềm và vào/ra (mục~\ref{sec:kien-truc}), các tối ưu kèm mức cải thiện đo được (mục~\ref{sec:toi-uu}), và cách kiểm chứng tính đúng (mục~\ref{sec:kiem-thu}). Toàn bộ mã nằm trong module Julia \texttt{EclatFIM} (thư mục \texttt{src/}).
+
+\subsection{Thuật toán Eclat theo bài báo gốc}
+\label{sec:thuat-toan}
+
+Eclat ghép ba ý của bài báo~\cite{zaki2000scalable}.
+
+\emph{Đếm support bằng phép giao} (§4.1, Bổ đề~4--5). Một giao dịch chứa $X \cup Y$ khi và chỉ khi nó chứa cả $X$ lẫn $Y$, nên
+\begin{equation}
+t(X \cup Y) = t(X) \cap t(Y), \qquad \sigma(X \cup Y) = |t(X) \cap t(Y)|.
+\label{eq:giao}
+\end{equation}
+Chỉ cần tidset của các item là tính được support của mọi tập mà không phải quét lại CSDL. Bổ đề~6 còn cho biết $X \subseteq Y$ kéo theo $t(Y) \subseteq t(X)$: tidset co lại khi tập dài ra, nên phép giao ở mức sâu ngày càng rẻ.
+
+\emph{Chia dàn tập con thành các lớp tương đương theo tiền tố} (§4.2, Bổ đề~7). Cố định một thứ tự toàn phần $\prec$ trên item và viết mỗi tập theo thứ tự đó. Hai tập $k$ item thuộc cùng lớp $[P]$ nếu chung tiền tố $P$ gồm $k-1$ item đầu. Mọi tập của lớp $[P]$ được sinh từ các \emph{nguyên tử} (atom) của lớp, tức các tập $P \cup \{x\}$, và lớp này không cần thông tin của lớp khác, nên mỗi lớp là một bài toán con giải độc lập trong bộ nhớ.
+
+\emph{Tìm kiếm từ dưới lên} (bottom-up search, §4.3 và Fig.~12 của bài báo). Trong mỗi lớp, giao tidset của từng cặp nguyên tử $A_i, A_j$ với $i < j$; cặp nào đạt $\sigma_{\min}$ trở thành nguyên tử của lớp con $[A_i]$, rồi giải tiếp lớp con. Thuật toán~\ref{alg:eclat} là cách nhóm hiện thực ba ý trên; Hình~\ref{fig:f01} chạy thuật toán trên ví dụ hiệu sách của bài báo.
+
+\begin{algorithm}[t]
+\caption{Eclat: duyệt theo chiều sâu trên các lớp tiền tố}
+\label{alg:eclat}
+\begin{algorithmic}[1]
+\Require CSDL $\mathcal{D}$ ở dạng ngang, ngưỡng $\sigma_{\min}$
+\Ensure mọi cặp $(X, \sigma(X))$ với $\sigma(X) \ge \sigma_{\min}$
+\State $\mathcal{F}_1 \gets \{x : \sigma(x) \ge \sigma_{\min}\}$, sắp theo $\prec$ \Comment{quét $\mathcal{D}$ lần 1}
+\State dựng $t(x)$ cho mọi $x \in \mathcal{F}_1$ \Comment{quét $\mathcal{D}$ lần 2}
+\State xuất mọi $(x, |t(x)|)$; \Call{BottomUp}{$(x, t(x))_{x \in \mathcal{F}_1}$}
+\Procedure{BottomUp}{$A_1, \dots, A_k$} \Comment{nguyên tử của một lớp}
+  \For{$i = 1, \dots, k-1$}
+    \State $C \gets$ danh sách rỗng
+    \For{$j = i+1, \dots, k$}
+      \State $t \gets t(A_i) \cap t(A_j)$ \Comment{công thức~\eqref{eq:giao}}
+      \If{$|t| \ge \sigma_{\min}$}
+        \State thêm $(A_i \cup A_j, t)$ vào $C$; xuất $(A_i \cup A_j, |t|)$
+      \EndIf
+    \EndFor
+    \If{$C$ khác rỗng}
+      \State \Call{BottomUp}{$C$} \Comment{giải ngay lớp con $[A_i]$}
+    \EndIf
+  \EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\footnotesize, x=1cm, y=1cm,
+  tap/.style={draw, rounded corners=1pt, align=center, inner sep=2pt, minimum width=1.05cm},
+  loai/.style={tap, densely dashed, draw=gray, text=gray},
+  >={Stealth[length=4pt]}]
+\node[anchor=west] at (-0.3, 0.75) {(a) Lớp gốc $[\emptyset]$: item và tidset};
+\node[tap] (A) at (0.4, 0) {A\\1345};
+\node[tap] (C) at (2.0, 0) {C\\123456};
+\node[tap] (D) at (3.6, 0) {D\\2456};
+\node[tap] (T) at (5.2, 0) {T\\1356};
+\node[tap] (W) at (6.8, 0) {W\\12345};
+\node[anchor=west] at (-0.3, -0.85) {(b) Lớp $[A]$ và các lớp con của nó};
+\node[tap] (AC) at (0.4, -1.6) {AC\\1345};
+\node[loai] (AD) at (2.0, -1.6) {AD\\45};
+\node[tap] (AT) at (3.6, -1.6) {AT\\135};
+\node[tap] (AW) at (5.2, -1.6) {AW\\1345};
+\node[tap] (ACT) at (0.4, -2.85) {ACT\\135};
+\node[tap] (ACW) at (2.0, -2.85) {ACW\\1345};
+\node[tap] (ATW) at (3.6, -2.85) {ATW\\135};
+\node[tap] (ACTW) at (0.4, -4.1) {ACTW\\135};
+\draw[->] (A) -- (AC);
+\draw[->, gray] (A) -- (AD);
+\draw[->] (A) -- (AT);
+\draw[->] (A) -- (AW);
+\draw[->] (AC) -- (ACT);
+\draw[->] (AC) -- (ACW);
+\draw[->] (AT) -- (ATW);
+\draw[->] (ACT) -- (ACTW);
+\node[anchor=west, align=left, font=\scriptsize] at (2.6, -4.1)
+  {$t(AC) = t(A) \cap t(C) = 1345$, $\sigma(AC) = 4$\\
+   $t(ACT) = t(AC) \cap t(AT) = 135$, $\sigma(ACT) = 3$};
+\end{tikzpicture}
+\caption{Thuật toán~\ref{alg:eclat} trên ví dụ hiệu sách của bài báo (Fig.~1 và Fig.~4 trong~\cite{zaki2000scalable}; $N = 6$, $\sigma_{\min} = 3$, mỗi tidset viết liền các mã giao dịch). Mỗi tập được giao với các tập anh em đứng sau nó để sinh lớp con. $AD$ chỉ có 2 giao dịch nên bị loại (khung nét đứt) và không sinh lớp con. Toàn bộ thuật toán cho đúng 19 tập phổ biến như bài báo.}
+\label{fig:f01}
+\end{figure}
+
+Nhóm giữ nguyên ba ý trên; các điểm khác với bài báo dưới đây đều không làm thay đổi tập kết quả.
+(i)~Bài báo giả sử CSDL đã nằm ở dạng dọc trên đĩa. Đề bài cho file dạng ngang theo định dạng SPMF, nên nhóm đảo sang dạng dọc bằng hai lần quét (dòng~1--2).
+(ii)~Bài báo đếm các tập 2 item bằng một mảng tam giác trên dữ liệu ngang (§5.1) trước khi chia lớp. Bản cơ bản của nhóm làm đúng như Thuật toán~\ref{alg:eclat}, giao từng cặp ngay ở lớp gốc; mảng tam giác là một tối ưu được đo riêng (mục~\ref{sec:toi-uu}).
+(iii)~Mã giả Fig.~12 của bài báo dựng xong mọi lớp con của một lớp rồi mới đệ quy, nên phải giữ tidset của hai mức liền nhau. Nhóm đệ quy ngay sau khi dựng xong mỗi lớp con (dòng~14), nên ở mỗi độ sâu chỉ giữ một lớp.
+(iv)~Thứ tự $\prec$: bản cơ bản dùng thứ tự mã item như ví dụ của bài báo; các bản tối ưu sắp item theo support tăng dần.
+Giống bài báo, cài đặt không kiểm tra các tập con của ứng viên trước khi giao: §5.2 của bài báo ghi nhận việc cắt tỉa này gần như không có lợi, vì nhờ Bổ đề~6 phép giao ở mức sâu vốn đã rẻ.
+
+\subsection{Phân tích độ phức tạp}
+\label{sec:do-phuc-tap}
+
+Gọi $m_f = |\mathcal{F}_1|$ là số item phổ biến, $\ell$ là độ dài của tập phổ biến dài nhất, $w = 64$ là số bit của một word máy và $\rho(X) = \sigma(X)/N$ là mật độ (density) của tidset. Bảng~\ref{tab:do-phuc-tap} tóm tắt chi phí của các thao tác chính; Chương~2 dùng bảng này để giải thích số đo.
+
+\begin{table}[t]
+\caption{Chi phí của các thao tác chính trong Eclat}
+\label{tab:do-phuc-tap}
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}p{2.25cm}p{5.75cm}@{}}
+\toprule
+Thao tác & Chi phí \\
+\midrule
+Giao hai tidset dạng mảng tăng dần & $O(\sigma(X) + \sigma(Y))$ nếu trộn hai mảng (merge); $O(\sigma(X) \log \frac{\sigma(Y)}{\sigma(X)})$ nếu dò bằng tìm kiếm phi mã (galloping~\cite{bentley1976almost}) khi $\sigma(Y) \gg \sigma(X)$ \\
+Giao hai tidset dạng mảng bit & $N/w$ phép AND trên word, không phụ thuộc $\sigma$ \\
+Bộ nhớ một tidset & mảng \texttt{Int32}: $4\sigma$ byte; mảng bit: $N/8$ byte. Bằng nhau khi $\rho = 1/32$ \\
+Số phép giao & $I = \sum_{[P]} \binom{|[P]|}{2} \le |\mathcal{F}| \cdot m_f$ \\
+Tập 2 item, giao từng cặp & $\binom{m_f}{2}$ phép giao \\
+Tập 2 item, mảng tam giác & $\sum_{j=1}^{N} \binom{|T_j \cap \mathcal{F}_1|}{2} \le N \bar{L}^2/2$ phép cộng, $\binom{m_f}{2}$ bộ đếm \\
+Bộ nhớ tidset khi duyệt sâu & $\sum_{d=1}^{\ell} \sum_{X \in [P_d]} \mathrm{size}(t(X))$, với $[P_d]$ là lớp đang mở ở độ sâu $d$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Thời gian theo kích thước đầu ra.} Mỗi phép giao sinh đúng một ứng viên, là một tập phổ biến của lớp cha ghép thêm một nguyên tử anh em, nên $I \le |\mathcal{F}| \cdot m_f$. Thời gian khai thác vì vậy tỉ lệ với số tập phổ biến nhân với chi phí một phép giao. Khi minsup giảm, $|\mathcal{F}|$ có thể tăng theo hàm mũ, nên thời gian cũng tăng theo. Phụ lục~A của bài báo cho thấy sự bùng nổ này là bản chất của bài toán: kiểm tra có tồn tại tập phổ biến với kích thước cho trước hay không là bài toán NP-đầy đủ, còn đếm số tập phổ biến tối đại là \#P-đầy đủ. Vì vậy cài đặt chỉ có thể giảm chi phí trên mỗi tập, không tránh được việc số tập tăng nhanh.
+
+\emph{Theo số giao dịch $N$.} Khi minsup tương đối cố định, support của mọi tập tỉ lệ với $N$, nên chi phí mỗi phép giao, ở cả hai dạng tidset, tăng tuyến tính theo $N$. Nếu các tập con được lấy mẫu đều thì $\mathcal{F}$ gần như không đổi, do đó thời gian tuyến tính theo $N$ (giả thuyết H4, kiểm chứng ở E5). Bài báo cũng ghi nhận các thuật toán của nó tăng tuyến tính theo số giao dịch (Fig.~21a).
+
+\emph{Theo độ dài giao dịch $\bar{L}$.} Một giao dịch dài $L$ chứa $2^L - 1$ tập con khác rỗng. Phụ lục~A của bài báo nêu chặn trên $O(2^{L_{\max}} \cdot N)$ cho việc liệt kê khi giao dịch dài nhất có $L_{\max}$ item: tuyến tính theo $N$ nhưng hàm mũ theo độ dài giao dịch. Khi $\bar{L}$ tăng mà $N$ và minsup giữ nguyên, các tập dài trở nên phổ biến, nên $|\mathcal{F}|$, $I$ và độ sâu $\ell$ có thể tăng nhanh hơn tuyến tính (H5, kiểm chứng ở E6). Thí nghiệm Fig.~21b của bài báo giữ $N \cdot \bar{L}$ không đổi và dùng support tuyệt đối, nên chỉ thấy thời gian tăng từ từ.
+
+\emph{Bộ nhớ.} Duyệt sâu chỉ giữ tidset của các lớp trên đường đi hiện tại. Theo Bổ đề~6, tidset ở độ sâu lớn nhỏ hơn, nên bộ nhớ đỉnh thường rơi vào lúc dựng các tập 2 item ở đầu một lớp lớn, như bài báo quan sát ở Fig.~22 (H7, kiểm chứng ở E10). Hai dạng tidset có điểm cân bằng bộ nhớ tại $\rho = 1/32$: dữ liệu dày ($\rho$ lớn) lợi khi dùng mảng bit, dữ liệu thưa lợi khi dùng mảng chỉ số (H2, kiểm chứng ở E7).

@@ -1,5 +1,9 @@
-% Kết luận và hướng phát triển (nội dung viết ở mốc M6)
+% VI. Kết luận và hướng phát triển — cả hai cùng viết.
 \section{Kết luận và hướng phát triển}
-\label{sec:06_ket_luan}
+\label{sec:ket-luan}
 
-Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
+Nhóm đã cài đặt lại Eclat từ bài báo gốc bằng Julia, với bảy phiên bản cho phép đo riêng tác dụng của từng tối ưu. Về tính đúng, cả 245 tổ hợp (bộ dữ liệu, minsup, phiên bản) khớp SPMF 100\%, cùng 15.869 phép kiểm tra tự động trên ba tầng độc lập. Về hiệu năng, bản mặc định nhanh hơn SPMF \texttt{Eclat} ở mọi mức minsup và nhanh hơn \texttt{Eclat\_bitset} ở 34/35 mức, xét theo thời gian thuật toán; điểm yếu chính là 4,5--6 giây khởi động của Julia. Hai ứng dụng đều chạy bằng chính cài đặt của nhóm. Trên Groceries, các luật theo lift cho thấy hai hành vi mua rõ ràng và ổn định khi kiểm tra trên dữ liệu giữ lại. Trên ảnh, các mẫu trực quan phản ánh cấu trúc hình học của từng lớp, làm lộ thiên lệch phông nền của lớp khuôn mặt, và đạt 75,8\% độ chính xác khi dùng làm đặc trưng.
+
+Đối chiếu dự đoán với số đo là phần nhóm học được nhiều nhất. Các giả thuyết về tính đúng (H1), thứ tự item (H3), khả năng mở rộng (H4), độ dài giao dịch (H5) và ưu thế so với Apriori, FP-Growth (H6) được xác nhận; riêng H6 còn cho thấy SPMF \texttt{Apriori} nhanh hơn chính SPMF \texttt{Eclat} ở 22/33 mức, tức chất lượng cài đặt quan trọng không kém thuật toán. Một số dự đoán chỉ đúng một phần hoặc sai, và mỗi chỗ lệch đều giải thích được bằng số đo: mảng bit nhanh hơn mảng chỉ số ở mật độ thấp hơn nhiều so với ngưỡng bộ nhớ $1/32$, trừ khi hầu hết phép giao thất bại (H2); mảng tam giác có hại khi $N$ rất lớn mà ít item phổ biến (H8); bộ nhớ không có đỉnh ở mức 2 vì cách duyệt sâu của nhóm khác cách duyệt của bài báo (H7). Vì vậy không có một phiên bản nào nhanh nhất trên mọi dữ liệu.
+
+Hướng phát triển, theo thứ tự lợi ích dự kiến: chọn biểu diễn tidset bằng mô hình chi phí thời gian, dùng số đếm sẵn có của mảng tam giác; giảm thời gian khởi động bằng PrecompileTools.jl; dùng diffset cho dữ liệu dày; song song hóa các lớp ở mức 1. Cùng khung lớp tiền tố này, bài báo còn đề xuất MaxEclat và MaxClique để tìm nhanh các tập phổ biến tối đại dài; đây là bước mở rộng tự nhiên tiếp theo.

@@ -18,10 +18,21 @@
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{Thuật toán}
+\algrenewcommand\algorithmicrequire{\textbf{Vào:}}
+\algrenewcommand\algorithmicensure{\textbf{Ra:}}
 \usepackage{cite}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figures/}}
+
+% Mỗi mục là một file riêng để hai người sửa song song mà không xung đột khi merge
+% (người viết từng mục: KE_HOACH_DU_AN.md mục 11.1). File nào chưa có thì PDF in dòng nhắc thay vì báo lỗi.
+\newcommand{\phan}[1]{\IfFileExists{sections/#1.tex}{\input{sections/#1}}{\par\noindent\textbf{[Chưa có mục: #1]}\par}}
 
 \begin{document}
 
@@ -36,29 +47,33 @@
 }
 
 \maketitle
+\renewcommand{\IEEEkeywordsname}{Từ khóa}
 
 \begin{abstract}
-(Tóm tắt, tối đa 200 từ. Viết ở mốc M6.)
+\phan{00_tom_tat}
 \end{abstract}
 
 \begin{IEEEkeywords}
 khai thác tập phổ biến, Eclat, tidset, biểu diễn dọc, Julia
 \end{IEEEkeywords}
 
-% Dòng thử font tiếng Việt (xóa khi viết nội dung thật):
-% Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
-
-\input{sections/01_gioi_thieu}
-\input{sections/02_nen_tang}
-\input{sections/03_chuong1_cai_dat}
-\input{sections/04_chuong2_thuc_nghiem}
-\input{sections/05_chuong3_ung_dung}
-\input{sections/06_ket_luan}
+\phan{01_gioi_thieu}     % I.   Chung
+\phan{02_nen_tang}        % II.  B (nhận thêm khi chia lại)
+\phan{03a_thuat_toan}     % III. Chương 1: A (III.A thuật toán, III.B độ phức tạp)
+\phan{03b_kien_truc}      %      B (III.C kiến trúc và I/O)
+\phan{03c_toi_uu}         %      A (III.D các tối ưu)
+\phan{03d_kiem_thu}       %      B (III.E kiểm thử)
+\phan{04a_thuc_nghiem}    % IV.  Chương 2: B (IV.A thiết lập, IV.B–G thí nghiệm E1–E6; E9)
+\phan{04b_mat_do}         %      A (IV.H ảnh hưởng của mật độ: E7)
+\phan{04c_manh_yeu}       %      Chung (IV.I mạnh/yếu so với SPMF, đề xuất tối ưu)
+\phan{05a_ung_dung_1}     % V.   Chương 3: B (V.A giỏ hàng)
+\phan{05b_ung_dung_2}     %      A (V.B mẫu trực quan trên ảnh)
+\phan{06_ket_luan}        % VI.  Chung
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
 \appendices
-\input{sections/07_phu_luc}
+\phan{07_phu_luc}
 
 \end{document}

@@ -43,9 +43,17 @@ function strip_trailing_spaces(src::AbstractString, dst::AbstractString)
     end
 end
 
+"""
+Link thư mục dataset của nhóm trên Hugging Face, dạng
+"https://huggingface.co/datasets/<tài-khoản>/<tên-dataset>/resolve/main" (cách tạo: data/huggingface/README.md).
+Script thử nguồn này trước, rồi mới đến nguồn gốc; mọi file đều được kiểm tra SHA-256 như nhau.
+Để trống thì chỉ tải từ nguồn gốc. Biến môi trường FIM_DATA_BASE (nếu có) được ưu tiên hơn hằng số này.
+"""
+const HF_DATA_BASE = ""
+
 function candidate_urls(s)
     urls = String[]
-    base = get(ENV, "FIM_DATA_BASE", "")
+    base = get(ENV, "FIM_DATA_BASE", HF_DATA_BASE)
     isempty(base) || push!(urls, rstrip(base, '/') * "/" * basename(s.dest))
     push!(urls, s.url)
     return urls

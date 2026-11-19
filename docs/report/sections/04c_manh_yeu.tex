@@ -1,0 +1,40 @@
+% IV.I Mạnh/yếu so với SPMF và đề xuất tối ưu — cả hai cùng viết (B07).
+\subsection{Điểm mạnh, điểm yếu so với SPMF và hướng tối ưu tiếp theo}
+\label{sec:manh-yeu}
+
+Bảng~\ref{tab:b07} tổng hợp các so sánh ở trên theo từng khía cạnh, kèm thí nghiệm làm bằng chứng.
+
+\begin{table}[t]
+\caption{Điểm mạnh và điểm yếu của cài đặt so với SPMF (B07)}
+\label{tab:b07}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{1.55cm}p{5.25cm}l@{}}
+\toprule
+Khía cạnh & Nhận xét & Nguồn \\
+\midrule
+Tốc độ, dữ liệu dày & \textbf{Mạnh.} Thời gian thuật toán nhanh hơn \texttt{Eclat} 14,5--285 lần và \texttt{Eclat\_bitset} 1,0--11,6 lần (trung vị 2,6) & E2 \\
+Tốc độ, dữ liệu thưa & \textbf{Mạnh.} Nhanh hơn \texttt{Eclat} 2,7--27 lần, \texttt{Eclat\_bitset} 1,0--28 lần; \texttt{Eclat\_bitset} chậm hẳn khi tidset rất thưa (T10I4D100K 0,01\%: 43 so với 4,8 giây) & E2 \\
+Khởi động & \textbf{Yếu.} Phần cố định của thời gian tiến trình khoảng 4,5--6 giây (nạp gói, biên dịch JIT), so với dưới 1 giây của JVM; lần chạy ngắn thì SPMF xong trước & E2, E2b \\
+Bộ nhớ tidset & \textbf{Mạnh.} v6 cần 0,04--3,9\,MiB tidset ở minsup trung bình; heap của SPMF từ 246\,MiB đến 6,4\,GiB & E4 \\
+Bộ nhớ nền và input & \textbf{Yếu.} RAM nền của Julia khoảng 237\,MiB; bộ đọc giữ cả file và một mảng \texttt{Int64} trung gian (Accidents: khoảng 360\,MiB tăng thêm) & E4 \\
+Đọc file & \textbf{Mạnh.} Đọc theo byte: Accidents (34\,MB, 340 nghìn giao dịch) trong khoảng 0,4 giây & E2 \\
+Khả năng mở rộng & \textbf{Ngang, hệ số nhỏ hơn.} Cả hai tăng tuyến tính theo $N$ trên Accidents ($R^2 \approx 0{,}98$); hệ số góc của nhóm nhỏ hơn 3,2 lần & E5 \\
+Độ bền với input & \textbf{Mạnh.} Chấp nhận dấu tab, khoảng trắng thừa, item trùng, mã item $10^6$; SPMF báo lỗi hoặc hết bộ nhớ ở các ca này & III.C \\
+Phạm vi & \textbf{Yếu.} SPMF có hàng trăm thuật toán (dEclat, FP-Growth, tập đóng, tập tối đại); nhóm chỉ cài Eclat & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Nhìn chung, ưu thế của cài đặt nằm ở chi phí cho mỗi phép giao và ở phần việc cố định của thuật toán (đọc file, đếm tập 2 item), nhờ ba lựa chọn đã đo được tác dụng: tidset dạng bit trên dữ liệu dày, mảng tam giác ở mức 2, và bản lai chuyển sang mảng chỉ số khi tidset thưa. Điểm yếu nằm ngoài thuật toán: thời gian khởi động của Julia và cách bộ đọc giữ input trong bộ nhớ. Vì vậy, với một lần khai thác ngắn chạy từ dòng lệnh, SPMF xong trước; còn khi khai thác ở minsup thấp, hoặc khai thác nhiều lần trong cùng một phiên Julia như hai ứng dụng ở Chương~3, cài đặt của nhóm có lợi rõ.
+
+Đề bài yêu cầu ít nhất hai hướng tối ưu cụ thể có thể làm tiếp. Hai tối ưu mà kế hoạch ban đầu đề xuất (giao có ngắt sớm và biểu diễn lai theo mật độ) nhóm đã làm và đo được ở v3, v6, nên các hướng dưới đây là những việc \emph{chưa làm}, mỗi hướng kèm bằng chứng từ thí nghiệm của nhóm.
+
+\emph{(1) Tập hiệu (diffset) cho dữ liệu dày.} dEclat~\cite{zaki2003fast} lưu $d(PX) = t(P) \setminus t(PX)$ thay cho $t(PX)$, với $\sigma(PX) = \sigma(P) - |d(PX)|$. Trên dữ liệu dày, $t(PX)$ gần bằng $t(P)$ nên diffset rất nhỏ. Bằng chứng: E10 cho thấy trên Chess tidset hầu như không co lại theo độ sâu (đường bộ nhớ gần phẳng), đúng trường hợp diffset có lợi; dự kiến giảm cả bộ nhớ lẫn thời gian giao ở các mức sâu trên Chess, Mushroom, Accidents. Có thể kết hợp với bản lai: dùng diffset khi $\sigma(PX)/\sigma(P)$ vượt một ngưỡng.
+
+\emph{(2) Song song hóa theo lớp ở mức 1.} Các lớp $[x]$ của lớp gốc độc lập với nhau (§4.2 của bài báo), nên có thể giao cho các luồng khác nhau bằng \texttt{Threads.@spawn}, mỗi luồng có workspace riêng. Vì các lớp đầu (item hiếm) và các lớp cuối có kích thước rất khác nhau, nên chia việc động (mỗi luồng lấy lớp kế tiếp khi rảnh) thay vì chia đều. Bằng chứng: E10 cho thấy tidset đang sống của cả quá trình duyệt chỉ 1--4\,MiB trên Chess và T10I4D100K, nên mỗi luồng có workspace riêng mà tổng bộ nhớ vẫn nhỏ; với máy đo 2 lõi, tăng tốc kỳ vọng gần 2 lần ở các mức minsup thấp, nơi thời gian khai thác lớn.
+
+\emph{(3) Giảm thời gian khởi động.} Bằng chứng: E2 cho thấy thời gian tiến trình của nhóm có phần cố định khoảng 4,5--6 giây do nạp gói và biên dịch tức thời (E2b), lớn hơn cả thời gian thuật toán của v6 ở 34/35 mức minsup. Dùng PrecompileTools.jl để lưu sẵn mã đã biên dịch cho phiên bản mặc định, hoặc PackageCompiler.jl để dựng sysimage riêng, dự kiến đưa phần cố định này xuống dưới 1 giây; khi đó cài đặt nhanh hơn SPMF cả ở thời gian tiến trình, vì thời gian thuật toán vốn đã nhanh hơn ở 34/35 mức.
+
+\emph{(4) Chọn biểu diễn tidset theo thời gian thay vì theo bộ nhớ.} Bằng chứng: E7 và E8 cho thấy bản lai chuyển sang mảng chỉ số theo ngưỡng bộ nhớ $1/32$ chậm hơn mảng bit 3,4 lần trên T10I4D100K 0,1\%, trong khi mảng chỉ số chỉ thắng khi phần lớn phép giao thất bại (Retail ở minsup thấp). Có thể chọn biểu diễn cho từng lớp bằng một mô hình chi phí đơn giản: ước lượng tỉ lệ phép giao thất bại từ mảng tam giác (đã có sẵn số đếm của mọi cặp), rồi so chi phí $N/64$ của phép AND với chi phí dự kiến của phép giao có dừng sớm. Dự kiến lấy được tốc độ của bản nhanh nhất trong v4, v5 trên mọi bộ (Bảng~\ref{tab:b03}) mà vẫn giữ bộ nhớ thấp của v6.

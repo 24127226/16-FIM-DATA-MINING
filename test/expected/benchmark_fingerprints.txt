@@ -1,0 +1,6 @@
+# tên | file input | minsup | số tập | tổng băm   (sinh bởi scripts/make_expected.jl)
+chess_80 | data/benchmark/chess.txt | 80% | 8227 | 2459870933803334957
+mushroom_20 | data/benchmark/mushroom.txt | 20% | 53583 | 13750238845306348539
+retail_0.5 | data/benchmark/retail.txt | 0.5% | 580 | 15669008644247401306
+T10I4D100K_0.5 | data/benchmark/T10I4D100K.txt | 0.5% | 1073 | 12334857668032876536
+accidents_80 | data/benchmark/accidents.txt | 80% | 149 | 9239803026344547245

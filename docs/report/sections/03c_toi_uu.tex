@@ -1,0 +1,109 @@
+% III.D Các tối ưu và mức cải thiện đo được — phần A viết.
+\subsection{Các tối ưu và mức cải thiện đo được}
+\label{sec:toi-uu}
+
+Nhóm cài bảy phiên bản v0--v6 trên cùng một mã nguồn; mỗi phiên bản thêm \emph{đúng một} thay đổi so với phiên bản trước (Bảng~\ref{tab:b01}), nên chênh lệch giữa hai phiên bản liền nhau là tác dụng riêng của thay đổi đó (phân tích cắt bỏ thành phần, ablation study). Cấu hình của mỗi phiên bản là một giá trị \texttt{EclatConfig} gồm năm lựa chọn; mã khai thác chọn hàm giao theo kiểu của lựa chọn (\texttt{Val\{:merge\}} hay \texttt{Val\{:adaptive\}}) bằng multiple dispatch, nên lựa chọn được quyết định lúc biên dịch và vòng lặp nóng không phải rẽ nhánh theo cấu hình. Bộ đếm \texttt{EclatStats} cũng dùng cơ chế này: khi tắt, tham số bộ đếm có kiểu \texttt{Nothing} và mọi lời gọi đếm biến mất khỏi mã máy, nên đo thời gian không bị bộ đếm làm chậm.
+
+\begin{table}[t]
+\caption{Các phiên bản; mỗi dòng thêm đúng một thay đổi so với dòng trên}
+\label{tab:b01}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lp{6.9cm}@{}}
+\toprule
+Bản & Thay đổi \\
+\midrule
+v0 & Cơ bản, đúng Thuật toán~\ref{alg:eclat}: tidset là mảng \texttt{Int32} tăng dần, mỗi phép giao cấp phát mảng mới, item theo thứ tự mã, tập 2 item bằng giao từng cặp \\
+v1 & + sắp item theo support tăng dần \\
+v2 & + dùng lại bộ nhớ đệm theo độ sâu: không cấp phát trong vòng lặp nóng \\
+v3 & + phép giao thích nghi: dừng sớm, tìm kiếm phi mã \\
+v4 & + tidset dạng mảng bit (\texttt{BitVector}) \\
+v5 & + đếm tập 2 item bằng mảng tam giác (§5.1 của bài báo) \\
+v6 & + biểu diễn lai: chuyển từ mảng bit sang mảng chỉ số khi tidset đủ thưa \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{v1, thứ tự item.} Nguyên tử đứng sau trong lớp có ít ứng viên con hơn (chỉ giao với các nguyên tử đứng sau nó). Đặt item hiếm lên trước thì lớp con của item hiếm, vốn phải giao với nhiều anh em, lại có tidset ngắn và thường cho ít tập phổ biến; còn item phổ biến nhất đứng cuối, có lớp con nhỏ. Tổng số phép giao và tổng độ dài tidset vì vậy giảm (giả thuyết H3).
+
+\emph{v2, dùng lại bộ nhớ.} Ở mỗi độ sâu, tidset của mọi nguyên tử trong lớp đang mở được ghi nối tiếp vào một bộ đệm \texttt{Vector\{Int32\}} của độ sâu đó, kèm vị trí bắt đầu và độ dài. Lớp con kế tiếp ghi đè lên bộ đệm cũ, nên sau vài lớp đầu bộ đệm đã đủ lớn và vòng lặp khai thác không cấp phát thêm. Bộ test khẳng định điều này bằng \texttt{@allocated} $= 0$ cho các hàm giao, và tổng bộ nhớ cấp phát trên một CSDL thử giảm từ 9,91\,MiB (v0) xuống 0,27\,MiB (v2).
+
+\emph{v3, phép giao thích nghi.} Ba cải tiến cho phép giao hai mảng $a$, $b$ (đặt $|a| \le |b|$): (i)~nếu $|a| < \sigma_{\min}$ thì trả về ngay; (ii)~trong khi trộn, dừng khi số phần tử chung đã tìm cộng số phần tử còn lại của mảng ngắn hơn vẫn nhỏ hơn $\sigma_{\min}$, vì ứng viên chắc chắn không phổ biến; (iii)~khi $|b| \ge 16|a|$, duyệt $a$ và dò vị trí trong $b$ bằng tìm kiếm phi mã (nhảy 1, 2, 4, \dots{} bước rồi tìm nhị phân~\cite{bentley1976almost}), tốn $O(|a| \log(|b|/|a|))$ thay vì $O(|a| + |b|)$. Trường hợp chênh lệch lớn hay gặp trên dữ liệu thưa, khi một item hiếm giao với một item phổ biến.
+
+\emph{v4, mảng bit.} Tidset là một \texttt{BitVector} $N$ bit. Phép giao là phép AND trên từng word 64 bit của trường \texttt{chunks}, viết thành vòng lặp \texttt{@inbounds @simd} để trình biên dịch dùng lệnh vector; support là tổng \texttt{count\_ones} của các word. Chi phí $N/64$ phép toán không phụ thuộc support, và bộ nhớ $N/8$ byte nhỏ hơn mảng chỉ số khi $\rho > 1/32$ (Bảng~\ref{tab:do-phuc-tap}).
+
+\emph{v5, mảng tam giác.} Thay cho $\binom{m_f}{2}$ phép giao ở lớp gốc, một lần quét dữ liệu ngang cộng dồn số lần xuất hiện của mọi cặp item phổ biến vào mảng tam giác trên gồm $\binom{m_f}{2}$ bộ đếm \texttt{UInt32}; cặp $(r, s)$ với $r < s$ nằm ở ô $(r-1)(2m_f - r)/2 + (s - r)$. Sau đó chỉ cần giao tidset cho các cặp đã biết chắc là phổ biến. Nếu mảng vượt $2^{28}$ ô (1\,GiB), cài đặt quay về giao từng cặp.
+
+\emph{v6, biểu diễn lai.} Lớp gốc dùng mảng bit nếu mật độ trung bình của item phổ biến đạt $1/32$. Khi dựng lớp con của nguyên tử $A_i$, support của mọi tập trong lớp con không vượt quá $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; nếu chặn trên này nhỏ hơn $N/32$ thì lớp con được dựng thẳng dưới dạng mảng chỉ số (lấy vị trí các bit 1 của phép AND), và mọi lớp sâu hơn tiếp tục dùng mảng chỉ số. Nhờ vậy dữ liệu dày dùng mảng bit ở các mức trên, còn các tidset đã co nhỏ ở mức sâu chuyển sang dạng gọn hơn. Trên dữ liệu thưa (mật độ lớp gốc dưới $1/32$, như Retail và T10I4D100K), v6 dùng mảng chỉ số ngay từ đầu, tức là v3 cộng thêm mảng tam giác.
+
+\emph{Kết quả đo (E8).} Mỗi phiên bản được đo ở minsup trung bình của từng bộ, theo giao thức ở mục~\ref{sec:thiet-lap}. Bảng~\ref{tab:b03} cho thời gian khai thác và ghi kết quả (không gồm đọc file, vốn như nhau ở mọi phiên bản); Bảng~\ref{tab:b04} cho các bộ đếm giải thích vì sao thời gian thay đổi. Mọi phiên bản cho cùng số tập phổ biến.
+
+\begin{table}[t]
+\caption{Ablation v0 $\to$ v6: thời gian khai thác và ghi kết quả (giây, trung vị 3--5 lần) ở minsup trung bình. In đậm: nhanh nhất trên mỗi bộ}
+\label{tab:b03}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Bản & Chess & Mushroom & Accidents & Retail & T10I4D100K \\
+& 65\% & 15\% & 65\% & 0,1\% & 0,1\% \\
+\midrule
+v0 & 2,023 & 1,596 & 5,290 & 10,160 & 4,445 \\
+v1 & 1,531 & 1,314 & 1,850 & 6,279 & 4,270 \\
+v2 & 0,556 & 0,369 & 0,904 & 5,662 & 3,823 \\
+v3 & 0,891 & 0,449 & 0,994 & 2,024 & 3,158 \\
+v4 & 0,070 & \textbf{0,045} & \textbf{0,081} & 2,360 & 0,429 \\
+v5 & 0,065 & 0,050 & 0,235 & \textbf{0,135} & \textbf{0,137} \\
+v6 & \textbf{0,059} & 0,048 & 0,260 & 0,266 & 0,470 \\
+\midrule
+v0 / tốt nhất & 34 lần & 35 lần & 65 lần & 75 lần & 32 lần \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Bộ đếm của E8 ở minsup trung bình: số phép giao (trong ngoặc: tỉ lệ phép giao cho kết quả dưới ngưỡng), thời gian dựng tập 2 item, tidset đỉnh}
+\label{tab:b04}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Bộ & Bản & Phép giao & Mức 2 & Tidset đỉnh \\
+\midrule
+Chess & v0 & 140.742 (21\%) & 3,7 ms & 1,48 MiB \\
+ & v1 & 114.007 (2\%) & 8,8 ms & 1,09 MiB \\
+ & v4 & 114.007 (2\%) & 0,0 ms & 0,04 MiB \\
+Accidents & v0 & 2.333 (54\%) & 341 ms & 84,1 MiB \\
+ & v1 & 1.182 (9\%) & 367 ms & 46,4 MiB \\
+ & v4 & 1.182 (9\%) & 0,8 ms & 1,91 MiB \\
+ & v5 & 1.129 (5\%) & 148 ms & 1,91 MiB \\
+Retail & v1 & 2.244.719 (99,8\%) & 5.443 ms & 2,66 MiB \\
+ & v3 & 2.244.719 (99,8\%) & 2.205 ms & 2,66 MiB \\
+ & v4 & 2.244.719 (99,8\%) & 2.772 ms & 22,45 MiB \\
+ & v5 & 8.038 (34\%) & 72 ms & 22,45 MiB \\
+ & v6 & 8.038 (34\%) & 102 ms & 2,66 MiB \\
+T10I4D100K & v4 & 393.599 (93\%) & 356 ms & 10,08 MiB \\
+ & v5 & 85.208 (69\%) & 39 ms & 10,08 MiB \\
+ & v6 & 85.208 (69\%) & 267 ms & 3,88 MiB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Từng tối ưu, đối chiếu với dự đoán:
+
+\emph{v1 (thứ tự item, H3): đúng.} Số phép giao giảm 19--49\% (Chess 140.742 xuống 114.007; Accidents 2.333 xuống 1.182), số phép giao thất bại trên Chess giảm 10 lần, tidset đỉnh giảm theo (Accidents 84 xuống 46\,MiB). Thời gian giảm 1,2--2,9 lần trên dữ liệu dày và Retail; trên T10I4D100K gần như không đổi vì các item có support khá đều nhau.
+
+\emph{v2 (dùng lại bộ nhớ): có lợi lớn trên dữ liệu dày,} nhanh hơn v1 từ 2,0 đến 3,6 lần, vì trên Chess, Mushroom mỗi lần chạy có hơn 100 nghìn phép giao và v1 cấp phát một mảng cho mỗi phép giao. Trên dữ liệu thưa, thời gian chủ yếu nằm ở mức 2 nên lợi ích nhỏ.
+
+\emph{v3 (giao thích nghi): có lợi trên dữ liệu thưa, có hại trên dữ liệu dày.} Retail nhanh hơn 2,8 lần vì 99,8\% trong 2,2 triệu phép giao cho kết quả dưới ngưỡng, nên dừng sớm tiết kiệm rất nhiều. Trên Chess chỉ 2\% phép giao thất bại và hai tidset thường dài gần bằng nhau, nên các phép kiểm tra thêm trong vòng lặp không bao giờ có lợi mà vẫn tốn chi phí: chậm hơn v2 60\% (0,556 lên 0,891 giây).
+
+\emph{v4 (mảng bit, H2): đúng trên dữ liệu dày,} nhanh hơn v3 từ 10 đến 13 lần và tidset đỉnh nhỏ hơn 9--25 lần. Trên Retail, v4 chậm hơn v3 và tidset đỉnh lớn gấp 8 lần (22,5 so với 2,7\,MiB), đúng như dự đoán cho dữ liệu thưa. Riêng T10I4D100K thưa ($\rho \approx 0{,}013$) nhưng v4 vẫn nhanh hơn v3 7,4 lần: về thời gian, mảng bit có lợi ở mật độ thấp hơn nhiều so với ngưỡng bộ nhớ $1/32$ (mục~\ref{sec:e7}).
+
+\emph{v5 (mảng tam giác, H8): đúng trên dữ liệu thưa, sai trên Accidents.} Trên Retail, mảng tam giác bỏ qua 2,24 triệu cặp không phổ biến, số phép giao giảm từ 2,2 triệu xuống 8.038 và thời gian giảm 17 lần. Trên Chess và Mushroom thay đổi không đáng kể, như dự đoán ($m_f$ nhỏ). Nhưng trên Accidents, v5 chậm hơn v4 2,9 lần: đếm cặp tốn $\sum_j \binom{|T_j \cap \mathcal{F}_1|}{2}$ phép cộng trên 340 nghìn giao dịch dài, trong khi chỉ có 18 item phổ biến, tức 153 cặp, nên giao từng cặp mảng bit chỉ tốn 0,8\,ms. Mảng tam giác có lợi khi $\binom{m_f}{2}$ lớn so với $N\bar{L}^2$, không phải trong mọi trường hợp.
+
+\emph{v6 (biểu diễn lai): đổi thời gian lấy bộ nhớ trên dữ liệu thưa.} v6 nhanh nhất trên Chess và ngang v4, v5 trên Mushroom. Trên Retail và T10I4D100K, mật độ lớp gốc dưới $1/32$ nên v6 dùng mảng chỉ số: tidset đỉnh trở về mức của v3 (Retail 22,5 xuống 2,7\,MiB; T10I4D100K 10,1 xuống 3,9\,MiB), nhưng chậm hơn v5 từ 2 đến 3,4 lần, vì ngưỡng chuyển $1/32$ là điểm cân bằng \emph{bộ nhớ} chứ không phải điểm cân bằng thời gian.
+
+Tóm lại, bản nhanh nhất ở minsup trung bình nhanh hơn v0 từ 32 đến 75 lần, nhưng không có phiên bản nào nhanh nhất trên mọi bộ: v4 thắng ở Mushroom, Accidents; v5 thắng ở dữ liệu thưa; v6 thắng ở Chess. Nhóm chọn v6 làm bản mặc định của giao diện dòng lệnh, vì nó không bao giờ cần nhiều bộ nhớ tidset hơn biểu diễn gọn hơn trong hai biểu diễn, và vẫn nhanh hơn SPMF ở gần như mọi điểm đo của Chương~2; mục~\ref{sec:manh-yeu} đề xuất cách chọn ngưỡng chuyển theo thời gian. Ngoài ra, công cụ \texttt{code\_warntype} xác nhận mọi hàm nóng ổn định kiểu (\texttt{results/type\_stability.md}), và bộ test khẳng định các hàm giao không cấp phát bộ nhớ.

@@ -1,0 +1,171 @@
+% IV. Chương 2: Thực nghiệm và đánh giá — phần B viết: IV.A (thiết lập), IV.B–G (E1–E6), E9.
+\section{Chương 2: Thực nghiệm và đánh giá}
+\label{sec:thuc-nghiem}
+
+\subsection{Thiết lập}
+\label{sec:thiet-lap}
+
+\emph{Máy và phần mềm.} Mọi số đo chính thức được đo trên một máy: Intel Core i5-6200U (2 lõi, 4 luồng, 2,3\,GHz), 10,1\,GiB RAM, Windows 10, Julia 1.11.4 chạy một luồng, OpenJDK 25.0.5 và SPMF (thuật toán \texttt{Eclat} v2.65, SHA-256 của \texttt{spmf.jar} ghi trong \texttt{results/ENV.md}). Mỗi lần chạy script thực nghiệm được ghi vào \texttt{results/LOG.md}, và mọi hình đều được vẽ lại từ CSV trong \texttt{results/}.
+
+\emph{Dữ liệu.} Bảng~\ref{tab:b06} là thống kê của 5 bộ benchmark do nhóm tự đo lại; cả 5 bộ khớp bảng của đề. Bộ Mushroom có hai phiên bản: bản trên trang SPMF có 8.416 giao dịch, nên nhóm dùng bản gốc của kho FIMI (8.124 giao dịch, khớp đề). Mật độ $\bar{L}/m$ chia 5 bộ thành hai nhóm rõ rệt: dữ liệu dày (Chess, Mushroom, Accidents) và dữ liệu thưa (Retail, T10I4D100K).
+
+\begin{table}[t]
+\caption{Năm bộ benchmark (thống kê do nhóm đo lại, khớp bảng của đề)}
+\label{tab:b06}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lrrrrl@{}}
+\toprule
+Bộ & $N$ & $m$ & $\bar{L}$ & $\bar{L}/m$ & Loại \\
+\midrule
+Chess & 3.196 & 75 & 37,0 & 49,3\% & dày \\
+Mushroom & 8.124 & 119 & 23,0 & 19,3\% & dày \\
+Accidents & 340.183 & 468 & 33,8 & 7,2\% & dày \\
+Retail & 88.162 & 16.470 & 10,3 & 0,06\% & thưa \\
+T10I4D100K & 100.000 & 870 & 10,1 & 1,16\% & thưa \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Lưới minsup.} Mỗi bộ có 7 mức minsup giảm dần, chốt bằng chạy thử trước khi đo chính thức theo ba quy tắc: mức cao nhất cho ít nhất khoảng 10 tập phổ biến; mức thấp nhất để SPMF \texttt{Eclat} chạy xong trong 5 phút với output không quá khoảng $10^7$ tập; dữ liệu dày chia đều 5 điểm phần trăm, dữ liệu thưa chia theo dãy 1--2--5 (đều trên thang log). Kết quả: Chess và Accidents từ 80\% xuống 50\%; Mushroom từ 30\% xuống 5\%; Retail và T10I4D100K từ 1\% xuống 0,01\%. ``Minsup trung bình'' của đề là mức thứ tư: 65\% (Chess, Accidents), 15\% (Mushroom), 0,1\% (Retail, T10I4D100K).
+
+\emph{Giao thức đo.} Mỗi lần đo là một tiến trình mới. Tiến trình Julia chạy khởi động trên dữ liệu toy với đúng phiên bản sẽ đo, để thời gian đo không chứa thời gian biên dịch tức thời (just-in-time, JIT). Nhóm so sánh ở hai cấp. \emph{Thời gian thuật toán} tính từ lúc bắt đầu đọc file input đến lúc ghi xong output, không gồm khởi động tiến trình: với SPMF là thời gian SPMF tự in ra, vốn đã gồm bước đọc file (ở Accidents, mức 80\% chỉ có 149 tập mà SPMF vẫn báo vài giây); với cài đặt của nhóm là tổng thời gian đọc file và thời gian dựng dữ liệu dọc, khai thác, ghi kết quả. \emph{Thời gian tiến trình} đo từ ngoài, gồm cả khởi động JVM hay Julia, nạp gói và biên dịch JIT. Cả hai bên đều ghi output ra file trên cùng một ổ đĩa, và SPMF chạy với heap cố định \texttt{-Xmx8g}. Mỗi phép đo lặp 3 lần (5 lần nếu một lần chạy dưới 1 giây) và lấy trung vị; mỗi lần chạy giới hạn 10 phút, quá thì ghi \texttt{timeout}. Bộ đếm nội bộ không bật khi đo thời gian. Máy không chạy việc gì khác trong lúc đo.
+
+\subsection{Tính đúng trên benchmark (E1)}
+\label{sec:e1}
+
+\emph{Câu hỏi.} Mọi phiên bản có cho đúng kết quả của SPMF ở mọi mức minsup không (giả thuyết H1)? \emph{Thiết lập:} 5 bộ $\times$ 7 mức minsup $\times$ 7 phiên bản $= 245$ tổ hợp; mỗi tổ hợp so dấu vân tay output của nhóm với output của SPMF \texttt{Eclat} trên cùng file và cùng chuỗi minsup (mục~\ref{sec:kiem-thu}).
+
+\emph{Kết quả.} Cả 245 tổ hợp đều khớp: tỉ lệ khớp theo công thức~\eqref{eq:ti-le-khop} là 100\% ở mọi bộ dữ liệu và mọi mức minsup (Bảng~\ref{tab:b05}). Tổng cộng 8,7 triệu tập phổ biến của SPMF được đối chiếu, mỗi tập với cả 7 phiên bản, tức khoảng 61 triệu cặp (tập, support). Không có tập thiếu, tập thừa hay tập lệch support nào, nên không có sai lệch cần phân tích nguyên nhân. Kết quả này cũng xác nhận rằng mọi tối ưu ở mục~\ref{sec:toi-uu} không làm thay đổi output, nên các so sánh thời gian ở các mục sau là so sánh trên cùng một khối lượng công việc.
+
+\begin{table}[t]
+\caption{Tính đúng so với SPMF \texttt{Eclat} (E1). ``Khớp'': số tổ hợp (mức minsup, phiên bản) có dấu vân tay trùng SPMF; tỉ lệ khớp là 100\% ở mọi dòng}
+\label{tab:b05}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllr@{}}
+\toprule
+Bộ & minsup & Số tập (cao $\to$ thấp) & Khớp \\
+\midrule
+Chess & 80\% $\to$ 50\% & 8.227 $\to$ 1.272.932 & 49/49 \\
+Mushroom & 30\% $\to$ 5\% & 2.735 $\to$ 3.755.511 & 49/49 \\
+Accidents & 80\% $\to$ 50\% & 149 $\to$ 8.057 & 49/49 \\
+Retail & 1\% $\to$ 0,01\% & 159 $\to$ 240.852 & 49/49 \\
+T10I4D100K & 1\% $\to$ 0,01\% & 385 $\to$ 411.365 & 49/49 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Thời gian chạy theo minsup (E2)}
+\label{sec:e2}
+
+\emph{Giả thuyết H9.} SPMF có hai bản Eclat; theo tài liệu của SPMF, \texttt{Eclat} lưu tidset dưới dạng tập hợp số nguyên, còn \texttt{Eclat\_bitset} dưới dạng mảng bit. Nhóm dự đoán: (a)~ngay cả bản cơ bản v0 cũng nhanh hơn SPMF \texttt{Eclat}, vì trộn hai mảng số nguyên liền nhau rẻ hơn tra cứu trong tập hợp; (b)~bản mặc định v6 và \texttt{Eclat\_bitset} chỉ khác nhau một hằng số vì cùng dùng mảng bit; (c)~ở cấp tiến trình, thời gian khởi động và biên dịch JIT của Julia làm nhóm chậm hơn ở các lần chạy ngắn. \emph{Thiết lập:} 5 bộ $\times$ 7 mức minsup; v0, v6, SPMF \texttt{Eclat} và \texttt{Eclat\_bitset}; giao thức ở mục~\ref{sec:thiet-lap}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{F03_thoi_gian_theo_minsup}
+\caption{Thời gian thuật toán (đọc file, khai thác, ghi kết quả; trung vị của 3--5 lần đo; trục dọc theo thang log) theo minsup giảm dần từ trái sang phải, trên 5 bộ benchmark. Mỗi khung là một bộ dữ liệu; số liệu đầy đủ ở Bảng~\ref{tab:e2-day-du} (phụ lục).}
+\label{fig:f03}
+\end{figure*}
+
+\emph{Kết quả} (Hình~\ref{fig:f03}). Về thời gian thuật toán, v6 nhanh hơn SPMF \texttt{Eclat} ở cả 35 mức: 14,5--285 lần trên dữ liệu dày (trung vị 83 lần) và 2,7--27 lần trên dữ liệu thưa (trung vị 4,1 lần). So với \texttt{Eclat\_bitset}, v6 nhanh hơn ở 34/35 mức, với trung vị 2,6 lần trên dữ liệu dày và 4,3 lần trên dữ liệu thưa; mức duy nhất SPMF nhỉnh hơn là T10I4D100K ở 1\% (0,182 so với 0,186 giây). So với v0, v6 nhanh hơn 2,1--46 lần trên dữ liệu dày và 2,6--76 lần trên dữ liệu thưa.
+
+\emph{Giải thích.} (a)~Giả thuyết đúng trên dữ liệu dày (v0 nhanh hơn SPMF \texttt{Eclat} ở mọi mức của Chess, Mushroom, Accidents) nhưng \emph{sai} trên dữ liệu thưa: v0 chậm hơn SPMF \texttt{Eclat} ở 5/7 mức của Retail và 5/7 mức của T10I4D100K, tới 19 lần ở Retail 0,01\%. Nguyên nhân nằm ở mức 2: v0 giao từng cặp trong $\binom{m_f}{2}$ cặp item phổ biến (Bảng~\ref{tab:do-phuc-tap}), mà Retail ở 0,01\% có 8.919 item phổ biến, tức gần 40 triệu cặp. Thông báo lỗi hết bộ nhớ của SPMF \texttt{Eclat} với mã item $10^6$ (mục~\ref{sec:kien-truc}) nhắc tới một ma trận tam giác, gợi ý SPMF đếm tập 2 item theo cách của §5.1; chính tối ưu này (v5) làm v6 nhanh hơn v0 tới 76 lần trên Retail (giả thuyết H8, mục~\ref{sec:toi-uu}). (b)~Khoảng cách với \texttt{Eclat\_bitset} lớn nhất ở minsup cao và thu hẹp khi minsup giảm (Chess: 10 lần ở 80\%, 1,7 lần ở 50\%; Mushroom: bằng nhau ở 5\%). Ở minsup cao, thời gian chủ yếu là phần cố định (đọc file, dựng dữ liệu dọc), nơi bộ đọc theo byte và mảng tam giác của nhóm có lợi. Ở minsup thấp, output lên tới hàng triệu dòng và cả hai bên đều bị chặn bởi chi phí ghi mỗi tập: v6 chỉ tốn 0,48--0,77\,µs cho mỗi tập trên Mushroom và Chess, kể cả đọc file. Ngược lại, \texttt{Eclat\_bitset} chậm hẳn trên T10I4D100K ở minsup thấp (43 giây so với 4,8 giây ở 0,01\%), vì mảng bit $N/8$ byte quá lãng phí khi tidset rất thưa; bản lai v6 dùng mảng chỉ số trong trường hợp này. (c)~Đúng: thời gian tiến trình của nhóm có phần cố định 4--6 giây, nên ở hầu hết các mức có thời gian thuật toán dưới 1 giây, SPMF xong trước tính từ lúc gõ lệnh. Đo trực tiếp lệnh \texttt{demo.jl} như người dùng chạy (E2b, không khởi động trước, 3 lần mỗi trường hợp), thời gian từ lúc gõ lệnh đến lúc có file kết quả là 4,5--6,1 giây trên Chess và Retail, gần như không đổi theo minsup. Trong khi đó SPMF \texttt{Eclat\_bitset} chỉ cần 0,85 giây ở Chess 80\%. Nhóm chỉ xong trước khi thời gian thuật toán của SPMF đủ lớn, như Chess 50\% so với \texttt{Eclat} (6,1 so với 108 giây) hay Retail 0,01\% (4,5 so với 4,9 và 7,5 giây).
+
+\emph{Kết luận.} Về thời gian thuật toán, cài đặt nhanh hơn cả hai bản của SPMF ở gần như mọi điểm đo, nhất là trên dữ liệu dày và dữ liệu thưa có nhiều item. Giả thuyết H9 đúng ở (b), (c) và chỉ đúng một phần ở (a); phần sai chỉ ra rằng tối ưu mức 2 là cần thiết cho dữ liệu thưa.
+
+\subsection{Số tập phổ biến theo minsup (E3)}
+\label{sec:e3}
+
+\emph{Câu hỏi.} Số tập phổ biến tăng nhanh thế nào khi minsup giảm, và dữ liệu dày khác dữ liệu thưa ra sao? Theo mục~\ref{sec:do-phuc-tap}, số tập có thể tăng theo hàm mũ. \emph{Thiết lập:} số tập lấy từ E2, trùng khớp với SPMF (E1).
+
+\emph{Kết quả} (Hình~\ref{fig:f04}). Trên dữ liệu dày, số tập tăng gần như theo cấp số nhân khi minsup giảm đều: Chess tăng 2,2--2,6 lần sau mỗi bước 5 điểm phần trăm (155 lần từ 80\% xuống 50\%), Accidents tăng khoảng 1,9 lần mỗi bước (54 lần), còn Mushroom tăng trung bình 4,2 lần cho mỗi 5 điểm phần trăm nhưng không đều (tỉ số giữa hai mức liền nhau dao động từ 1,6 đến 9,7). Trên dữ liệu thưa, khi vẽ cả hai trục theo thang log thì đường gần thẳng: số tập tỉ lệ khoảng với $\mathrm{minsup}^{-1{,}6}$ ở Retail và $\mathrm{minsup}^{-1{,}5}$ ở T10I4D100K, tức tăng khoảng 1.500 và 1.070 lần khi minsup giảm 100 lần.
+
+\emph{Giải thích.} Chess và Mushroom là dữ liệu dạng thuộc tính--giá trị: mỗi giao dịch có đúng một item cho mỗi thuộc tính (37 item ở Chess, 23 item ở Mushroom), nên các item cùng xuất hiện rất thường xuyên và tập phổ biến dài. Khi minsup giảm, ở mọi độ dài đều có thêm một tỉ lệ gần như không đổi các tập vượt ngưỡng, nên số tập tăng theo cấp số nhân. Những bước nhảy lớn của Mushroom xảy ra khi minsup đi qua tần suất của một giá trị thuộc tính phổ biến: mọi tổ hợp của giá trị đó với các tập đã phổ biến cùng vượt ngưỡng một lượt. Trên dữ liệu thưa, giao dịch ngắn ($\bar{L} \approx 10$) và tập phổ biến chủ yếu có 1--3 item, nên số tập tăng theo lũy thừa của $1/\mathrm{minsup}$ chứ không theo hàm mũ.
+
+\emph{Kết luận.} Giả thuyết đúng với dữ liệu dày và chỉ đúng một phần với dữ liệu thưa. Vì thời gian của Eclat tỉ lệ với số tập (mục~\ref{sec:do-phuc-tap}), hình dạng các đường thời gian ở Hình~\ref{fig:f03} gần giống các đường số tập ở Hình~\ref{fig:f04}; ở mức thấp nhất, v6 chỉ tốn 0,77\,µs cho mỗi tập trên Chess và 0,48\,µs trên Mushroom, kể cả đọc file.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F04_so_tap_theo_minsup}
+\caption{Số tập phổ biến theo minsup (trục dọc theo thang log; minsup giảm dần từ trái sang phải). Trái: dữ liệu dày, trục minsup tuyến tính. Phải: dữ liệu thưa, trục minsup theo thang log.}
+\label{fig:f04}
+\end{figure}
+
+\subsection{Bộ nhớ đỉnh (E4)}
+\label{sec:e4}
+
+\emph{Câu hỏi.} Bản tối ưu dùng ít bộ nhớ hơn bản cơ bản bao nhiêu ở minsup trung bình? Theo Bảng~\ref{tab:do-phuc-tap}, mảng bit gọn hơn mảng chỉ số trên dữ liệu dày ($\rho > 1/32$), còn trên dữ liệu thưa thì ngược lại. \emph{Thiết lập:} v0 và v6 ở minsup trung bình, mỗi bản 3 lần chạy ghi output vào thiết bị rỗng. Ba con số được ghi: RAM đỉnh của tiến trình (\texttt{Sys.maxrss}); RAM nền, tức RAM của một tiến trình chỉ nạp gói và chạy khởi động; và tidset đỉnh, lấy từ bộ đếm nội bộ ở một lần chạy riêng. Với SPMF, nhóm ghi bộ nhớ heap lớn nhất do SPMF tự in ra; con số này chỉ để tham khảo vì không cùng loại với RAM tiến trình.
+
+\begin{table}[t]
+\caption{Bộ nhớ ở minsup trung bình (MiB; trung vị của 3 lần chạy). RAM nền của Julia khoảng 234--240\,MiB}
+\label{tab:e4}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{RAM đỉnh} & \multicolumn{2}{c}{Tidset đỉnh} & SPMF \\
+Bộ (minsup) & v0 & v6 & v0 & v6 & heap \\
+\midrule
+Chess (65\%) & 255 & 239 & 1,48 & 0,044 & 633 \\
+Mushroom (15\%) & 255 & 239 & 1,80 & 0,155 & 260 \\
+Accidents (65\%) & 751 & 596 & 84,1 & 1,91 & 6.575 \\
+Retail (0,1\%) & 256 & 266 & 4,19 & 2,67 & 685 \\
+T10I4D100K (0,1\%) & 265 & 266 & 3,99 & 3,89 & 246 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Kết quả} (Bảng~\ref{tab:e4}, Hình~\ref{fig:f05}). Trên dữ liệu dày, tidset đỉnh của v6 nhỏ hơn v0 từ 12 lần (Mushroom) đến 44 lần (Accidents: 84\,MiB xuống 1,9\,MiB). Trên dữ liệu thưa, hai bản gần như bằng nhau. RAM đỉnh của tiến trình lại chủ yếu là phần nền của Julia (khoảng 237\,MiB cho runtime và mã đã biên dịch): trên Chess và Mushroom, v6 chỉ dùng thêm chưa đến 1\,MiB so với nền, còn v0 dùng thêm khoảng 20\,MiB. So với heap của SPMF, RAM toàn tiến trình của nhóm nhỏ hơn trên Chess, Accidents, Retail và tương đương trên Mushroom, T10I4D100K.
+
+\emph{Giải thích.} Tidset của v0 không lớn (1,5\,MiB trên Chess), nhưng mỗi phép giao cấp phát một mảng mới, và bộ thu gom rác của Julia để heap phình ra rồi mới dọn, nên RAM đỉnh của v0 cao hơn nền khoảng 20\,MiB. Bản v6 dùng lại bộ đệm theo độ sâu và lưu tidset dạng bit ($N/8 = 400$ byte cho mỗi tidset của Chess), nên gần như không cấp phát. Trên Accidents, phần lớn khoảng 360\,MiB tăng thêm của v6 là dữ liệu input: file 34\,MB được đọc nguyên vào bộ nhớ, rồi tách thành một mảng trung gian \texttt{Int64} gồm 11,5 triệu item trước khi đổi sang \texttt{Int32}; tidset chỉ chiếm 1,9\,MiB. Đây là chỗ còn cải thiện được (mục~\ref{sec:manh-yeu}). Trên dữ liệu thưa, bản lai v6 chọn mảng chỉ số ngay từ đầu, nên bộ nhớ tidset giống v0.
+
+\emph{Kết luận.} Tối ưu bộ nhớ có hiệu quả rõ trên dữ liệu dày, đúng dự đoán từ ngưỡng $\rho = 1/32$; trên dữ liệu thưa, bản lai không làm tốn thêm bộ nhớ. Bộ nhớ toàn tiến trình bị chi phối bởi RAM nền của Julia và bởi cách đọc input.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F05_bo_nho}
+\caption{Bộ nhớ ở minsup trung bình. Trái: RAM đỉnh của tiến trình, đường đứt là RAM nền của Julia. Phải: tidset đỉnh theo bộ đếm nội bộ (thang log).}
+\label{fig:f05}
+\end{figure}
+
+\subsection{Khả năng mở rộng (E5)}
+\label{sec:e5}
+
+\emph{Giả thuyết H4.} Khi minsup tương đối cố định, thời gian tăng tuyến tính theo số giao dịch $N$ (mục~\ref{sec:do-phuc-tap}; bài báo cũng ghi nhận điều này ở Fig.~21a). \emph{Thiết lập:} tập con lồng nhau 10 $\subset$ 25 $\subset$ 50 $\subset$ 75 $\subset$ 100\%: xáo trộn giao dịch một lần (seed 42), tập con $p\%$ là $\lceil pN \rceil$ giao dịch đầu, nên khác biệt giữa các mức chỉ do kích thước. Đề cho chọn Retail hoặc Accidents; nhóm đo cả hai. Accidents (dày, 340 nghìn giao dịch) ở minsup 30\%, so với SPMF \texttt{Eclat\_bitset} vì \texttt{Eclat} quá chậm ở mức này, lặp 5 lần mỗi điểm. Retail (thưa) ở 0,05\%, mức thấp nhất mà tập con 10\% vẫn có $\sigma_{\min} = 5$, so với SPMF \texttt{Eclat}.
+
+\emph{Kết quả} (Hình~\ref{fig:f06}). Trên Accidents, số tập gần như không đổi (149.545 ở 100\%, 158.388 ở 10\%). Thời gian của nhóm tăng từ 0,23 lên 1,30 giây, của SPMF từ 0,83 lên 4,25 giây. Đường hồi quy tuyến tính khớp tốt: $R^2 = 0{,}976$ cho nhóm và $0{,}981$ cho SPMF. Hệ số góc của nhóm là 0,0115 giây cho mỗi 1\% dữ liệu (3.402 giao dịch), so với 0,0368 giây của SPMF, tức chi phí thêm cho mỗi giao dịch thấp hơn 3,2 lần. Trên Retail, thời gian chỉ 0,25--0,57 giây (nhóm) và 1,2--2,4 giây (SPMF), gần như không tăng theo $N$ ($R^2$ chỉ 0,61 và 0,17).
+
+\emph{Giải thích.} Trên Accidents, mỗi phép giao mảng bit tốn $N/64$ phép AND và số phép giao gần như không đổi vì số tập không đổi, nên thời gian khai thác tỉ lệ với $N$; thời gian đọc file cũng tỉ lệ với $N$. Trên Retail ở 0,05\%, phần lớn công việc không phụ thuộc $N$: ghi khoảng 19 nghìn tập, cấp phát mảng tam giác cho khoảng 3.900 item phổ biến. Thời gian lại ngắn đến mức nhiễu của hệ điều hành lấn át xu hướng. Tập con 10\% còn cho nhiều hơn 20\% số tập (23.130), vì với $\sigma_{\min} = 5$ một số tập vượt ngưỡng chỉ do ngẫu nhiên khi lấy mẫu.
+
+\emph{Kết luận.} H4 được xác nhận trên dữ liệu lớn và dày: cả hai cài đặt tăng tuyến tính theo $N$, và cài đặt của nhóm có hệ số góc nhỏ hơn. Trên Retail, thí nghiệm cho thấy giới hạn của phép đo hơn là của thuật toán: muốn thấy rõ xu hướng thì mỗi lần chạy phải đủ dài so với nhiễu.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F06_kha_nang_mo_rong}
+\caption{Thời gian thuật toán theo kích thước tập con (minsup tương đối cố định), kèm đường hồi quy tuyến tính và $R^2$. Trái: Retail ở 0,05\%. Phải: Accidents ở 30\% (5 lần đo mỗi điểm).}
+\label{fig:f06}
+\end{figure}
+
+\subsection{Ảnh hưởng của độ dài giao dịch (E6)}
+\label{sec:e6}
+
+\emph{Giả thuyết H5.} Khi $N$ và minsup giữ nguyên, số tập phổ biến và thời gian tăng nhanh hơn tuyến tính theo độ dài giao dịch trung bình $\bar{L}$ (mục~\ref{sec:do-phuc-tap}). \emph{Thiết lập:} bộ sinh dữ liệu tổng hợp do nhóm tự viết theo cách của bộ sinh IBM Quest~\cite{agrawal1994fast} mà bài báo dùng: 1.000 item, 500 ``mẫu tiềm năng'' độ dài trung bình 4, $N = 50.000$ giao dịch, $\bar{L} \in \{5, 10, \dots, 30\}$, seed 42; minsup 0,5\%; v6 so với SPMF \texttt{Eclat}.
+
+\emph{Kết quả} (Hình~\ref{fig:f07}). Số tập phổ biến tăng từ 875 ($\bar{L} = 5$) lên 40.633 ($\bar{L} = 30$), tức 46 lần, khoảng gấp đôi sau mỗi bước 5 item; trên trục log, đường số tập gần thẳng, đúng dạng hàm mũ. Thời gian của SPMF tăng 55 lần (0,30 lên 16,2 giây), sát với số tập. Thời gian của nhóm tăng 6,3 lần (0,22 lên 1,37 giây) và có dao động ở giữa (0,67 giây ở $\bar{L} = 20$ so với 0,48 giây ở $\bar{L} = 25$).
+
+\emph{Giải thích.} Một giao dịch dài $L$ chứa $2^L - 1$ tập con, nên khi giao dịch dài ra thì các mẫu tiềm năng và tổ hợp của chúng vượt ngưỡng nhiều hơn; số tập tăng theo hàm mũ của $\bar{L}$, đúng chặn trên $O(2^{L_{\max}} N)$ ở Phụ lục~A của bài báo. Thời gian của SPMF bám theo số tập. Thời gian của nhóm tăng chậm hơn vì ở các mức này lần chạy chỉ vài trăm mili giây, nên phần cố định (dựng dữ liệu dọc, mảng tam giác) và nhiễu đo chiếm tỉ lệ lớn.
+
+\emph{Kết luận.} H5 được xác nhận cho số tập và cho thời gian của SPMF; với cài đặt của nhóm, xu hướng tăng vẫn rõ nhưng biên độ nhỏ hơn vì lần chạy ngắn.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F07_do_dai_giao_dich}
+\caption{Ảnh hưởng của độ dài giao dịch trung bình $\bar{L}$ trên dữ liệu tổng hợp ($N = 50.000$, minsup 0,5\%). Trái: thời gian thuật toán (thang log). Phải: số tập phổ biến (thang log).}
+\label{fig:f07}
+\end{figure}
+
+\emph{So với Apriori và FP-Growth (E9, giả thuyết H6).} Nhóm chạy SPMF \texttt{Apriori} và \texttt{FPGrowth\_itemsets} trên cùng lưới minsup, mỗi mức một lần, dừng sớm khi quá 10 phút (Hình~\ref{fig:f09}, phụ lục). Bản v6 nhanh hơn Apriori ở cả 33 mức Apriori chạy xong (3,1--913 lần, trung vị 17 lần) và nhanh hơn FP-Growth ở cả 35 mức (1,5--59 lần, trung vị 8,3 lần). Apriori bùng nổ ở nơi có nhiều ứng viên: 351 giây ở Mushroom 5\%, 366 giây ở Retail 0,05\% và quá giờ ở Retail 0,02\%; FP-Growth luôn xong trong 1--7 giây. Kết quả đáng chú ý là SPMF \texttt{Apriori} lại nhanh hơn chính SPMF \texttt{Eclat} ở 22/33 mức (ví dụ Chess 50\%: 13 so với 107 giây). Như vậy H6 đúng khi so cài đặt Eclat của nhóm với các thuật toán khác, nhưng ``Eclat nhanh hơn Apriori'' không còn đúng nếu cài đặt Eclat dùng cấu trúc tidset kém: chất lượng cài đặt ảnh hưởng tới hiệu năng không kém bản thân thuật toán, đúng kết luận của FIMI'03~\cite{goethals2004advances}.

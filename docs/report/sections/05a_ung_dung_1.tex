@@ -1,0 +1,71 @@
+% V. Chương 3: Ứng dụng thực tế — phần B viết: mở đầu chương và V.A (phân tích giỏ hàng).
+\section{Chương 3: Ứng dụng thực tế}
+\label{sec:ung-dung}
+
+Cả hai ứng dụng dùng chính cài đặt Eclat của nhóm (bản mặc định v6) cho mọi bước khai thác; mã biến đổi dữ liệu và phân tích nằm trong thư mục \texttt{apps/} và được notebook gọi lại, nên mọi bảng, hình dưới đây tái lập được bằng một lệnh. Mỗi ứng dụng đi qua năm bước: chọn cách biến đổi dữ liệu thành giao dịch bằng số liệu, chọn ngưỡng theo quy tắc định trước, trình bày kết quả chính, kiểm tra độ tin cậy, và nêu hạn chế cùng hướng dùng tiếp kết quả.
+
+\subsection{Ứng dụng 1: Phân tích giỏ hàng trên Groceries}
+\label{sec:groceries}
+
+\emph{Dữ liệu và biến đổi.} Groceries là dữ liệu bán hàng thật trong 30 ngày của một cửa hàng tạp hóa, phát hành cùng gói \texttt{arules}~\cite{hahsler2005arules}: 9.835 hóa đơn, mặt hàng đã được gộp thành 169 nhóm có tên (ví dụ \emph{whole milk}, \emph{root vegetables}). Nhóm chọn Groceries thay vì Retail vì Retail đã mã hóa sản phẩm thành số nên không diễn giải được ý nghĩa kinh doanh. Mỗi hóa đơn là một giao dịch, mỗi nhóm hàng là một item; tên được lưu trong các dòng \texttt{@ITEM=mã=tên} đúng cú pháp SPMF, nên file vừa chạy được với SPMF vừa giữ được tên để diễn giải. Có 22\% hóa đơn chỉ có một món; các hóa đơn này không sinh được luật nhưng vẫn làm thay đổi $N$ và do đó thay đổi support và lift. Bảng~\ref{tab:b08} so sánh hai phương án: giữ mọi hóa đơn, và bỏ hóa đơn một món.
+
+\begin{table}[t]
+\caption{Hai cách biến đổi Groceries thành giao dịch (minsup $= 0{,}5\%$, minconf $= 0{,}5$; ``Tập'': số tập phổ biến, ``Luật'': số luật)}
+\label{tab:b08}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{1.85cm}rrrrrrr@{}}
+\toprule
+Phương án & $N$ & $m$ & $\bar{L}$ & $\rho$ & $\sigma_{\min}$ & Tập & Luật \\
+\midrule
+Giữ mọi hóa đơn (chọn) & 9.835 & 169 & 4,41 & 2,61\% & 50 & 1.001 & 120 \\
+Bỏ hóa đơn một món & 7.676 & 169 & 5,37 & 3,18\% & 39 & 1.473 & 224 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bỏ hóa đơn một món làm giao dịch dài hơn và dày hơn (mật độ vượt ngưỡng $1/32 \approx 3{,}1\%$ ở mục~\ref{sec:do-phuc-tap}), nên cùng minsup cho thêm 47\% tập phổ biến và gần gấp đôi số luật, và top-10 theo lift chỉ còn trùng 4/10 luật với phương án giữ nguyên. Nhóm giữ mọi hóa đơn, vì support phải phản ánh toàn bộ lượt mua của khách: bỏ các lượt mua một món làm support và confidence của mọi luật bị thổi phồng, còn mẫu số $s(Y)$ của lift thì thay đổi. Với Eclat, cả hai phương án đều nhỏ, nên quyết định này dựa trên ý nghĩa của số liệu chứ không dựa trên tốc độ (mỗi lần khai thác dưới 5\,ms).
+
+\emph{Chọn ngưỡng.} Nhóm khảo sát lưới minsup $\in \{0{,}5\%; 1\%; 2\%\}$ $\times$ minconf $\in \{0{,}2; 0{,}3; 0{,}5\}$ (Bảng~\ref{tab:b08b}, phụ lục) với quy tắc đặt trước: trong các cặp cho 50--300 luật (đủ để phân tích mà vẫn đọc hết được), lấy minsup nhỏ nhất để phủ nhiều mặt hàng nhất, hòa thì lấy minconf lớn nhất. Cặp được chọn là minsup $= 0{,}5\%$ ($\sigma_{\min} = 50$ hóa đơn) và minconf $= 0{,}5$, cho 1.001 tập phổ biến và 120 luật. Luật được sinh từ chính các tập phổ biến của Eclat: với mỗi tập $Z$ và mỗi cách tách $Z = X \cup Y$, confidence và lift tính theo công thức~\eqref{eq:rule} từ support đã có sẵn, không quét lại dữ liệu, vì mọi tập con của tập phổ biến đều phổ biến.
+
+\begin{table}[t]
+\caption{Top-10 luật theo lift trên Groceries (minsup $= 0{,}5\%$, minconf $= 0{,}5$; $\sigma$ là số hóa đơn chứa cả hai vế)}
+\label{tab:b09}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}rp{4.85cm}rrr@{}}
+\toprule
+\# & Luật $X \Rightarrow Y$ & $\sigma$ & Conf. & Lift \\
+\midrule
+1 & \{curd, tropical fruit\} $\Rightarrow$ \{yogurt\} & 52 & 0,515 & 3,691 \\
+2 & \{citrus fruit, root vegetables, whole milk\} $\Rightarrow$ \{other vegetables\} & 57 & 0,633 & 3,273 \\
+3 & \{pip fruit, root vegetables, whole milk\} $\Rightarrow$ \{other vegetables\} & 54 & 0,614 & 3,171 \\
+4 & \{pip fruit, whipped/sour cream\} $\Rightarrow$ \{other vegetables\} & 55 & 0,604 & 3,124 \\
+5 & \{onions, root vegetables\} $\Rightarrow$ \{other vegetables\} & 56 & 0,602 & 3,112 \\
+6 & \{citrus fruit, root vegetables\} $\Rightarrow$ \{other vegetables\} & 102 & 0,586 & 3,030 \\
+7 & \{root vegetables, tropical fruit, whole milk\} $\Rightarrow$ \{other vegetables\} & 69 & 0,585 & 3,022 \\
+8 & \{root vegetables, tropical fruit\} $\Rightarrow$ \{other vegetables\} & 121 & 0,585 & 3,021 \\
+9 & \{butter, whipped/sour cream\} $\Rightarrow$ \{other vegetables\} & 57 & 0,570 & 2,946 \\
+10 & \{tropical fruit, whipped/sour cream\} $\Rightarrow$ \{other vegetables\} & 77 & 0,566 & 2,926 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Kết quả và ý nghĩa kinh doanh.} Bảng~\ref{tab:b09} là top-10 luật theo lift; Hình~\ref{fig:f11} đặt toàn bộ 120 luật trên mặt phẳng support--confidence. Hai nhóm hành vi mua hiện ra rõ.
+(1)~\emph{Đi chợ nấu ăn}: chín luật có vế phải là \emph{other vegetables}, với vế trái là các loại rau củ, trái cây và nguyên liệu nấu nướng (\emph{onions}, \emph{butter}, \emph{whipped/sour cream}). Khách đã mua hai, ba món tươi sống thì khả năng mua thêm rau cao gấp khoảng 3 lần mức trung bình. Gợi ý hành động: đặt quầy rau cạnh quầy củ và trái cây, khuyến mãi theo combo nguyên liệu cho một món ăn, hoặc nhắc mua rau khi giỏ hàng trực tuyến đã có củ và hành.
+(2)~\emph{Sữa và trái cây}: luật mạnh nhất, \{curd, tropical fruit\} $\Rightarrow$ \{yogurt\} (lift 3,69), gợi ý nhóm khách mua đồ ăn sáng hoặc tráng miệng từ sữa. Có thể đặt sữa chua gần quầy trái cây nhiệt đới, hoặc giảm giá sữa chua khi mua kèm sữa đông.
+
+\emph{Vì sao xếp theo lift.} Xếp theo confidence thì 9/10 luật đứng đầu có vế phải là \emph{whole milk} (confidence 0,62--0,70; Bảng~\ref{tab:b09b}, phụ lục). Nguyên nhân là \emph{whole milk} có mặt trong 25,6\% hóa đơn: vế phải càng phổ biến thì confidence càng cao, dù vế trái không nói thêm điều gì. Lift chia confidence cho $s(Y)$ nên loại được hiệu ứng này; các luật về \emph{whole milk} chỉ có lift 2,4--2,7.
+
+\emph{Độ tin cậy.} Nhóm chia ngẫu nhiên (seed 42; Bảng~\ref{tab:b10}, phụ lục) 80\% hóa đơn để tìm luật và 20\% còn lại để kiểm tra. Toàn bộ 127 luật tìm được trên phần huấn luyện vẫn có lift $> 1$ trên phần kiểm tra, và 7/10 luật trong top-10 của phần huấn luyện trùng với top-10 trên toàn bộ dữ liệu. Lift của top-10 trên phần kiểm tra thấp hơn trên phần huấn luyện khoảng 13\% (trung bình 2,76 so với 3,17), đúng hiện tượng ``người thắng bị đánh giá quá cao'' khi chọn luật tốt nhất trên cùng dữ liệu, nhưng vẫn lớn hơn 2 ở cả mười luật. Về độ nhạy theo ngưỡng: support, confidence và lift của một luật không phụ thuộc ngưỡng, nên tăng minsup chỉ loại bớt luật hiếm. Tuy vậy, 8/10 luật của Bảng~\ref{tab:b09} có support dưới 1\%, nên với minsup $= 1\%$ chỉ còn 15 luật và hầu hết các luật mạnh nhất biến mất; ngưỡng 0,5\% là cần thiết để thấy chúng.
+
+\emph{Hạn chế.} Lift cao nhưng support chỉ 0,5--1,2\% (52--121 hóa đơn): mỗi luật mô tả một nhóm khách nhỏ, và phần kiểm tra chỉ còn 4--20 hóa đơn cho mỗi luật. Lift đối xứng giữa $X$ và $Y$ nên không cho biết chiều tác động, và luật kết hợp chỉ là tương quan, không phải nhân quả; muốn biết combo khuyến mãi có làm tăng doanh số hay không cần thử nghiệm A/B. Cuối cùng, item là nhóm hàng chứ không phải sản phẩm cụ thể, và dữ liệu chỉ phủ 30 ngày của một cửa hàng.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F11_luat_groceries}
+\caption{Toàn bộ 120 luật của Groceries ở minsup $= 0{,}5\%$, minconf $= 0{,}5$: support (trục ngang), confidence (trục dọc), màu theo lift. Các luật có lift cao nhất không phải là các luật có confidence cao nhất.}
+\label{fig:f11}
+\end{figure}

@@ -1,0 +1,100 @@
+% V.B Ứng dụng 2: mẫu trực quan trên ảnh (bag of visual words) — phần A viết.
+\subsection{Ứng dụng 2: Mẫu trực quan trên ảnh}
+\label{sec:bovw}
+
+\emph{Mục tiêu.} Tìm các tổ hợp chi tiết ảnh thường xuất hiện cùng nhau trong một lớp đối tượng, rồi dùng chúng theo hai cách: để hiểu dữ liệu ảnh (mỗi mẫu được khoanh lại trên ảnh) và để làm đặc trưng cho một bộ phân lớp.
+
+\emph{Dữ liệu và trích đặc trưng.} Nhóm dùng Caltech-101~\cite{feifei2004learning} (giấy phép CC BY 4.0), chọn bốn lớp có hình dạng khác nhau: \emph{airplanes}, \emph{Motorbikes}, \emph{Faces\_easy}, \emph{watch}. Mỗi lớp lấy ngẫu nhiên 100 ảnh (seed 42) và chia 70\% huấn luyện, 30\% kiểm tra theo từng lớp, được 280 và 120 ảnh. Toàn bộ khâu trích đặc trưng do nhóm tự viết; thư viện ngoài duy nhất là JpegTurbo.jl, chỉ để giải mã file JPEG. Mỗi ảnh được chuyển sang ảnh xám và thu nhỏ để cạnh dài bằng 256 điểm ảnh. Trên lưới bước 8 điểm ảnh, mỗi mảnh $16 \times 16$ được mô tả bằng biểu đồ hướng gradient gồm $4 \times 4$ ô $\times$ 8 hướng (128 chiều), chuẩn hóa như SIFT~\cite{lowe2004distinctive,dalal2005histograms}; mỗi ảnh giữ 150 mảnh có gradient mạnh nhất. Từ điển mã (codebook) gồm $k$ từ thị giác được dựng bằng k-means++~\cite{arthur2007kmeans} chỉ trên descriptor của ảnh huấn luyện, để không rò rỉ thông tin của tập kiểm tra. Mỗi mảnh được gán vào từ thị giác gần nhất~\cite{sivic2003video,csurka2004visual}.
+
+\emph{Biến đổi ảnh thành giao dịch.} Mỗi ảnh là một giao dịch. Nhóm so sánh bốn cách chọn item, mỗi cách với $k \in \{100, 200, 500\}$ (Bảng~\ref{tab:b11}): (a)~tập các từ có mặt trong ảnh; (b)~như (a) nhưng bỏ các từ có mặt ở hơn 50\% ảnh huấn luyện, tương tự bỏ từ dừng (stop word) trong văn bản; (c)~như (b) và thêm item riêng ``từ $w$ xuất hiện ít nhất 2 lần'', ký hiệu $w{\times}2$, để giữ một phần thông tin về số lần xuất hiện; (d)~như (b) nhưng gắn mỗi từ với góc phần tư của ảnh chứa nó, để giữ thông tin vị trí. Phương án cuối cùng được chọn bằng số liệu: độ chính xác của bộ phân lớp chỉ dùng đặc trưng itemset trên một tập kiểm định (validation) gồm 72 ảnh tách từ tập huấn luyện; tập kiểm tra chỉ dùng ở bước cuối.
+
+\begin{table}[t]
+\caption{Các phương án biến đổi ảnh thành giao dịch (280 ảnh huấn luyện, minsup $= 30\%$, tập tối đa 4 từ; thời gian khai thác nhỏ nhất trong 3 lần; độ chính xác đo trên tập kiểm định)}
+\label{tab:b11}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{@{}rlrrrrrrr@{}}
+\toprule
+$k$ & Cách & $m$ & $\bar{L}$ & $\rho$ & Số tập & v3 (ms) & v4 (ms) & Đ.x. \\
+\midrule
+100 & (a) & 100 & 56,0 & 56,0\% & 48.879 & 96,67 & 6,40 & 0,625 \\
+100 & (b) & 25 & 9,4 & 37,6\% & 34 & 0,13 & 0,04 & 0,667 \\
+100 & (c) & 50 & 15,0 & 30,0\% & 44 & 0,17 & 0,05 & 0,667 \\
+100 & (d) & 100 & 13,7 & 13,7\% & 1 & 0,01 & 0,01 & 0,556 \\
+200 & (a) & 200 & 76,2 & 38,1\% & 242 & 7,47 & 0,41 & 0,653 \\
+200 & (b) & 190 & 71,0 & 37,4\% & 171 & 7,15 & 0,32 & 0,667 \\
+\textbf{200} & \textbf{(c)} & \textbf{380} & \textbf{103,1} & \textbf{27,1\%} & \textbf{171} & \textbf{5,72} & \textbf{0,31} & \textbf{0,708} \\
+200 & (d) & 760 & 94,6 & 12,4\% & 1 & 0,09 & 0,08 & 0,708 \\
+500 & (a) & 500 & 98,7 & 19,7\% & 8 & 0,07 & 0,06 & 0,708 \\
+500 & (b) & 500 & 98,7 & 19,7\% & 8 & 0,11 & 0,09 & 0,708 \\
+500 & (c) & 1.000 & 126,7 & 12,7\% & 8 & 0,15 & 0,13 & 0,694 \\
+500 & (d) & 1.995 & 115,4 & 5,8\% & 0 & 0,03 & 0,03 & 0,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bảng~\ref{tab:b11} cho thấy $k$ điều khiển trực tiếp hai đại lượng mà mục~\ref{sec:do-phuc-tap} chỉ ra là quyết định hành vi của Eclat. Với $k = 100$, mỗi ảnh chứa trung bình 56 trên 100 từ ($\rho = 56\%$): giao dịch dài và dày nên số tập bùng nổ (48.879 tập dù chỉ xét tập tối đa 4 từ), đúng giả thuyết H5. Ở mật độ này tidset dạng bit nhanh hơn dạng mảng 15 lần (v4 so với v3), đúng giả thuyết H2. Ngược lại, $k = 500$ hay cách (d) chia nhỏ support đến mức gần như không còn tập phổ biến ở minsup $= 30\%$. Bỏ từ dừng ở $k = 100$ làm mất 75 trên 100 từ, cho thấy codebook nhỏ chủ yếu sinh ra các từ chung chung. Phương án được chọn là $k = 200$ với cách (c): độ chính xác kiểm định cao nhất (0,708; hòa với ba phương án khác nên áp quy tắc định trước là lấy $k$ nhỏ hơn rồi đến cách đứng trước), số tập vừa phải (171), và có thêm thông tin số lần xuất hiện.
+
+\emph{Mẫu đặc trưng cho từng lớp.} Với phương án đã chọn, nhóm khai thác riêng ảnh huấn luyện của từng lớp $c$ (minsup $= 30\%$ của lớp, tập 2--3 từ) rồi xếp các tập theo tỉ lệ tăng (growth rate) $GR_c(X) = s_c(X)/s_{\neg c}(X)$, tức mẫu nổi bật~\cite{dong1999efficient}; $GR = \infty$ nghĩa là tập không xuất hiện ở lớp nào khác. Bảng~\ref{tab:b12} liệt kê hai mẫu đứng đầu mỗi lớp. Hình~\ref{fig:f12} khoanh các mảnh thuộc mẫu số~1 trên ảnh kiểm tra, còn Hình~\ref{fig:f13} cho thấy mỗi từ thị giác trông như thế nào qua 6 mảnh ảnh huấn luyện gần tâm cụm nhất.
+
+\begin{table}[t]
+\caption{Hai mẫu đặc trưng đứng đầu mỗi lớp ($s_c$, $s_{\neg c}$: tỉ lệ ảnh huấn luyện chứa mẫu ở lớp đó và ở các lớp còn lại; $w{\times}2$: từ $w$ xuất hiện ít nhất 2 lần)}
+\label{tab:b12}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Lớp & Tập từ thị giác & $s_c$ & $s_{\neg c}$ & $GR$ \\
+\midrule
+airplanes & \{31, 41, 146\} & 0,36 & 0,000 & $\infty$ \\
+ & \{31, 146, 171\} & 0,36 & 0,000 & $\infty$ \\
+Motorbikes & \{63, 139, 192\} & 0,31 & 0,005 & 66,0 \\
+ & \{12, 57, 192${\times}2$\} & 0,30 & 0,005 & 63,0 \\
+Faces\_easy & \{56, 73, 113\} & 0,36 & 0,000 & $\infty$ \\
+ & \{87, 126, 167\} & 0,36 & 0,000 & $\infty$ \\
+watch & \{44, 72, 191${\times}2$\} & 0,30 & 0,010 & 31,5 \\
+ & \{15, 74, 129${\times}2$\} & 0,31 & 0,014 & 22,0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{F12_mau_truc_quan_tren_anh}
+\caption{Mẫu đặc trưng số~1 của mỗi lớp (Bảng~\ref{tab:b12}) trên ảnh của tập kiểm tra. Mỗi khung là một mảnh $16 \times 16$ được gán vào một từ của mẫu; màu đỏ, xanh dương, xanh lá lần lượt ứng với từ thứ nhất, thứ hai, thứ ba. Ví dụ ở lớp \emph{airplanes}, từ 41 (xanh dương) nằm dọc thân máy bay.}
+\label{fig:f12}
+\end{figure*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{F13_chan_dung_visual_word}
+\caption{``Chân dung'' của các từ thị giác trong mẫu số~1 của mỗi lớp: 6 mảnh ảnh huấn luyện gần tâm cụm nhất.}
+\label{fig:f13}
+\end{figure}
+
+\emph{Diễn giải.} Đặt Bảng~\ref{tab:b12} cạnh hai hình cho thấy mỗi mẫu là một \emph{cấu trúc hình học} đặc trưng của lớp, không phải một chi tiết đơn lẻ.
+Ở \emph{airplanes}, từ 31 là cạnh ngang sáng trên tối dưới, từ 41 là dải ngang tối, từ 146 là vùng phẳng: tổ hợp ``thân dài nằm ngang trên nền trời hoặc đường băng phẳng''; không ảnh huấn luyện nào của ba lớp kia có đủ ba từ này.
+Ở \emph{Motorbikes}, các từ là cạnh chéo và các dải cong (vè xe, ống xả, vành bánh) cùng vùng chi tiết dày của động cơ.
+Ở \emph{watch}, các từ là các sọc chéo lặp lại của dây kim loại, và việc từ 191 xuất hiện ít nhất hai lần trong mẫu số~1 chính là tính lặp lại của các mắt dây; cách biến đổi (c) giữ được thông tin này nên được chọn.
+Ở \emph{Faces\_easy}, từ 56 nằm ở chân tóc nhưng từ 73 và 113 là các cạnh dọc nằm ở mép ảnh và trên nền: nhiều ảnh khuôn mặt của Caltech-101 có phông nền giống nhau (giá sách, tường, áp phích), nên mẫu ``đặc trưng cho khuôn mặt'' thực ra học cả phông nền. Đây là một thiên lệch của dữ liệu mà mẫu phổ biến làm lộ ra một cách dễ thấy, điều mà một bộ phân lớp hộp đen không cho biết.
+
+\begin{table}[t]
+\caption{Phân lớp 4 lớp trên 120 ảnh kiểm tra bằng hồi quy logistic}
+\label{tab:b13}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{4.5cm}rr@{}}
+\toprule
+Đặc trưng & Số chiều & Độ chính xác \\
+\midrule
+Histogram túi từ thị giác ($k = 200$) & 200 & 0,858 \\
+Có chứa mẫu đặc trưng hay không (20 mẫu mỗi lớp) & 80 & 0,758 \\
+Kết hợp hai loại & 280 & 0,867 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Dùng mẫu để huấn luyện mô hình khác.} Mỗi ảnh được biểu diễn bằng vector nhị phân ``ảnh có chứa mẫu $X$ không'' cho 20 mẫu đứng đầu mỗi lớp (80 chiều), rồi huấn luyện hồi quy logistic đa lớp (nhóm tự viết, có điều chuẩn L2). Bảng~\ref{tab:b13} so với histogram túi từ thị giác thông thường. Riêng 80 mẫu đã phân lớp đúng 75,8\% ảnh, so với mức ngẫu nhiên 25\%, nên các mẫu mang thông tin thật về lớp; nhưng chúng kém histogram 200 chiều, vì một mẫu chỉ phủ khoảng 30\% ảnh của lớp và bỏ qua những từ không nằm trong mẫu nào. Kết hợp hai loại tăng thêm 0,9 điểm phần trăm, tức đúng thêm 1 ảnh trên 120, chưa đủ để kết luận có cải thiện thật. Giá trị chính của mẫu nằm ở chỗ mỗi đặc trưng đọc được bằng mắt, như phân tích ở trên. Ma trận nhầm lẫn cho thấy \emph{watch} khó nhất (16/30 ảnh đúng; 7 ảnh bị nhầm sang \emph{Motorbikes}, có lẽ vì cả hai đều nhiều cạnh cong và bề mặt kim loại), còn \emph{airplanes} dễ nhất (29/30).
+
+\emph{Hạn chế.} Biểu diễn túi từ bỏ gần hết thông tin vị trí và số lần xuất hiện; cách (d) giữ vị trí thì lại chia nhỏ support đến mức không còn mẫu. Codebook phụ thuộc vào ảnh huấn luyện và vào seed của k-means. Với 70 ảnh mỗi lớp, minsup $= 30\%$ tương ứng 21 ảnh, nên $GR = \infty$ chỉ có nghĩa là mẫu không xuất hiện trong 210 ảnh của các lớp khác, chưa chắc đúng trên dữ liệu lớn hơn. Hướng tiếp theo là dùng mẫu làm bộ lọc để phát hiện ảnh lạc lớp, hoặc dùng các từ trong mẫu làm vùng chú ý cho mô hình phát hiện vật thể.
