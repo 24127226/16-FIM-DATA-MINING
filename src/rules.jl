@@ -1,5 +1,4 @@
-# Sinh luật kết hợp và chọn top-k theo lift bằng heap của DataStructures.jl
-# (phần của B, KE_HOACH_DU_AN.md mục 6.3, 6.5, R18).
+# Mô-đun sinh luật kết hợp và trích xuất top-k luật bằng đống nhị phân (BinaryMinHeap).
 
 """
     Rule(antecedent, consequent, support_count, support, confidence, lift)

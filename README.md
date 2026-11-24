@@ -1,45 +1,54 @@
-# Khai thác tập phổ biến bằng Eclat (Julia)
+# Khai thác tập phổ biến bằng thuật toán Eclat (Julia)
 
-Đồ án môn **Khai thác dữ liệu và ứng dụng**: tự cài đặt lại thuật toán **Eclat** từ bài báo gốc, kiểm chứng với cài đặt tham chiếu SPMF, đánh giá hiệu năng trên các bộ benchmark và áp dụng cho hai bài toán thực tế.
+Đồ án môn **Khai thác dữ liệu và ứng dụng** (Khoa Công nghệ Thông tin, Trường Đại học Khoa học Tự nhiên — ĐHQG-HCM): tự cài đặt thuật toán **Eclat** theo bài báo gốc, kiểm chứng tính đúng đắn với cài đặt tham chiếu SPMF, đánh giá hiệu năng trên các bộ dữ liệu benchmark và triển khai hai ứng dụng thực tế.
 
-> M. J. Zaki, "Scalable Algorithms for Association Mining", *IEEE TKDE* 12(3):372–390, 2000. [PDF](https://www.cs.rpi.edu/~zaki/PaperDir/TKDE00.pdf)
+> M. J. Zaki, "Scalable Algorithms for Association Mining", *IEEE Transactions on Knowledge and Data Engineering*, vol. 12, no. 3, pp. 372–390, 2000. [PDF](https://www.cs.rpi.edu/~zaki/PaperDir/TKDE00.pdf)
 
-## Thành viên
+## Thành viên thực hiện
 
-| Họ tên | MSSV | Vai trò |
+| Họ và tên | MSSV | Phân công chính |
 |---|---|---|
-| Phạm Trần Anh Quân | ……… | Thuật toán & Hiệu năng |
-| Nguyễn Tiến Cường | ……… | Kiểm chứng, Thực nghiệm & Dữ liệu |
+| Phạm Trần Anh Quân | 24127226 | Thuật toán Eclat, tối ưu hiệu năng và Ứng dụng 2 (BoVW) |
+| Nguyễn Tiến Cường | 24127337 | I/O chuẩn SPMF, kiểm chứng, hạ tầng thực nghiệm, Ứng dụng 1 (Groceries), Notebook và tài liệu |
 
-## Trạng thái
+## Tài nguyên công khai
 
-🚧 Đang phát triển. Hướng dẫn cài đặt, cách chạy, kết quả kiểm thử và link Colab sẽ được bổ sung theo từng mốc.
+- **Tập dữ liệu công khai (Hugging Face, truy cập không cần đăng nhập):** https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining
+- **Notebook tái lập trên Google Colab:** https://colab.research.google.com/github/24127226/16-FIM-DATA-MINING/blob/main/notebooks/demo.ipynb
 
-- **Dữ liệu công khai (Hugging Face, không cần đăng nhập):** https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining
+## Yêu cầu môi trường và thực thi
 
-## Chuẩn bị môi trường
+- **Julia:** phiên bản `1.11.4`
+- **Java:** phiên bản `≥ 25` (phục vụ chạy cài đặt tham chiếu `spmf.jar` khi đối chiếu kết quả)
 
-- Julia **1.11.4**
-- Java **≥ 25** (để chạy SPMF khi đối chiếu kết quả)
-
-```
+```bash
 julia --project=. -e "using Pkg; Pkg.instantiate()"
-julia --project=. scripts/fetch_data.jl benchmark
+julia --project=. scripts/fetch_data.jl benchmark groceries
 julia --project=. scripts/fetch_spmf.jl
+julia --project=. test/runtests.jl
+```
+
+### Giao diện dòng lệnh (`demo.jl`)
+
+```bash
+julia --project=. demo.jl --minsup 0.4 data/toy/pasquier99.txt
+julia --project=. demo.jl --minsup 50% --stats -o output.txt data/toy/bookstore.txt
 ```
 
 ## Cấu trúc thư mục
 
-```
+```text
 ├── README.md
-├── Project.toml, Manifest.toml
-├── src/                 # cài đặt chính (module EclatFIM)
-├── test/                # kiểm thử tự động
+├── Project.toml, Manifest.toml   # môi trường gói chính EclatFIM
+├── demo.jl                       # giao diện dòng lệnh chuẩn SPMF
+├── src/                          # mã nguồn chính (module EclatFIM)
+├── test/                         # bộ kiểm thử tự động (chọn test/ theo lệnh chuẩn của đề)
 ├── data/
-│   ├── toy/             # CSDL nhỏ để kiểm thử nhanh
-│   └── benchmark/       # nguồn và SHA-256 của dữ liệu benchmark (file lớn không commit)
-├── scripts/             # tải dữ liệu, đối chiếu SPMF, thực nghiệm, vẽ hình
-├── results/             # kết quả thực nghiệm (CSV, hình, ghi chú)
-├── notebooks/           # notebook demo chạy trên Google Colab
-└── docs/                # báo cáo (Report.pdf)
+│   ├── toy/                      # tập dữ liệu nhỏ phục vụ kiểm thử đơn vị
+│   └── benchmark/                # nguồn, thống kê và mã băm SHA-256 (tệp lớn không commit)
+├── scripts/                      # tải dữ liệu, đối chiếu SPMF, thực nghiệm và vẽ biểu đồ
+├── apps/                         # mã nguồn hai ứng dụng thực tế (Chương 3)
+├── results/                      # dữ liệu CSV thô, biểu đồ và tệp tổng hợp kết quả
+├── notebooks/                    # notebook tái lập kết quả trên Google Colab
+└── docs/                         # mã nguồn LaTeX và báo cáo PDF
 ```

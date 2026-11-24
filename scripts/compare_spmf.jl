@@ -1,11 +1,11 @@
-# Chuẩn hóa và so sánh output của nhóm với SPMF (phần của B, KE_HOACH_DU_AN.md mục 7.1–7.2).
+# Công cụ chuẩn hóa và đối chiếu tệp kết quả khai thác với cài đặt tham chiếu SPMF.
 #
-# Có thể include từ bộ test / script thực nghiệm, hoặc chạy trực tiếp:
+# Hỗ trợ nạp trực tiếp trong bộ kiểm thử hoặc thực thi độc lập:
 #   julia --project=. scripts/compare_spmf.jl [--fingerprint] <file_nhom> <file_spmf>
 #
-# Mã thoát khi chạy CLI:
-#   0  khớp 100%
-#   1  có sai lệch hoặc lỗi tham số
+# Mã thoát khi thực thi CLI:
+#   0  khớp hoàn toàn 100%
+#   1  phát hiện sai lệch hoặc lỗi tham số
 
 using SHA
 

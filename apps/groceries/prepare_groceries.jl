@@ -1,9 +1,9 @@
-# Chuyển đổi dữ liệu Groceries (CSV) sang định dạng giao dịch SPMF (kèm dòng @ITEM=)
-# cho Ứng dụng 1 (phần của B, KE_HOACH_DU_AN.md mục 9.2, R17).
+# Mô-đun tiền xử lý và biến đổi dữ liệu Groceries (CSV) sang định dạng giao dịch SPMF
+# kèm bảng ánh xạ `@ITEM=mã=tên` phục vụ Ứng dụng 1.
 #
-# Hỗ trợ 2 phương án biến đổi để so sánh trong bảng B08:
-#   - Phương án 1 (:fine)   : giữ nguyên 169 mặt hàng gốc (phương án chọn).
-#   - Phương án 2 (:coarse) : gộp mặt hàng theo nhóm hàng cấp cao (~12 nhóm siêu thị).
+# Hai phương án biểu diễn được cài đặt phục vụ so sánh định lượng (Bảng B08):
+#   - Phương án 1 (:fine)   : giữ nguyên 169 mặt hàng gốc (phương án lựa chọn).
+#   - Phương án 2 (:coarse) : gom nhóm mặt hàng theo 12 nhóm hàng cấp cao.
 
 using DataStructures: counter, inc!
 

@@ -1,6 +1,6 @@
-# Bộ kiểm thử tự động của EclatFIM (phần của B, KE_HOACH_DU_AN.md mục 7).
+# Bộ kiểm thử tự động cho gói EclatFIM.
 #
-# Cách chạy từ gốc repo:
+# Cú pháp thực thi:
 #   julia --project=. test/runtests.jl
 #   julia --project=. --check-bounds=yes test/runtests.jl
 

@@ -1,13 +1,13 @@
-# Hạ tầng đo hiệu năng cho Chương 2 (phần của B, KE_HOACH_DU_AN.md mục 8.5).
+# Hạ tầng đo đạc hiệu năng thực nghiệm cho Chương 2.
 #
-# Tuân thủ đúng giao thức đo:
-#   - Mỗi lần đo chạy trong một tiến trình mới.
-#   - Bên trong tiến trình Julia: warm-up trên dữ liệu toy rồi mới đo bằng time_ns().
-#   - Không bật bộ đếm EclatStats khi đo thời gian (quyết định D20).
-#   - Đo RAM đỉnh bằng `/usr/bin/time -v` (trên Linux/WSL2) hoặc fallback `Sys.maxrss()` (Julia) / JVM heap (SPMF).
-#   - Xuất CSV đúng 17 cột chuẩn mục 8.5 và ghi nhật ký vào `results/LOG.md`.
+# Giao thức đo đạc:
+#   - Mỗi lượt đo thực thi trong một tiến trình độc lập.
+#   - Tiến trình Julia thực hiện pha khởi động (warm-up) trên tập nhỏ trước khi đo bằng time_ns().
+#   - Tắt bộ đếm nội bộ EclatStats trong quá trình đo thời gian (quyết định D20).
+#   - Đo bộ nhớ đỉnh bằng `/usr/bin/time -v` (Linux/WSL2) hoặc `Sys.maxrss()` (Julia) / JVM heap (SPMF).
+#   - Xuất dữ liệu CSV chuẩn 17 cột và cập nhật nhật ký `results/LOG.md`.
 #
-# Cách dùng (từ gốc repo):
+# Cú pháp thực thi:
 #   julia --project=. scripts/bench.jl --dataset pasquier99 --input data/toy/pasquier99.txt --minsups 40%,60% --variants v0,v1 --repeats 3 --out results/bench_toy.csv
 #   julia --project=. scripts/bench.jl --mode quick --variants v0 --repeats 1 --out results/bench_quick.csv
 #   julia --project=. scripts/bench.jl --mode full --variants v0,v1 --repeats 3 --with-spmf --out results/bench_full.csv

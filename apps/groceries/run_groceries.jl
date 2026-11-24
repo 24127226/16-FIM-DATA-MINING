@@ -1,15 +1,15 @@
-# Ứng dụng 1: Phân tích giỏ hàng trên dữ liệu Groceries (phần của B, KE_HOACH_DU_AN.md mục 9.2).
+# Kịch bản thực nghiệm Ứng dụng 1: Phân tích giỏ hàng trên tập dữ liệu Groceries.
 #
-# Toàn bộ kết quả tập phổ biến và luật kết hợp được sinh bởi `EclatFIM` của nhóm (R16).
-# Xuất đủ số liệu cho báo cáo và notebook:
-#   - results/groceries_b08_transforms.csv : Bảng B08 (so sánh 2 phương án biến đổi dữ liệu)
-#   - results/groceries_grid.csv           : Khảo sát độ nhạy lưới minsup × minconf
-#   - results/groceries_rules.csv          : Toàn bộ luật ở ngưỡng đã chọn (vẽ hình F11)
-#   - results/groceries_top10.csv          : Bảng B09 (top-10 luật theo lift)
-#   - results/groceries_stability.csv      : Bảng B10 (độ ổn định chia 80/20 theo seed 42)
-#   - results/groceries_summary.md         : Tóm tắt kết quả và diễn giải chính
+# Toàn bộ tập phổ biến và luật kết hợp được khai thác bởi gói `EclatFIM`.
+# Các tệp kết quả xuất ra thư mục `results/`:
+#   - groceries_b08_transforms.csv : Bảng B08 (so sánh hai phương án biến đổi dữ liệu)
+#   - groceries_grid.csv           : Khảo sát độ nhạy trên lưới minsup × minconf
+#   - groceries_rules.csv          : Toàn bộ tập luật ở ngưỡng lựa chọn (dữ liệu nguồn Hình F11)
+#   - groceries_top10.csv          : Bảng B09 (10 luật dẫn đầu theo độ nâng)
+#   - groceries_stability.csv      : Bảng B10 (đánh giá độ ổn định trên phép chia 80/20)
+#   - groceries_summary.md         : Bản tổng hợp kết quả định lượng
 #
-# Cách dùng (từ gốc repo):
+# Cú pháp thực thi:
 #   julia --project=. apps/groceries/run_groceries.jl
 
 using Random
@@ -213,40 +213,40 @@ function main()
         for p in (p_fine, p_coarse)
             println(io, "| $(p.label) | $(p.n) | $(p.m) | $(round(p.avg_len; digits=2)) | $(round(p.density*100; digits=2))% | $(p.n_itemsets) | $(p.n_rules) | $(round(p.t_s; digits=4)) |")
         end
-        println(io, "\n- Mật độ của bản 169 mặt hàng là **$(round(p_fine.density*100; digits=2))%**, rất sát ngưỡng cân bằng `1/32 ≈ 3,125%` giữa `Vector` và `BitVector` của Eclat.")
-        println(io, "- Gộp thành 12 nhóm hàng làm mật độ tăng vọt lên **$(round(p_coarse.density*100; digits=2))%**, số tập phổ biến tăng mạnh nhưng luật trở nên quá chung chung, khó gợi ý xếp kệ cụ thể.\n")
+        println(io, "\n- Phương án 169 mặt hàng gốc có mật độ **$(round(p_fine.density*100; digits=2))%**, tiệm cận ngưỡng cân bằng lý thuyết `1/32 ≈ 3,125%` giữa biểu diễn `Vector` và `BitVector` của Eclat.")
+        println(io, "- Phương án gom 12 nhóm hàng làm mật độ tăng lên **$(round(p_coarse.density*100; digits=2))%**, dẫn đến gia tăng mạnh số tập phổ biến và số luật nhưng làm giảm tính cụ thể của luật.\n")
 
-        println(io, "## 2. Khảo sát độ nhạy lưới ngưỡng\n")
+        println(io, "## 2. Khảo sát độ nhạy trên lưới ngưỡng\n")
         println(io, "| minsup | σ_min | Tập phổ biến | minconf | Số luật | Lift lớn nhất |")
         println(io, "|---|---:|---:|---:|---:|---:|")
         for g in grid_rows
             println(io, "| $(g.minsup) | $(g.sigma_min) | $(g.n_itemsets) | $(g.minconf) | $(g.n_rules) | $(round(g.max_lift; digits=3)) |")
         end
-        println(io, "\n- Chọn **minsup = $(CHOSEN_MINSUP), minconf = $(CHOSEN_MINCONF)** vì cho **$(length(chosen_rules)) luật** (nằm gọn trong vùng 50–300 luật), cân bằng giữa độ phủ và ý nghĩa kinh doanh.\n")
+        println(io, "\n- Cặp ngưỡng **minsup = $(CHOSEN_MINSUP), minconf = $(CHOSEN_MINCONF)** được lựa chọn vì tạo ra **$(length(chosen_rules)) luật** (thuộc vùng mục tiêu 50–300 luật), cân bằng giữa độ bao phủ và độ tin cậy diễn giải.\n")
 
-        println(io, "## 3. Top-10 luật theo Lift (Bảng B09)\n")
-        println(io, "| # | Tiền đề (X) | Hệ quả (Y) | σ | Support | Confidence | Lift |")
+        println(io, "## 3. Mười luật kết hợp dẫn đầu theo độ nâng (Bảng B09)\n")
+        println(io, "| Hạng | Tiền đề (X) | Hệ quả (Y) | σ | Support | Confidence | Lift |")
         println(io, "|---:|---|---|---:|---:|---:|---:|")
         for (rank, r) in enumerate(top10_lift)
             println(io, "| $rank | $(format_items(r.antecedent, db, prep.fine.id_to_name)) | $(format_items(r.consequent, db, prep.fine.id_to_name)) | $(r.support_count) | $(round(r.support; digits=4)) | $(round(r.confidence; digits=4)) | $(round(r.lift; digits=3)) |")
         end
-        println(io, "\n- **Vì sao xếp theo lift thay vì confidence:** mặt hàng `whole milk` xuất hiện trong **$(whole_milk_cnt)/$(n) giỏ ($(whole_milk_pct)%)**, nên hầu hết các luật có confidence cao nhất đều có hệ quả là `whole milk` nhưng lift chỉ quanh 1,8–2,3:")
+        println(io, "\n- **Phân tích tiêu chí xếp hạng:** mặt hàng `whole milk` xuất hiện trong **$(whole_milk_cnt)/$(n) hóa đơn ($(whole_milk_pct)%)**, khiến các luật đạt confidence cao nhất chủ yếu mang hệ quả `whole milk` nhưng chỉ đạt lift trung bình (1,8–2,3):")
         for r in top5_conf
             println(io, "  - `$(format_items(r.antecedent, db, prep.fine.id_to_name)) ⇒ $(format_items(r.consequent, db, prep.fine.id_to_name))`: conf = $(round(r.confidence; digits=3)), lift = $(round(r.lift; digits=3))")
         end
 
-        println(io, "\n## 4. Độ ổn định khi chia 80/20 (Bảng B10, train=$(stab.n_train), test=$(stab.n_test))\n")
-        println(io, "| # | Luật (X ⇒ Y) | Train Lift | Test Lift | Chênh lệch | Train Conf | Test Conf |")
+        println(io, "\n## 4. Đánh giá độ ổn định trên phép chia 80/20 (Bảng B10, train=$(stab.n_train), test=$(stab.n_test))\n")
+        println(io, "| Hạng | Luật (X ⇒ Y) | Train Lift | Test Lift | Biến thiên | Train Conf | Test Conf |")
         println(io, "|---:|---|---:|---:|---:|---:|---:|")
         n_stable = 0
         for row in stab.rows
             row.test_lift > 1.5 && (n_stable += 1)
             println(io, "| $(row.rank) | $(row.antecedent) ⇒ $(row.consequent) | $(round(row.train_lift; digits=3)) | $(round(row.test_lift; digits=3)) | $(round(row.lift_diff_pct; digits=1))% | $(round(row.train_conf; digits=3)) | $(round(row.test_conf; digits=3)) |")
         end
-        println(io, "\n- Có **$(n_stable)/10** luật giữ được `test_lift > 1.5` trên tập kiểm tra độc lập 20%.")
+        println(io, "\n- Toàn bộ **$(n_stable)/10** luật duy trì `test_lift > 1,5` trên tập kiểm tra độc lập 20%.")
     end
 
-    println("✓ Hoàn tất Ứng dụng 1! Xem tóm tắt tại ", summary_path)
+    println("Hoàn tất thực nghiệm Ứng dụng 1. Kết quả tổng hợp lưu tại: ", summary_path)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

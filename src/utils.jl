@@ -1,9 +1,9 @@
-# Đọc/ghi định dạng SPMF và quy đổi ngưỡng minsup (phần của B).
+# Mô-đun đọc/ghi định dạng SPMF và quy đổi ngưỡng hỗ trợ tối thiểu (minsup).
 #
-# Quy tắc hành vi khớp SPMF đã kiểm chứng bằng thí nghiệm hộp đen ở results/spmf_behavior.md:
-#   - D04: σ_min = ceil(Int, minsup * N) tính bằng Float64; "p%" đổi thành p / 100.
-#   - D05: bỏ dòng rỗng và dòng bắt đầu bằng '#', '%', '@'; N là số dòng còn lại.
-#   - D06: ghi output dạng "i1 i2 ... #SUP: s" với mã item gốc tăng dần, không ghi tập rỗng.
+# Hành vi tham chiếu được kiểm chứng hộp đen với SPMF tại results/spmf_behavior.md:
+#   - D04: σ_min = ceil(Int, Float64(minsup) * N); chuỗi "p%" được quy đổi thành p / 100.
+#   - D05: bỏ qua dòng rỗng và dòng bắt đầu bằng '#', '%', '@'; N là số dòng còn lại.
+#   - D06: xuất định dạng "i1 i2 ... #SUP: s" theo mã mặt hàng gốc tăng dần, không xuất tập rỗng.
 
 """
     read_spmf(io::IO) -> TransactionDB
