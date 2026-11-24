@@ -12,7 +12,12 @@ module EclatFIM
 
 export TransactionDB, n_transactions, n_items
 export EclatConfig, VARIANTS, VARIANT_NAMES, EclatStats
+export read_spmf, parse_minsup, minsup_count, write_itemset
+export DEFAULT_VARIANT, DEFAULT_CONFIG, eclat!, eclat
 
 include("structures.jl")
+include("utils.jl")
+include("algorithm/tidsets.jl")
+include("algorithm/eclat.jl")
 
 end # module
