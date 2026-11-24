@@ -6,7 +6,7 @@ Các file `*.txt` trong thư mục này **không commit** lên GitHub (xem `.git
 julia --project=. scripts/fetch_data.jl benchmark
 ```
 
-Script tự kiểm tra SHA-256 của từng file. Nếu đặt biến môi trường `FIM_DATA_BASE` (ví dụ link thư mục dataset trên Hugging Face của nhóm), script sẽ thử nguồn đó trước.
+Script tự kiểm tra SHA-256 của từng file và mặc định ưu tiên tải từ bộ dữ liệu công khai của nhóm trên Hugging Face ([cuongnguyen0794/16-fim-data-mining](https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining)), sau đó mới lùi về nguồn gốc nếu cần. Có thể ghi đè nguồn tải qua biến môi trường `FIM_DATA_BASE`.
 
 ## Nguồn và thống kê
 

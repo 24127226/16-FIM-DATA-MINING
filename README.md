@@ -15,6 +15,8 @@
 
 🚧 Đang phát triển. Hướng dẫn cài đặt, cách chạy, kết quả kiểm thử và link Colab sẽ được bổ sung theo từng mốc.
 
+- **Dữ liệu công khai (Hugging Face, không cần đăng nhập):** https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining
+
 ## Chuẩn bị môi trường
 
 - Julia **1.11.4**

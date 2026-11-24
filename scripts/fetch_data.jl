@@ -12,6 +12,7 @@ using Downloads, SHA
 include(joinpath(@__DIR__, "common.jl"))
 
 const SPMF_DATA = "https://www.philippe-fournier-viger.com/spmf/publicdatasets"
+const DEFAULT_HF_BASE = "https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining/resolve/main"
 
 const SOURCES = [
     (group = "benchmark", dest = "data/benchmark/chess.txt", url = "$SPMF_DATA/chess.txt",
@@ -45,7 +46,7 @@ end
 
 function candidate_urls(s)
     urls = String[]
-    base = get(ENV, "FIM_DATA_BASE", "")
+    base = get(ENV, "FIM_DATA_BASE", DEFAULT_HF_BASE)
     isempty(base) || push!(urls, rstrip(base, '/') * "/" * basename(s.dest))
     push!(urls, s.url)
     return urls
