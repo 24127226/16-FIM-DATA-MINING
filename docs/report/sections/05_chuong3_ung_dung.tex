@@ -10,7 +10,7 @@ Mọi tập phổ biến và luật kết hợp (association rule) được phâ
 \label{subsec:app1_groceries}
 
 \subsubsection{Thiết lập bài toán và phân tích quyết định biến đổi dữ liệu}
-Bài toán phân tích giỏ hàng (market basket analysis) được thực hiện trên tập dữ liệu \texttt{Groceries} từ gói \texttt{arules}~\cite{hahsler2005}, gồm $N = 9.835$ hóa đơn bán lẻ thực tế trên $m = 169$ mặt hàng định danh cụ thể. Khác với tập \texttt{Retail} đã ẩn danh mã sản phẩm, tên mặt hàng trong \texttt{Groceries} cho phép diễn giải trực tiếp ý nghĩa kinh doanh. Mỗi hóa đơn được ánh xạ thành một giao dịch chuẩn SPMF kèm bảng tra cứu \texttt{@ITEM=mã=tên}; bộ đọc \texttt{read\_spmf} bỏ qua các dòng siêu dữ liệu này trong pha khai thác và phục hồi nhãn mặt hàng ở pha phân tích luật.
+Bài toán phân tích giỏ hàng (market basket analysis) được thực hiện trên tập dữ liệu \texttt{Groceries} từ gói \texttt{arules}~\cite{hahsler2005arules}, gồm $N = 9.835$ hóa đơn bán lẻ thực tế trên $m = 169$ mặt hàng định danh cụ thể. Khác với tập \texttt{Retail} đã ẩn danh mã sản phẩm, tên mặt hàng trong \texttt{Groceries} cho phép diễn giải trực tiếp ý nghĩa kinh doanh. Mỗi hóa đơn được ánh xạ thành một giao dịch chuẩn SPMF kèm bảng tra cứu \texttt{@ITEM=mã=tên}; bộ đọc \texttt{read\_spmf} bỏ qua các dòng siêu dữ liệu này trong pha khai thác và phục hồi nhãn mặt hàng ở pha phân tích luật.
 
 Nhằm đánh giá ảnh hưởng của mức độ chi tiết dữ liệu đối với đặc tính vận hành của Eclat, nghiên cứu so sánh hai phương án biến đổi tại cùng ngưỡng \texttt{minsup} $= 1\%$ ($\sigma_{\min} = 99$) và độ tin cậy tối thiểu \texttt{minconf} $= 0{,}3$: (i) giữ nguyên $169$ mặt hàng gốc và (ii) gộp $169$ mặt hàng thành $12$ nhóm hàng cấp cao (ví dụ \texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, \texttt{meat\_seafood}). Kết quả định lượng ở Bảng~\ref{tab:b08_groceries_transform} chỉ ra hai đặc điểm đáng chú ý:
 \begin{itemize}
@@ -21,16 +21,18 @@ Nhằm đánh giá ảnh hưởng của mức độ chi tiết dữ liệu đố
 % Nguồn số liệu: results/groceries_b08_transforms.csv
 \begin{table}[!t]
 \centering
-\caption{Bảng B08: So sánh định lượng hai phương án biến đổi dữ liệu Groceries tại \texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$ (phiên bản \texttt{v1}).}
+\caption{So sánh định lượng hai phương án biến đổi dữ liệu Groceries tại \texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$ (phiên bản \texttt{v1}).}
 \label{tab:b08_groceries_transform}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Phương án biểu diễn & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Số luật & Thời gian \\
+Phương án biểu diễn & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Luật & Thời gian \\
 \midrule
 169 mặt hàng gốc (chọn) & 169 & 4,41 & 2,61\% & 333 & 125 & 0,0256 s \\
-Gộp 12 nhóm hàng cấp cao & 12 & 3,12 & 25,98\% & 477 & 2.232 & 0,0024 s \\
+Gộp 12 nhóm hàng & 12 & 3,12 & 25,98\% & 477 & 2.232 & 0,0024 s \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \subsubsection{Phân tích độ nhạy và lựa chọn ngưỡng}
@@ -42,14 +44,14 @@ Hình~\ref{fig:f11_groceries} biểu diễn phân bố $125$ luật kết hợp 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{F11_groceries_rules.pdf}
-\caption{Hình F11: Phân bố $125$ luật kết hợp trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$) theo độ hỗ trợ và độ tin cậy, mã hóa màu theo độ nâng; ba dấu sao đỏ biểu thị ba luật có \texttt{lift} cao nhất.}
+\caption{Phân bố $125$ luật kết hợp trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$) theo độ hỗ trợ và độ tin cậy, mã hóa màu theo độ nâng; ba dấu sao đỏ biểu thị ba luật có \texttt{lift} cao nhất.}
 \label{fig:f11_groceries}
 \end{figure}
 
 % Nguồn số liệu: results/groceries_top10.csv
 \begin{table*}[!t]
 \centering
-\caption{Bảng B09: Mười luật kết hợp có độ nâng (\texttt{lift}) cao nhất trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$).}
+\caption{Mười luật kết hợp có độ nâng (\texttt{lift}) cao nhất trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$).}
 \label{tab:b09_groceries_top10}
 \begin{tabular}{rllrrrr}
 \toprule
@@ -82,8 +84,9 @@ Khả năng tổng quát hóa của các luật được kiểm định thông q
 % Nguồn số liệu: results/groceries_stability.csv
 \begin{table}[!t]
 \centering
-\caption{Bảng B10: Đánh giá độ ổn định của 10 luật dẫn đầu theo \texttt{lift} trên phép chia 80/20 (\texttt{seed} $= 42$, $N_{\text{train}} = 7.868$, $N_{\text{test}} = 1.967$).}
+\caption{Đánh giá độ ổn định của 10 luật dẫn đầu theo \texttt{lift} trên phép chia 80/20 (\texttt{seed} $= 42$, $N_{\text{train}} = 7.868$, $N_{\text{test}} = 1.967$).}
 \label{tab:b10_groceries_stability}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{rlrrr}
 \toprule
 Hạng & Luật ($X \Rightarrow Y$) & Train Lift & Test Lift & Biến thiên \\
@@ -99,7 +102,8 @@ Hạng & Luật ($X \Rightarrow Y$) & Train Lift & Test Lift & Biến thiên \\
 9 & other veg + cream $\Rightarrow$ yogurt & 2,612 & 2,214 & $-15{,}3\%$ \\
 10 & rolls/buns + root veg $\Rightarrow$ other veg & 2,588 & 2,628 & $+1{,}5\%$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \subsubsection{Hạn chế phương pháp và hướng ứng dụng tiếp theo}

@@ -33,7 +33,7 @@ Thiết kế kiến trúc dựa trên ba nguyên tắc kỹ thuật chính:
     \item \textbf{Khai thác đặc trưng ngôn ngữ Julia:} Điều phối đa phương thức (multiple dispatch) được áp dụng cho các phép toán trên tập mã giao dịch (tidset) và nhằm loại bỏ chi phí thu thập thống kê khi tham số \texttt{stats === nothing} ở giai đoạn biên dịch; biểu thức sinh (generator expression) được dùng cho thống kê độ dài giao dịch và liệt kê tập con khi sinh luật; các cấu trúc \texttt{BinaryMinHeap} và \texttt{counter} trong \texttt{DataStructures.jl} được dùng để trích xuất top-$k$ luật kết hợp theo độ nâng (lift) trong thời gian $O(n \log k)$ và thống kê tần suất mặt hàng.
 \end{enumerate}
 
-Để bảo đảm tính tương thích hoàn toàn với cài đặt tham chiếu (reference implementation) \texttt{spmf.jar} (Eclat v2.65), nhóm tiến hành kiểm chứng hộp đen hành vi đầu vào và quy đổi ngưỡng (kết quả lưu tại \texttt{results/spmf\_behavior.md}), từ đó chuẩn hóa tầng đọc/ghi như sau:
+Để bảo đảm tính tương thích hoàn toàn với cài đặt tham chiếu (reference implementation) \texttt{spmf.jar}~\cite{fournier2014spmf} (Eclat v2.65), nhóm tiến hành kiểm chứng hộp đen hành vi đầu vào và quy đổi ngưỡng (kết quả lưu tại \texttt{results/spmf\_behavior.md}), từ đó chuẩn hóa tầng đọc/ghi như sau:
 \begin{itemize}
     \item \emph{Quy đổi ngưỡng đếm:} Cài đặt tham chiếu xác định ngưỡng đếm theo công thức $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ trên số thực dấu phẩy động \texttt{Float64}, trong đó chuỗi phần trăm \texttt{"p\%"} được chuyển thành $p/100$. Do đặc tính biểu diễn nhị phân (ví dụ $0{,}28 \times 25 = 7{,}000000000000001$ cho $\sigma_{\min} = 8$ thay vì $7$), hàm \texttt{minsup\_count} tái lập chính xác phép tính \texttt{Float64} này nhằm loại trừ sai lệch tại ranh giới.
     \item \emph{Đọc/ghi định dạng SPMF:} Hàm \texttt{read\_spmf} bỏ qua dòng trống và các dòng siêu dữ liệu bắt đầu bằng \texttt{\#}, \texttt{\%}, \texttt{@}; chuẩn hóa mỗi giao dịch bằng cách sắp xếp tăng dần và loại bỏ phần tử trùng lặp. Hàm \texttt{write\_itemset} ánh xạ ngược mã nội bộ sang mã gốc tăng dần, không xuất tập rỗng và ghi đúng khuôn dạng \texttt{i1 i2 ... \#SUP: s}.
@@ -53,11 +53,12 @@ Giao diện dòng lệnh \texttt{demo.jl} được xây dựng thuần thư vi�
 Tính đúng đắn của cài đặt được xác minh độc lập thông qua quy trình kiểm chứng ba tầng trong thư mục \texttt{test/}:
 \begin{enumerate}
     \item \textbf{Tầng 1 — Bộ kiểm chứng duyệt trâu (brute-force oracle):} Sinh $200$ cơ sở dữ liệu ngẫu nhiên với hạt giống cố định $1 \ldots 200$ ($m \le 12$, $N \le 30$, $\sigma_{\min}$ ngẫu nhiên), liệt kê toàn bộ $2^m - 1$ tập con khác rỗng bằng mặt nạ bit để đếm trực tiếp độ hỗ trợ (support) và đối chiếu tuyệt đối với từng biến thể Eclat đã cài đặt.
-    \item \textbf{Tầng 2 — Ví dụ chuẩn, trường hợp biên và kiểm thử I/O:} Xác minh kết quả trên hai tập chuẩn \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, đúng $15$ tập phổ biến) và \texttt{bookstore.txt} trong bài báo gốc~\cite{zaki2000} (\texttt{minsup} $= 50\%$, đúng $19$ tập phổ biến, bao gồm hai tập tối đại \texttt{ACTW} và \texttt{CDW}); các trường hợp biên (CSDL rỗng, một giao dịch, giao dịch trùng lặp, \texttt{minsup} $= 100\%$, không có tập đạt ngưỡng, mã mặt hàng rời rạc lớn); kiểm thử \texttt{minsup\_count} trên toàn bộ $10$ ca ranh giới \texttt{Float64}; và kiểm thử mô-đun sinh luật kết hợp (\texttt{test\_rules.jl}) bằng đối chiếu tính tay.
+    \item \textbf{Tầng 2 — Ví dụ chuẩn, trường hợp biên và kiểm thử I/O:} Xác minh kết quả trên hai tập chuẩn \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, đúng $15$ tập phổ biến) và \texttt{bookstore.txt} trong bài báo gốc~\cite{zaki2000scalable} (\texttt{minsup} $= 50\%$, đúng $19$ tập phổ biến, bao gồm hai tập tối đại \texttt{ACTW} và \texttt{CDW}); các trường hợp biên (CSDL rỗng, một giao dịch, giao dịch trùng lặp, \texttt{minsup} $= 100\%$, không có tập đạt ngưỡng, mã mặt hàng rời rạc lớn); kiểm thử \texttt{minsup\_count} trên toàn bộ $10$ ca ranh giới \texttt{Float64}; và kiểm thử mô-đun sinh luật kết hợp (\texttt{test\_rules.jl}) bằng đối chiếu tính tay.
     \item \textbf{Tầng 3 — Đối chiếu trên dữ liệu benchmark:} Tỉ lệ khớp giữa tập kết quả của nhóm $\mathcal{F}_{\text{nhóm}}$ và cài đặt tham chiếu $\mathcal{F}_{\text{SPMF}}$ được định nghĩa tại \texttt{scripts/compare\_spmf.jl} như sau:
     \begin{equation}
-        \text{Tỉ lệ khớp} = \frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
+        \text{Tỉ lệ khớp} = \frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|}
     \end{equation}
+    tính theo phần trăm ($\times 100\%$).
     Với tập kết quả vượt quá $5 \times 10^6$ phần tử, quy trình tự động chuyển sang so khớp dấu vân tay (fingerprint): chuẩn hóa mỗi dòng theo mã mặt hàng tăng dần, băm SHA-256, trích xuất $64$~bit đầu và cộng dồn modulo $2^{64}$, bảo đảm tính bất biến theo thứ tự xuất.
 \end{enumerate}
 
@@ -66,18 +67,20 @@ Quy trình tích hợp liên tục (GitHub Actions CI) thực thi tự động t
 % Nguồn số liệu: kết quả thực thi `julia --project=. test/runtests.jl` (commit 52011a2)
 \begin{table}[!t]
 \centering
-\caption{Bảng B02: Tổng hợp kết quả kiểm thử tự động (\texttt{test/runtests.jl}) trên các phiên bản \texttt{v0}, \texttt{v1} ở hai chế độ mặc định và \texttt{--check-bounds=yes}.}
+\caption{Tổng hợp kết quả kiểm thử tự động (\texttt{test/runtests.jl}) trên các phiên bản \texttt{v0}, \texttt{v1} ở hai chế độ mặc định và \texttt{--check-bounds=yes}.}
 \label{tab:b02_tests}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{llrr}
 \toprule
-Nhóm kiểm thử & Tệp nguồn & Số khẳng định & Tỉ lệ đạt \\
+Nhóm kiểm thử & Tệp nguồn & Khẳng định & Đạt \\
 \midrule
 Đọc/ghi SPMF, \texttt{minsup\_count} & \texttt{test\_io.jl} & 49 & 100\% \\
 Oracle 200 CSDL, tập chuẩn, ca biên & \texttt{test\_correctness.jl} & 62 & 100\% \\
 Luật kết hợp và \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
-Thống kê và đồng nhất trên 4 bộ benchmark & \texttt{test\_benchmark.jl} & 16 & 100\% \\
+Thống kê và đồng nhất 4 benchmark & \texttt{test\_benchmark.jl} & 16 & 100\% \\
 \midrule
 \textbf{Tổng cộng} & \texttt{runtests.jl} & \textbf{352} & \textbf{100\%} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
