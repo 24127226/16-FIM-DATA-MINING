@@ -32,7 +32,7 @@ Trả về `(items_sorted, support)` hoặc `nothing` nếu dòng rỗng.
 """
 function parse_spmf_output_line(line::AbstractString)
     s = strip(line)
-    isempty(s) && return nothing
+    (isempty(s) || startswith(s, '@')) && return nothing
     marker = findfirst("#SUP:", s)
     marker === nothing && throw(ArgumentError("Dòng output không chứa '#SUP:': $line"))
 
@@ -141,7 +141,8 @@ function _count_nonempty_lines(path::AbstractString)
     c = 0
     open(path, "r") do io
         for line in eachline(io)
-            isempty(strip(line)) || (c += 1)
+            s = strip(line)
+            (isempty(s) || startswith(s, '@')) || (c += 1)
         end
     end
     return c

@@ -14,7 +14,8 @@ using DataStructures: BinaryMinHeap
 
 export TransactionDB, n_transactions, n_items
 export EclatConfig, VARIANTS, VARIANT_NAMES, EclatStats
-export read_spmf, parse_minsup, minsup_count, write_itemset
+export read_spmf, parse_spmf, parse_minsup, minsup_count, write_itemset
+export SPMFWriter, write_itemset!, flush_writer!, close_writer!
 export DEFAULT_VARIANT, DEFAULT_CONFIG, eclat!, eclat
 export Rule, rules, top_k
 

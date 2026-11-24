@@ -124,29 +124,30 @@ function run_cli(opts::CLIOptions)
     n_tx = n_transactions(db)
     sigma_min = minsup_count(opts.minsup, n_tx)
     stats = opts.show_stats ? EclatStats() : nothing
-    n_found = Ref(0)
-    write_buf = Int32[]
+    n_found = 0
 
-    # Pha 2: Khai thác và ghi kết quả
+    # Pha 2: Khai thác và ghi kết quả (dùng SPMFWriter có bộ đệm khối)
     t_mine_0 = time_ns()
     try
         if opts.output_path == "-"
+            w = SPMFWriter(stdout, db)
             if n_tx > 0
-                eclat!(db, sigma_min, opts.cfg; stats = stats) do items, supp
-                    n_found[] += 1
-                    write_itemset(stdout, items, supp, db, write_buf)
-                end
+                eclat!((items, supp) -> write_itemset!(w, items, supp),
+                       db, sigma_min, opts.cfg; stats = stats)
             end
+            close_writer!(w)
+            n_found = w.count
         else
             dir = dirname(opts.output_path)
             !isempty(dir) && mkpath(dir)
             open(opts.output_path, "w") do io
+                w = SPMFWriter(io, db)
                 if n_tx > 0
-                    eclat!(db, sigma_min, opts.cfg; stats = stats) do items, supp
-                        n_found[] += 1
-                        write_itemset(io, items, supp, db, write_buf)
-                    end
+                    eclat!((items, supp) -> write_itemset!(w, items, supp),
+                           db, sigma_min, opts.cfg; stats = stats)
                 end
+                close_writer!(w)
+                n_found = w.count
             end
         end
     catch err
@@ -161,7 +162,7 @@ function run_cli(opts::CLIOptions)
     println(summary_io, "  Input        : ", opts.input_path)
     println(summary_io, "  Giao dịch (N): ", n_tx, " (m = ", n_items(db), " item)")
     println(summary_io, "  Minsup       : ", opts.minsup_str, " (σ_min = ", sigma_min, ")")
-    println(summary_io, "  Số tập phổ biến: ", n_found[])
+    println(summary_io, "  Số tập phổ biến: ", n_found)
     println(summary_io, "  Thời gian đọc: ", fmt_s(t_read_s))
     println(summary_io, "  Khai thác+ghi: ", fmt_s(t_mine_write_s))
     println(summary_io, "  Tổng thời gian: ", fmt_s(t_read_s + t_mine_write_s))
