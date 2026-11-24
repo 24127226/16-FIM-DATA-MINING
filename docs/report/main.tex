@@ -7,7 +7,12 @@
 \documentclass[conference]{IEEEtran}
 
 \usepackage{fontspec}
-\setmainfont{TeX Gyre Termes}          % font kiểu Times, có đủ dấu tiếng Việt
+\IfFontExistsTF{TeX Gyre Termes}{%
+  \setmainfont{TeX Gyre Termes}%
+}{%
+  \setmainfont{Times New Roman}%
+}
+\setmonofont{Consolas}[Scale=0.88]
 \usepackage{polyglossia}
 \setdefaultlanguage{vietnamese}
 \setotherlanguage{english}
