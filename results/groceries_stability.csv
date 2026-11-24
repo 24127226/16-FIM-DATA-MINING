@@ -1,0 +1,11 @@
+rank,antecedent,consequent,train_sup,train_conf,train_lift,test_sup,test_conf,test_lift,lift_diff_pct
+1,"citrus fruit + other vegetables","root vegetables",0.0105,0.3609,3.3247,0.0097,0.3519,3.1747,-4.51
+2,"other vegetables + tropical fruit","root vegetables",0.0128,0.3519,3.2422,0.0102,0.303,2.7342,-15.67
+3,"citrus fruit + root vegetables","other vegetables",0.0105,0.6103,3.1591,0.0097,0.5,2.5679,-18.71
+4,"beef","root vegetables",0.0177,0.3357,3.0933,0.0163,0.3137,2.8307,-8.49
+5,"root vegetables + tropical fruit","other vegetables",0.0128,0.5872,3.0396,0.0102,0.5714,2.9347,-3.45
+6,"whipped/sour cream + whole milk","root vegetables",0.0102,0.3175,2.9248,0.0066,0.2,1.8046,-38.3
+7,"other vegetables + yogurt","root vegetables",0.0135,0.3109,2.8639,0.0107,0.2442,2.2033,-23.07
+8,"other vegetables + whole milk","root vegetables",0.0229,0.3025,2.7872,0.0244,0.3404,3.0716,10.21
+9,"other vegetables + whipped/sour cream","yogurt",0.0103,0.3665,2.6121,0.0097,0.3016,2.2135,-15.26
+10,"rolls/buns + root vegetables","other vegetables",0.0125,0.5,2.5882,0.0112,0.5116,2.6276,1.52

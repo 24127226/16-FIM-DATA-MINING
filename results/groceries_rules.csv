@@ -1,0 +1,126 @@
+antecedent,consequent,support_count,support,confidence,lift
+"frankfurter","rolls/buns",189,0.019217,0.325862,1.771616
+"pork","whole milk",218,0.022166,0.38448,1.504719
+"other vegetables + whipped/sour cream","whole milk",144,0.014642,0.507042,1.984385
+"whipped/sour cream + whole milk","other vegetables",144,0.014642,0.454259,2.347679
+"citrus fruit + other vegetables","whole milk",128,0.013015,0.450704,1.763898
+"citrus fruit + whole milk","other vegetables",128,0.013015,0.426667,2.20508
+"other vegetables","whole milk",736,0.074835,0.386758,1.513634
+"butter","other vegetables",197,0.020031,0.361468,1.868122
+"rolls/buns + root vegetables","whole milk",125,0.01271,0.523013,2.046888
+"rolls/buns + tropical fruit","whole milk",108,0.010981,0.446281,1.746587
+"fruit/vegetable juice + other vegetables","whole milk",103,0.010473,0.497585,1.947371
+"fruit/vegetable juice + whole milk","other vegetables",103,0.010473,0.39313,2.031756
+"other vegetables + tropical fruit","root vegetables",121,0.012303,0.342776,3.14478
+"root vegetables + tropical fruit","other vegetables",121,0.012303,0.584541,3.020999
+"onions","other vegetables",140,0.014235,0.459016,2.372268
+"beef","root vegetables",171,0.017387,0.331395,3.040367
+"margarine","whole milk",238,0.024199,0.413194,1.617098
+"sausage","whole milk",294,0.029893,0.318182,1.245252
+"other vegetables + pork","whole milk",100,0.010168,0.469484,1.837394
+"pork + whole milk","other vegetables",100,0.010168,0.458716,2.370714
+"citrus fruit","other vegetables",284,0.028876,0.348894,1.80314
+"long life bakery product","whole milk",133,0.013523,0.361413,1.414444
+"curd","whole milk",257,0.026131,0.490458,1.919481
+"sliced cheese","whole milk",106,0.010778,0.439834,1.721356
+"whipped/sour cream","other vegetables",284,0.028876,0.402837,2.081924
+"sugar","whole milk",148,0.015048,0.444444,1.7394
+"berries","yogurt",104,0.010574,0.318043,2.279848
+"rolls/buns + yogurt","other vegetables",113,0.01149,0.33432,1.727815
+"cream cheese","other vegetables",135,0.013726,0.346154,1.788977
+"tropical fruit + whole milk","yogurt",149,0.01515,0.358173,2.567516
+"tropical fruit + yogurt","whole milk",149,0.01515,0.517361,2.02477
+"chicken","other vegetables",176,0.017895,0.417062,2.155439
+"chocolate","whole milk",164,0.016675,0.336066,1.315243
+"rolls/buns + root vegetables","other vegetables",120,0.012201,0.502092,2.59489
+"butter + other vegetables","whole milk",113,0.01149,0.573604,2.244885
+"butter + whole milk","other vegetables",113,0.01149,0.416974,2.154987
+"other vegetables + sausage","whole milk",100,0.010168,0.377358,1.476849
+"sausage + whole milk","other vegetables",100,0.010168,0.340136,1.757876
+"other vegetables + soda","whole milk",137,0.01393,0.425466,1.665124
+"soda + whole milk","other vegetables",137,0.01393,0.347716,1.797049
+"other vegetables + whipped/sour cream","yogurt",100,0.010168,0.352113,2.524073
+"whipped/sour cream + yogurt","other vegetables",100,0.010168,0.490196,2.53341
+"root vegetables + yogurt","whole milk",143,0.01454,0.562992,2.203354
+"curd + whole milk","yogurt",99,0.010066,0.385214,2.761356
+"curd + yogurt","whole milk",99,0.010066,0.582353,2.279125
+"dessert","whole milk",135,0.013726,0.369863,1.447514
+"pastry","whole milk",327,0.033249,0.373714,1.462587
+"yogurt","other vegetables",427,0.043416,0.311224,1.608457
+"soda + yogurt","whole milk",103,0.010473,0.3829,1.498535
+"newspapers","whole milk",269,0.027351,0.342675,1.34111
+"pip fruit","other vegetables",257,0.026131,0.34543,1.785237
+"frankfurter","whole milk",202,0.020539,0.348276,1.363029
+"citrus fruit + other vegetables","root vegetables",102,0.010371,0.359155,3.295045
+"citrus fruit + root vegetables","other vegetables",102,0.010371,0.586207,3.029608
+"root vegetables","other vegetables",466,0.047382,0.434701,2.246605
+"citrus fruit + whole milk","yogurt",101,0.010269,0.336667,2.41335
+"citrus fruit + yogurt","whole milk",101,0.010269,0.474178,1.855768
+"curd","yogurt",170,0.017285,0.324427,2.325615
+"yogurt","whole milk",551,0.056024,0.401603,1.571735
+"butter milk","other vegetables",102,0.010371,0.370909,1.916916
+"domestic eggs","whole milk",295,0.029995,0.472756,1.850203
+"other vegetables + pastry","whole milk",104,0.010574,0.468468,1.833421
+"pastry + whole milk","other vegetables",104,0.010574,0.318043,1.643695
+"oil","whole milk",111,0.011286,0.402174,1.573968
+"butter","whole milk",271,0.027555,0.497248,1.946053
+"domestic eggs + other vegetables","whole milk",121,0.012303,0.552511,2.162336
+"domestic eggs + whole milk","other vegetables",121,0.012303,0.410169,2.11982
+"root vegetables + tropical fruit","whole milk",118,0.011998,0.570048,2.230969
+"other vegetables + yogurt","whole milk",219,0.022267,0.512881,2.007235
+"whole milk + yogurt","other vegetables",219,0.022267,0.397459,2.054131
+"fruit/vegetable juice","whole milk",262,0.02664,0.368495,1.44216
+"onions","whole milk",119,0.0121,0.390164,1.526965
+"hard cheese","whole milk",99,0.010066,0.410788,1.607682
+"pork","other vegetables",213,0.021657,0.375661,1.941476
+"citrus fruit","whole milk",300,0.030503,0.36855,1.442377
+"white bread","other vegetables",135,0.013726,0.326087,1.685268
+"frozen vegetables","other vegetables",175,0.017794,0.369979,1.912108
+"root vegetables","whole milk",481,0.048907,0.448694,1.756031
+"tropical fruit","whole milk",416,0.042298,0.403101,1.577595
+"cream cheese","whole milk",162,0.016472,0.415385,1.62567
+"pip fruit","whole milk",296,0.030097,0.397849,1.557043
+"chicken","whole milk",173,0.01759,0.409953,1.604411
+"hygiene articles","whole milk",126,0.012811,0.388889,1.521975
+"other vegetables + root vegetables","whole milk",228,0.023183,0.48927,1.914833
+"other vegetables + whole milk","root vegetables",228,0.023183,0.309783,2.842082
+"root vegetables + whole milk","other vegetables",228,0.023183,0.474012,2.44977
+"other vegetables + tropical fruit","whole milk",168,0.017082,0.475921,1.862587
+"tropical fruit + whole milk","other vegetables",168,0.017082,0.403846,2.08714
+"beef","other vegetables",194,0.019725,0.375969,1.943066
+"bottled water","whole milk",338,0.034367,0.310948,1.21694
+"bottled water + other vegetables","whole milk",106,0.010778,0.434426,1.700192
+"bottled water + whole milk","other vegetables",106,0.010778,0.313609,1.620783
+"other vegetables + pip fruit","whole milk",133,0.013523,0.51751,2.025351
+"pip fruit + whole milk","other vegetables",133,0.013523,0.449324,2.322178
+"brown bread","whole milk",248,0.025216,0.388715,1.521293
+"tropical fruit","other vegetables",353,0.035892,0.342054,1.76779
+"butter milk","whole milk",114,0.011591,0.414545,1.622385
+"hamburger meat","other vegetables",136,0.013828,0.415902,2.149447
+"berries","other vegetables",101,0.010269,0.308869,1.59628
+"cream cheese","yogurt",122,0.012405,0.312821,2.242412
+"waffles","whole milk",125,0.01271,0.330688,1.294196
+"sugar","other vegetables",106,0.010778,0.318318,1.645119
+"coffee","whole milk",184,0.018709,0.322242,1.261141
+"root vegetables + yogurt","other vegetables",127,0.012913,0.5,2.584078
+"other vegetables + tropical fruit","yogurt",121,0.012303,0.342776,2.457146
+"tropical fruit + yogurt","other vegetables",121,0.012303,0.420139,2.171343
+"whipped/sour cream + whole milk","yogurt",107,0.01088,0.337539,2.419607
+"whipped/sour cream + yogurt","whole milk",107,0.01088,0.52451,2.052747
+"frozen vegetables","whole milk",201,0.020437,0.424947,1.663094
+"margarine","other vegetables",194,0.019725,0.336806,1.740663
+"curd","other vegetables",169,0.017184,0.322519,1.666829
+"napkins","whole milk",194,0.019725,0.376699,1.474268
+"beef","whole milk",209,0.021251,0.405039,1.58518
+"rolls/buns","whole milk",557,0.056634,0.307905,1.205032
+"sausage","rolls/buns",301,0.030605,0.325758,1.771048
+"dessert","other vegetables",114,0.011591,0.312329,1.614164
+"rolls/buns + yogurt","whole milk",153,0.015557,0.452663,1.771563
+"whipped/sour cream","whole milk",317,0.032232,0.449645,1.759754
+"hamburger meat","whole milk",145,0.014743,0.443425,1.73541
+"ham","whole milk",113,0.01149,0.441406,1.727509
+"berries","whole milk",116,0.011795,0.35474,1.388328
+"other vegetables + rolls/buns","whole milk",176,0.017895,0.420048,1.643919
+"rolls/buns + whole milk","other vegetables",176,0.017895,0.315978,1.633026
+"white bread","whole milk",168,0.017082,0.405797,1.588147
+"domestic eggs","other vegetables",219,0.022267,0.350962,1.813824
