@@ -10,14 +10,18 @@ Cài đặt thuật toán **Eclat** khai thác tập phổ biến theo bài báo
 """
 module EclatFIM
 
+using DataStructures: BinaryMinHeap
+
 export TransactionDB, n_transactions, n_items
 export EclatConfig, VARIANTS, VARIANT_NAMES, EclatStats
 export read_spmf, parse_minsup, minsup_count, write_itemset
 export DEFAULT_VARIANT, DEFAULT_CONFIG, eclat!, eclat
+export Rule, rules, top_k
 
 include("structures.jl")
 include("utils.jl")
 include("algorithm/tidsets.jl")
 include("algorithm/eclat.jl")
+include("rules.jl")
 
 end # module
