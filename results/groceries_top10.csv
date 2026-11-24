@@ -1,0 +1,11 @@
+rank,antecedent,consequent,support_count,support,confidence,lift
+1,"citrus fruit + other vegetables","root vegetables",102,0.0104,0.3592,3.295
+2,"other vegetables + tropical fruit","root vegetables",121,0.0123,0.3428,3.1448
+3,"beef","root vegetables",171,0.0174,0.3314,3.0404
+4,"citrus fruit + root vegetables","other vegetables",102,0.0104,0.5862,3.0296
+5,"root vegetables + tropical fruit","other vegetables",121,0.0123,0.5845,3.021
+6,"other vegetables + whole milk","root vegetables",228,0.0232,0.3098,2.8421
+7,"curd + whole milk","yogurt",99,0.0101,0.3852,2.7614
+8,"rolls/buns + root vegetables","other vegetables",120,0.0122,0.5021,2.5949
+9,"root vegetables + yogurt","other vegetables",127,0.0129,0.5,2.5841
+10,"tropical fruit + whole milk","yogurt",149,0.0151,0.3582,2.5675
