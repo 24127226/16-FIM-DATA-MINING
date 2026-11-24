@@ -1,4 +1,4 @@
-# Cấu hình chung cho các script thực nghiệm (phần của B, KE_HOACH_DU_AN.md mục 8).
+# Tham số cấu hình dùng chung cho các kịch bản thực nghiệm Chương 2.
 
 const SEED = 42
 

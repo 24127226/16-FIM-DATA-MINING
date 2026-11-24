@@ -1,12 +1,12 @@
-# Giao diện dòng lệnh (CLI) cho EclatFIM (phần của B, KE_HOACH_DU_AN.md mục 6.7).
+# Giao diện dòng lệnh (CLI) cho gói EclatFIM.
 #
-# Cách dùng:
+# Cú pháp:
 #   julia --project=. demo.jl [tùy chọn] --minsup <ngưỡng> <file_input>
 #
-# Mã thoát:
-#   0  thành công
-#   1  tham số dòng lệnh sai
-#   2  lỗi đọc/định dạng dữ liệu hoặc ghi file output
+# Mã thoát chuẩn:
+#   0  thực thi thành công
+#   1  lỗi tham số dòng lệnh
+#   2  lỗi đọc/định dạng dữ liệu hoặc ghi tệp đầu ra
 
 using EclatFIM
 

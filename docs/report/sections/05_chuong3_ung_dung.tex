@@ -1,59 +1,59 @@
 % Chương 3: Ứng dụng thực tế
-% Phụ trách: V.A (B - Cường); V.B (A - Quân).
+% Phân công: V.A (Nguyễn Tiến Cường); V.B (Phạm Trần Anh Quân).
 \section{Chương 3: Ứng dụng thực tế}
 \label{sec:05_chuong3_ung_dung}
 
-Toàn bộ kết quả tập phổ biến và luật kết hợp (association rule) trong chương này được tạo trực tiếp bởi gói \texttt{EclatFIM} do nhóm tự cài đặt, không sử dụng bất kỳ thư viện khai thác tập phổ biến nào từ bên ngoài.
+Mọi tập phổ biến và luật kết hợp (association rule) được phân tích trong chương này đều được khai thác trực tiếp bằng gói \texttt{EclatFIM} do nhóm tự cài đặt, không sử dụng thư viện khai thác tập phổ biến bên ngoài.
 
 % ---------------------------------------------------------------------------
 \subsection{Ứng dụng 1: Phân tích giỏ hàng trên tập dữ liệu Groceries}
 \label{subsec:app1_groceries}
 
-\subsubsection{Bài toán và quyết định biến đổi dữ liệu}
-Ứng dụng phân tích giỏ hàng (market basket analysis) sử dụng tập dữ liệu \texttt{Groceries} kinh điển của gói \texttt{arules}~\cite{hahsler2005}, gồm $N = 9.835$ hóa đơn siêu thị thực tế trên $m = 169$ mặt hàng có tên cụ thể (khác với \texttt{Retail} đã mã hóa số nguyên không thể diễn giải ý nghĩa kinh doanh). Mỗi hóa đơn được chuyển thành một giao dịch chuẩn SPMF kèm dòng siêu dữ liệu \texttt{@ITEM=mã=tên}; bộ đọc \texttt{read\_spmf} tự động bỏ qua dòng \texttt{@} khi khai thác và ánh xạ ngược tên mặt hàng khi diễn giải luật.
+\subsubsection{Thiết lập bài toán và phân tích quyết định biến đổi dữ liệu}
+Bài toán phân tích giỏ hàng (market basket analysis) được thực hiện trên tập dữ liệu \texttt{Groceries} từ gói \texttt{arules}~\cite{hahsler2005}, gồm $N = 9.835$ hóa đơn bán lẻ thực tế trên $m = 169$ mặt hàng định danh cụ thể. Khác với tập \texttt{Retail} đã ẩn danh mã sản phẩm, tên mặt hàng trong \texttt{Groceries} cho phép diễn giải trực tiếp ý nghĩa kinh doanh. Mỗi hóa đơn được ánh xạ thành một giao dịch chuẩn SPMF kèm bảng tra cứu \texttt{@ITEM=mã=tên}; bộ đọc \texttt{read\_spmf} bỏ qua các dòng siêu dữ liệu này trong pha khai thác và phục hồi nhãn mặt hàng ở pha phân tích luật.
 
-Để đánh giá tác động của quyết định biểu diễn dữ liệu tới thuật toán Eclat, nhóm so sánh hai phương án biến đổi tại cùng ngưỡng \texttt{minsup} $= 1\%$ ($\sigma_{\min} = 99$) và độ tin cậy (confidence) tối thiểu \texttt{minconf} $= 0{,}3$: (i) giữ nguyên $169$ mặt hàng gốc và (ii) gộp $169$ mặt hàng thành $12$ nhóm hàng cấp cao (như \texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, \texttt{meat\_seafood}, v.v.). Số liệu đối chiếu ở Bảng~\ref{tab:b08_groceries_transform} cho thấy hai điểm quan trọng:
+Nhằm đánh giá ảnh hưởng của mức độ chi tiết dữ liệu đối với đặc tính vận hành của Eclat, nghiên cứu so sánh hai phương án biến đổi tại cùng ngưỡng \texttt{minsup} $= 1\%$ ($\sigma_{\min} = 99$) và độ tin cậy tối thiểu \texttt{minconf} $= 0{,}3$: (i) giữ nguyên $169$ mặt hàng gốc và (ii) gộp $169$ mặt hàng thành $12$ nhóm hàng cấp cao (ví dụ \texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, \texttt{meat\_seafood}). Kết quả định lượng ở Bảng~\ref{tab:b08_groceries_transform} chỉ ra hai đặc điểm đáng chú ý:
 \begin{itemize}
-    \item Ở phương án giữ nguyên $169$ mặt hàng, mật độ trung bình $\rho = \bar{L}/m = 2{,}61\%$, nằm rất sát ngưỡng cân bằng lý thuyết $1/32 \approx 3{,}125\%$ giữa biểu diễn danh sách mã giao dịch (\texttt{Vector\{Int32\}}) và mảng bit (\texttt{BitVector}) của Eclat. Nhờ giao dịch ngắn ($\bar{L} = 4{,}41$), thuật toán khai thác chỉ mất $0{,}0256$~giây và tạo ra $125$ luật cụ thể.
-    \item Khi gộp thành $12$ nhóm hàng, mật độ tăng vọt lên $25{,}98\%$ (dày hơn gần $10$ lần), khiến số tập phổ biến tăng từ $333$ lên $477$ và số luật bùng nổ lên $2.232$ luật nhưng mang tính quá chung chung (ví dụ \emph{sản phẩm sữa $\Rightarrow$ rau củ}), khó chuyển hóa thành hành động xếp kệ cụ thể. Do đó, nhóm chọn phương án $169$ mặt hàng gốc.
+    \item Ở phương án giữ nguyên $169$ mặt hàng, mật độ trung bình $\rho = \bar{L}/m = 2{,}61\%$, tiệm cận ngưỡng cân bằng lý thuyết $1/32 \approx 3{,}125\%$ giữa biểu diễn danh sách mã giao dịch (\texttt{Vector\{Int32\}}) và mảng bit (\texttt{BitVector}) của Eclat. Do độ dài giao dịch ngắn ($\bar{L} = 4{,}41$), quá trình khai thác chỉ mất $0{,}0256$~giây và sinh $125$ luật có độ cụ thể cao.
+    \item Ở phương án gộp $12$ nhóm hàng, mật độ tăng lên $25{,}98\%$ (gấp gần $10$ lần), khiến số tập phổ biến tăng từ $333$ lên $477$ và số luật mở rộng lên $2.232$ luật nhưng mang tính khái quát quá mức (chẳng hạn \emph{nhóm sữa $\Rightarrow$ nhóm rau củ}), làm giảm giá trị hành động trong quản trị trưng bày. Trên cơ sở đó, phương án $169$ mặt hàng gốc được lựa chọn cho các phân tích tiếp theo.
 \end{itemize}
 
 % Nguồn số liệu: results/groceries_b08_transforms.csv
 \begin{table}[!t]
 \centering
-\caption{Bảng B08: So sánh hai phương án biến đổi dữ liệu Groceries tại \texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$ (bản \texttt{v1}).}
+\caption{Bảng B08: So sánh định lượng hai phương án biến đổi dữ liệu Groceries tại \texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$ (phiên bản \texttt{v1}).}
 \label{tab:b08_groceries_transform}
 \begin{tabular}{lrrrrrr}
 \toprule
-Phương án & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Số luật & Thời gian \\
+Phương án biểu diễn & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Số luật & Thời gian \\
 \midrule
 169 mặt hàng gốc (chọn) & 169 & 4,41 & 2,61\% & 333 & 125 & 0,0256 s \\
-Gộp 12 nhóm hàng & 12 & 3,12 & 25,98\% & 477 & 2.232 & 0,0024 s \\
+Gộp 12 nhóm hàng cấp cao & 12 & 3,12 & 25,98\% & 477 & 2.232 & 0,0024 s \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsubsection{Khảo sát độ nhạy và chọn ngưỡng}
-Nhóm khảo sát lưới tham số $\texttt{minsup} \in \{0{,}5\%, 1\%, 2\%\} \times \texttt{minconf} \in \{0{,}2, 0{,}3, 0{,}5\}$ (tệp \texttt{results/groceries\_grid.csv}). Ở $\texttt{minsup} = 0{,}5\%$ ($\sigma_{\min} = 50$), số tập phổ biến lên tới $1.001$ và sinh tới $893$ luật (nhiều luật nhiễu có ít bằng chứng); ngược lại, ở $\texttt{minsup} = 2\%$ ($\sigma_{\min} = 197$), chỉ còn $37$ luật tại $\texttt{minconf} = 0{,}3$ (và chỉ $1$ luật tại $0{,}5$), bỏ sót các nhóm hàng chuyên biệt. Cặp ngưỡng $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) và $\texttt{minconf} = 0{,}3$ cho đúng $125$ luật (nằm gọn trong vùng $50$--$300$ luật), cân bằng giữa độ phủ và ý nghĩa thực tiễn.
+\subsubsection{Phân tích độ nhạy và lựa chọn ngưỡng}
+Độ nhạy của tập luật được khảo sát trên lưới $\texttt{minsup} \in \{0{,}5\%, 1\%, 2\%\} \times \texttt{minconf} \in \{0{,}2, 0{,}3, 0{,}5\}$ (\texttt{results/groceries\_grid.csv}). Tại $\texttt{minsup} = 0{,}5\%$ ($\sigma_{\min} = 50$), tập kết quả mở rộng lên $1.001$ tập phổ biến và $893$ luật (ở $\texttt{minconf} = 0{,}2$), làm tăng tỉ lệ luật nhiễu có bằng chứng thống kê yếu. Ngược lại, tại $\texttt{minsup} = 2\%$ ($\sigma_{\min} = 197$), số luật suy giảm còn $37$ (ở $\texttt{minconf} = 0{,}3$) và $1$ luật duy nhất (ở $\texttt{minconf} = 0{,}5$), bỏ sót các mối liên kết chuyên biệt. Cặp tham số $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) và $\texttt{minconf} = 0{,}3$ sinh $125$ luật, cân bằng giữa độ bao phủ và độ tin cậy diễn giải.
 
-\subsubsection{Kết quả chính và ý nghĩa kinh doanh}
-Hình~\ref{fig:f11_groceries} minh họa phân bố toàn bộ $125$ luật theo độ hỗ trợ, độ tin cậy và độ nâng (lift). Một nhận xét quan trọng là nếu xếp hạng theo \texttt{confidence}, đa số luật đứng đầu đều có hệ quả là \texttt{whole milk} (ví dụ \texttt{curd + yogurt} $\Rightarrow$ \texttt{whole milk} đạt $\text{conf} = 0{,}582$ nhưng $\text{lift}$ chỉ đạt $2{,}279$). Nguyên nhân là \texttt{whole milk} xuất hiện tới $2.513/9.835$ giỏ ($25{,}55\%$), nên xác suất mua kèm sữa tươi vốn đã rất cao ngay cả khi không có tiền đề. Xếp hạng theo \texttt{lift} loại bỏ thiên lệch này và phát hiện các mối liên kết thực sự mạnh (Bảng~\ref{tab:b09_groceries_top10}).
+\subsubsection{Kết quả khai thác và diễn giải kinh doanh}
+Hình~\ref{fig:f11_groceries} biểu diễn phân bố $125$ luật kết hợp theo không gian độ hỗ trợ và độ tin cậy, với thang màu thể hiện độ nâng (\texttt{lift}). Phân tích đối chiếu cho thấy tiêu chí \texttt{confidence} chịu thiên lệch mạnh bởi các mặt hàng có tần suất nền cao: mặt hàng \texttt{whole milk} xuất hiện trong $2.513/9.835$ hóa đơn ($25{,}55\%$), dẫn đến nhiều luật có độ tin cậy cao nhất đều mang hệ quả \texttt{whole milk} nhưng độ nâng chỉ ở mức trung bình (ví dụ \texttt{curd + yogurt} $\Rightarrow$ \texttt{whole milk} đạt $\text{conf} = 0{,}582$, $\text{lift} = 2{,}279$). Việc xếp hạng theo \texttt{lift} loại bỏ hiệu ứng tần suất nền này và làm nổi bật các quan hệ đồng xuất hiện thực chất (Bảng~\ref{tab:b09_groceries_top10}).
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{F11_groceries_rules.pdf}
-\caption{Hình F11: Phân bố $125$ luật kết hợp trên Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$) theo độ hỗ trợ và độ tin cậy, tô màu theo độ nâng; dấu sao đỏ đánh dấu Top-3 luật có \texttt{lift} cao nhất.}
+\caption{Hình F11: Phân bố $125$ luật kết hợp trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$) theo độ hỗ trợ và độ tin cậy, mã hóa màu theo độ nâng; ba dấu sao đỏ biểu thị ba luật có \texttt{lift} cao nhất.}
 \label{fig:f11_groceries}
 \end{figure}
 
 % Nguồn số liệu: results/groceries_top10.csv
 \begin{table*}[!t]
 \centering
-\caption{Bảng B09: Top-10 luật kết hợp theo độ nâng (\texttt{lift}) trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$).}
+\caption{Bảng B09: Mười luật kết hợp có độ nâng (\texttt{lift}) cao nhất trên tập dữ liệu Groceries (\texttt{minsup} $= 1\%$, \texttt{minconf} $= 0{,}3$).}
 \label{tab:b09_groceries_top10}
 \begin{tabular}{rllrrrr}
 \toprule
-\# & Tiền đề ($X$) & Hệ quả ($Y$) & $\sigma$ & Support & Confidence & Lift \\
+Hạng & Tiền đề ($X$) & Hệ quả ($Y$) & $\sigma$ & Support & Confidence & Lift \\
 \midrule
 1 & citrus fruit + other vegetables & root vegetables & 102 & 0,0104 & 0,3592 & 3,295 \\
 2 & other vegetables + tropical fruit & root vegetables & 121 & 0,0123 & 0,3428 & 3,145 \\
@@ -69,24 +69,24 @@ Hình~\ref{fig:f11_groceries} minh họa phân bố toàn bộ $125$ luật theo
 \end{tabular}
 \end{table*}
 
-Từ Bảng~\ref{tab:b09_groceries_top10}, có thể rút ra ba cụm hành vi mua sắm rõ rệt kèm gợi ý hành động:
+Các luật hàng đầu trong Bảng~\ref{tab:b09_groceries_top10} hội tụ thành ba nhóm hành vi tiêu dùng rõ nét:
 \begin{itemize}
-    \item \textbf{Cụm nấu ăn gia đình (luật \#3):} Khách mua \texttt{beef} có xác suất mua \texttt{root vegetables} cao gấp $3{,}04$ lần mức trung bình ($\sigma = 171$), phản ánh thói quen mua thịt bò kèm rau củ nấu súp/hầm. Siêu thị có thể đặt quầy rau củ tươi ngay cạnh khu thịt tươi sống hoặc tạo gói nguyên liệu nấu sẵn.
-    \item \textbf{Cụm nông sản tươi (luật \#1, \#2, \#4, \#5):} Các nhóm \texttt{citrus fruit}, \texttt{tropical fruit}, \texttt{other vegetables} và \texttt{root vegetables} gắn kết chặt với $\text{lift} > 3{,}0$, phù hợp thiết kế khu trưng bày nông sản liên thông và chương trình giảm giá theo giỏ rau quả.
-    \item \textbf{Cụm chế phẩm từ sữa (luật \#7, \#10):} \texttt{curd + whole milk} $\Rightarrow$ \texttt{yogurt} ($\text{lift} = 2{,}761$) gợi ý chiến dịch khuyến mãi chéo (cross-promotion) trong cùng dãy tủ mát sữa và sữa chua.
+    \item \textbf{Nhóm nguyên liệu nấu ăn gia đình (luật hạng~3):} Luật \texttt{beef} $\Rightarrow$ \texttt{root vegetables} đạt $\text{lift} = 3{,}040$ với $\sigma = 171$ hóa đơn, cho thấy tần suất mua kèm rau củ ở khách hàng mua thịt bò cao gấp ba lần mức kỳ vọng độc lập. Phát hiện này hỗ trợ bố trí quầy rau củ tươi liền kề khu thịt tươi sống hoặc thiết kế gói nguyên liệu chế biến sẵn.
+    \item \textbf{Nhóm nông sản tươi (luật hạng~1, 2, 4, 5):} Tập mặt hàng \texttt{citrus fruit}, \texttt{tropical fruit}, \texttt{other vegetables} và \texttt{root vegetables} hình thành cụm liên kết chặt ($\text{lift} > 3{,}0$), phù hợp với chiến lược trưng bày liên thông khu nông sản và chính sách ưu đãi theo giỏ rau quả.
+    \item \textbf{Nhóm chế phẩm từ sữa (luật hạng~7, 10):} Luật \texttt{curd + whole milk} $\Rightarrow$ \texttt{yogurt} ($\text{lift} = 2{,}761$) phản ánh nhu cầu mua kèm tập trung trong dãy tủ mát sữa và sữa chua, làm cơ sở triển khai khuyến mãi chéo.
 \end{itemize}
 
-\subsubsection{Kiểm tra độ ổn định (chia tập 80/20)}
-Để đánh giá khả năng khái quát hóa, tập dữ liệu được chia ngẫu nhiên theo hạt giống cố định (\texttt{seed} $= 42$) thành tập huấn luyện $80\%$ ($7.868$ giỏ) và tập kiểm tra $20\%$ ($1.967$ giỏ). Nhóm khai thác Top-10 luật theo \texttt{lift} trên tập huấn luyện rồi tính lại \texttt{confidence} và \texttt{lift} trên tập kiểm tra (Bảng~\ref{tab:b10_groceries_stability}). Cả $10/10$ luật đều duy trì $\text{test\_lift} > 1{,}5$; các luật cốt lõi như \#1 (\texttt{citrus fruit + other vegetables} $\Rightarrow$ \texttt{root vegetables}, lệch $-4{,}5\%$), \#5 (lệch $-3{,}4\%$) và \#4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, lệch $-8{,}5\%$) rất ổn định. Ngược lại, luật \#6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) sụt giảm mạnh ($-38{,}3\%$) do có độ hỗ trợ sát ngưỡng $1\%$, dễ chịu phương sai mẫu.
+\subsubsection{Đánh giá độ ổn định trên tập kiểm tra độc lập}
+Khả năng tổng quát hóa của các luật được kiểm định thông qua phân chia ngẫu nhiên $80\%/20\%$ theo hạt giống cố định (\texttt{seed} $= 42$), tương ứng $N_{\text{train}} = 7.868$ và $N_{\text{test}} = 1.967$ giao dịch. Mười luật dẫn đầu theo \texttt{lift} được khai thác trên tập huấn luyện và đánh giá lại trên tập kiểm tra (Bảng~\ref{tab:b10_groceries_stability}). Kết quả cho thấy toàn bộ $10/10$ luật duy trì $\text{test\_lift} > 1{,}5$; các luật cốt lõi như hạng~1 (biến thiên $-4{,}5\%$), hạng~5 ($-3{,}4\%$) và hạng~4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, $-8{,}5\%$) có độ ổn định cao. Ngược lại, luật hạng~6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) suy giảm $-38{,}3\%$ do độ hỗ trợ nằm sát ngưỡng $1\%$, chịu phương sai lấy mẫu lớn hơn.
 
 % Nguồn số liệu: results/groceries_stability.csv
 \begin{table}[!t]
 \centering
-\caption{Bảng B10: Kiểm tra độ ổn định Top-10 luật theo \texttt{lift} khi chia 80/20 (\texttt{seed} $= 42$, $N_{\text{train}} = 7.868$, $N_{\text{test}} = 1.967$).}
+\caption{Bảng B10: Đánh giá độ ổn định của 10 luật dẫn đầu theo \texttt{lift} trên phép chia 80/20 (\texttt{seed} $= 42$, $N_{\text{train}} = 7.868$, $N_{\text{test}} = 1.967$).}
 \label{tab:b10_groceries_stability}
 \begin{tabular}{rlrrr}
 \toprule
-\# & Luật ($X \Rightarrow Y$) & Train Lift & Test Lift & Chênh lệch \\
+Hạng & Luật ($X \Rightarrow Y$) & Train Lift & Test Lift & Biến thiên \\
 \midrule
 1 & citrus + other veg $\Rightarrow$ root veg & 3,325 & 3,175 & $-4{,}5\%$ \\
 2 & other veg + tropical $\Rightarrow$ root veg & 3,242 & 2,734 & $-15{,}7\%$ \\
@@ -102,11 +102,10 @@ Từ Bảng~\ref{tab:b09_groceries_top10}, có thể rút ra ba cụm hành vi m
 \end{tabular}
 \end{table}
 
-\subsubsection{Hạn chế và hướng ứng dụng tiếp theo}
-Phân tích luật kết hợp trên Groceries có ba hạn chế cần lưu ý khi diễn giải: (i) luật có \texttt{lift} cao nhưng \texttt{support} sát ngưỡng $1\%$ chứa ít bằng chứng nên dễ biến động (như luật \#6 ở Bảng~\ref{tab:b10_groceries_stability}); (ii) \texttt{lift} có tính đối xứng ($\text{lift}(X \Rightarrow Y) = \text{lift}(Y \Rightarrow X)$), không phân biệt được hướng dẫn dắt mua hàng; và (iii) tương quan đồng xuất hiện không đồng nghĩa với quan hệ nhân quả (cả hai mặt hàng có thể cùng chịu ảnh hưởng của yếu tố bên ngoài như ngày cuối tuần hoặc mùa lễ). Về hướng mở rộng, các luật ổn định có thể dùng làm đầu vào cho hệ thống gợi ý giỏ hàng theo thời gian thực hoặc làm thí nghiệm A/B kiểm chứng tác động doanh thu khi sắp xếp lại quầy hàng.
+\subsubsection{Hạn chế phương pháp và hướng ứng dụng tiếp theo}
+Quá trình diễn giải luật kết hợp cần lưu ý ba giới hạn phương pháp luận: (i) các luật đạt \texttt{lift} cao nhưng có độ hỗ trợ thấp mang ít bằng chứng thống kê và dễ dao động ngoài mẫu; (ii) độ đo \texttt{lift} có tính đối xứng ($\text{lift}(X \Rightarrow Y) = \text{lift}(Y \Rightarrow X)$), không phản ánh chiều tác động; và (iii) quan hệ đồng xuất hiện không hàm ý quan hệ nhân quả do có thể chịu chi phối bởi các biến ẩn như thời điểm mua sắm hoặc yếu tố mùa vụ. Trong thực tế vận hành, tập luật ổn định có thể tích hợp vào mô-đun gợi ý sản phẩm theo giỏ hàng trực tuyến hoặc làm giả thuyết đầu vào cho thử nghiệm A/B đánh giá tác động doanh thu khi tái bố trí quầy kệ.
 
 % ---------------------------------------------------------------------------
 \subsection{Ứng dụng 2: Mẫu trực quan bằng túi từ thị giác (Bag of Visual Words)}
 \label{subsec:app2_bovw}
-% (Phần của A - Quân: Caltech-101, B11-B13, F12-F13)
-\textit{[Đang hoàn thiện bởi thành viên A.]}
+% Nội dung phần V.B do thành viên A biên soạn (Caltech-101, B11-B13, F12-F13).

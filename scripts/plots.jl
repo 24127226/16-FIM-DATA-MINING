@@ -1,10 +1,9 @@
-# Vẽ toàn bộ hình cho báo cáo (PDF vector) và notebook/README (PNG 300 dpi) CHỈ TỪ FILE CSV
-# (phần của B, KE_HOACH_DU_AN.md quyết định D14, mục 11.3).
+# Kịch bản sinh biểu đồ báo cáo (PDF vector) và ảnh minh họa (PNG 300 dpi) trực tiếp từ tệp CSV.
 #
-# Cách dùng (từ gốc repo):
-#   julia --project=scripts scripts/plots.jl             # tự động vẽ mọi hình có sẵn CSV
-#   julia --project=scripts scripts/plots.jl f11         # chỉ vẽ hình F11 (Groceries)
-#   julia --project=scripts scripts/plots.jl f03 f04     # vẽ các hình cụ thể
+# Cú pháp thực thi:
+#   julia --project=scripts scripts/plots.jl             # sinh toàn bộ biểu đồ có sẵn CSV
+#   julia --project=scripts scripts/plots.jl f11         # sinh riêng biểu đồ F11 (Groceries)
+#   julia --project=scripts scripts/plots.jl f03 f04     # sinh các biểu đồ chỉ định
 
 ENV["GKSwstype"] = "100"   # chạy headless không cần cửa sổ đồ họa (Colab/Linux/Windows)
 
