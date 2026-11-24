@@ -83,10 +83,10 @@ function plot_f11_groceries(; csv_path = joinpath(RESULTS_DIR, "groceries_rules.
         sup_pct, conf_pct;
         zcolor = lifts,
         color = :viridis,
-        colorbar_title = "Lift",
-        xlabel = "Độ hỗ trợ — Support (%)",
-        ylabel = "Độ tin cậy — Confidence (%)",
-        title = "Groceries: Phân bố 125 luật kết hợp (minsup = 1%, minconf = 0,3)",
+        colorbar_title = "\nLift",
+        xlabel = "Support (%)",
+        ylabel = "Confidence (%)",
+        title = "Groceries: 125 Association Rules (minsup = 1%, minconf = 0.3)",
         label = "",
         markersize = 5.5,
         markerstrokewidth = 0.4,
@@ -96,11 +96,11 @@ function plot_f11_groceries(; csv_path = joinpath(RESULTS_DIR, "groceries_rules.
         margin = 5Plots.mm,
     )
 
-    # Làm nổi bật top-3 luật có lift cao nhất
+    # Highlight top-3 rules by lift
     top_idx = partialsortperm(lifts, 1:min(3, length(lifts)); rev = true)
     scatter!(plt, sup_pct[top_idx], conf_pct[top_idx];
              color = :red, markershape = :star5, markersize = 8,
-             markerstrokecolor = :black, label = "Top-3 luật theo Lift")
+             markerstrokecolor = :black, label = "Top-3 Rules by Lift")
 
     save_figure(plt, "F11_groceries_rules")
     return true
@@ -262,43 +262,43 @@ function plot_f02_architecture()
     plt = plot(; xlims = (0, 10), ylims = (0, 6.2), framestyle = :none,
                legend = false, size = (760, 420), margin = 2Plots.mm)
 
-    # Hàng 1: Luồng xử lý chính (trái -> phải)
-    _draw_box!(plt, 1.4, 4.7, 2.2, 1.3, "Dữ liệu SPMF", "benchmark / toy / apps";
+    # Row 1: Primary pipeline (left -> right)
+    _draw_box!(plt, 1.4, 4.7, 2.2, 1.3, "SPMF Datasets", "benchmark / toy / apps";
                fill = :whitesmoke, border = :gray40)
-    _draw_box!(plt, 4.9, 4.7, 2.7, 1.3, "src/utils.jl (B)", "read_spmf, minsup_count";
+    _draw_box!(plt, 4.9, 4.7, 2.7, 1.3, "src/utils.jl (I/O)", "read_spmf, minsup_count";
                fill = :lightcyan, border = :teal)
-    _draw_box!(plt, 8.4, 4.7, 2.4, 1.3, "Hợp đồng giao diện", "TransactionDB, EclatConfig";
+    _draw_box!(plt, 8.4, 4.7, 2.4, 1.3, "Interface Contract", "TransactionDB, EclatConfig";
                fill = :cornsilk, border = :darkorange)
 
-    # Hàng 2: Lõi thuật toán & các tầng tiêu thụ
-    _draw_box!(plt, 8.4, 2.5, 2.4, 1.3, "src/algorithm/ (A)", "eclat!, tidsets (v0..v6)";
+    # Row 2: Core algorithm & consumers
+    _draw_box!(plt, 8.4, 2.5, 2.4, 1.3, "src/algorithm/", "eclat!, tidsets (v0..v6)";
                fill = :lavender, border = :navy)
-    _draw_box!(plt, 4.9, 2.5, 2.7, 1.3, "Hàm gọi lại sink", "write_itemset / Dict / Stats";
+    _draw_box!(plt, 4.9, 2.5, 2.7, 1.3, "Streaming sink", "write_itemset / Dict / Stats";
                fill = :lightcyan, border = :teal)
-    _draw_box!(plt, 1.4, 2.5, 2.2, 1.3, "CLI & Luật (B)", "demo.jl, src/rules.jl";
+    _draw_box!(plt, 1.4, 2.5, 2.2, 1.3, "CLI & Rules", "demo.jl, src/rules.jl";
                fill = :honeydew, border = :forestgreen)
 
-    # Hàng 3: Kiểm chứng, Thực nghiệm & Ứng dụng
-    _draw_box!(plt, 2.0, 0.75, 3.1, 1.0, "Kiểm chứng & CI (B)", "test/ (oracle 200 CSDL, SPMF)";
+    # Row 3: Verification, Benchmarking & Applications
+    _draw_box!(plt, 2.0, 0.75, 3.1, 1.0, "Verification & CI", "test/ (200-DB oracle, SPMF)";
                fill = :mistyrose, border = :crimson)
-    _draw_box!(plt, 5.5, 0.75, 2.9, 1.0, "Thực nghiệm (B + A)", "scripts/bench.jl -> CSV -> plots.jl";
+    _draw_box!(plt, 5.5, 0.75, 2.9, 1.0, "Benchmarking", "scripts/bench.jl -> CSV -> plots.jl";
                fill = :aliceblue, border = :steelblue)
-    _draw_box!(plt, 8.6, 0.75, 2.3, 1.0, "Ứng dụng (B & A)", "Groceries & BoVW";
+    _draw_box!(plt, 8.6, 0.75, 2.3, 1.0, "Applications", "Groceries & BoVW";
                fill = :honeydew, border = :forestgreen)
 
-    # Mũi tên luồng dữ liệu
+    # Data flow arrows
     _draw_arrow!(plt, 2.5, 4.7, 3.55, 4.7)
     _draw_arrow!(plt, 6.25, 4.7, 7.2, 4.7)
     _draw_arrow!(plt, 8.4, 4.05, 8.4, 3.15)
     _draw_arrow!(plt, 7.2, 2.5, 6.25, 2.5)
     _draw_arrow!(plt, 3.55, 2.5, 2.5, 2.5)
 
-    # Mũi tên xuống hàng 3
+    # Downward arrows to Row 3
     _draw_arrow!(plt, 4.2, 1.85, 2.6, 1.25)
     _draw_arrow!(plt, 5.1, 1.85, 5.4, 1.25)
     _draw_arrow!(plt, 8.4, 1.85, 8.5, 1.25)
 
-    annotate!(plt, 5.0, 5.85, text("Kiến trúc mô-đun và luồng dữ liệu của EclatFIM", 11, "sans-serif", :black, :center))
+    annotate!(plt, 5.0, 5.85, text("EclatFIM Modular Architecture and Data Flow", 11, "sans-serif", :black, :center))
 
     save_figure(plt, "F02_architecture")
     return true

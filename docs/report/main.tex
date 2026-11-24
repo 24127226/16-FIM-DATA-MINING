@@ -1,54 +1,31 @@
 % =====================================================================
-% Báo cáo đồ án: Khai thác tập phổ biến bằng Eclat (Julia)
-% Mẫu: IEEE conference (IEEEtran). Biên dịch bằng XeLaTeX
-%   Overleaf: Menu -> Settings -> Compiler -> XeLaTeX
-% Bản PDF nộp bài đặt ở docs/Report.pdf.
+% Course Project Report: Frequent Itemset Mining Using Eclat (Julia)
+% Template: HCMUS FIT Report Style (12pt, A4, 1.5 spacing), compiled with XeLaTeX.
+% Final PDF submission path: docs/Report.pdf
 % =====================================================================
-\documentclass[conference]{IEEEtran}
-
-\usepackage{fontspec}
-\IfFontExistsTF{TeX Gyre Termes}{%
-  \setmainfont{TeX Gyre Termes}%
-}{%
-  \setmainfont{Times New Roman}%
-}
-\setmonofont{Consolas}[Scale=0.88]
-\usepackage{polyglossia}
-\setdefaultlanguage{vietnamese}
-\setotherlanguage{english}
-
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{xcolor}
-\usepackage{listings}
-\usepackage{cite}
-\usepackage[hidelinks]{hyperref}
+\documentclass[12pt, a4paper]{article}
+\usepackage{hcmus}
+\usepackage{makecell}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
 
 \graphicspath{{figures/}}
+\onehalfspacing
 
 \begin{document}
 
-\title{Khai thác tập phổ biến bằng Eclat:\\ cài đặt, đánh giá hiệu năng và ứng dụng}
+\input{cover}
 
-\author{
-\IEEEauthorblockN{Phạm Trần Anh Quân}
-\IEEEauthorblockA{MSSV: 24127226}
-\and
-\IEEEauthorblockN{Nguyễn Tiến Cường}
-\IEEEauthorblockA{MSSV: 24127337}
-}
-
-\maketitle
+\tableofcontents
+\newpage
 
 \begin{abstract}
-Báo cáo trình bày quá trình tự cài đặt, kiểm chứng, đánh giá hiệu năng và ứng dụng thực tế thuật toán Eclat trong bài toán khai thác tập phổ biến bằng ngôn ngữ Julia~1.11.4.
+This report presents the from-scratch implementation, verification, experimental evaluation, and real-world applications of the Eclat algorithm for frequent itemset mining in Julia~1.11.4. The implementation adheres to the vertical tidset representation and prefix-based equivalence class decomposition introduced by Zaki~(2000), verified through a three-tier testing framework against a brute-force oracle and the SPMF reference library, and applied to retail market basket analysis and visual pattern discovery.
 \end{abstract}
-
-\begin{IEEEkeywords}
-khai thác tập phổ biến, Eclat, tidset, biểu diễn dọc, luật kết hợp, Julia
-\end{IEEEkeywords}
 
 \input{sections/01_gioi_thieu}
 \input{sections/02_nen_tang}
@@ -57,10 +34,12 @@ khai thác tập phổ biến, Eclat, tidset, biểu diễn dọc, luật kết 
 \input{sections/05_chuong3_ung_dung}
 \input{sections/06_ket_luan}
 
+\newpage
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
-\appendices
+\newpage
+\appendix
 \input{sections/07_phu_luc}
 
 \end{document}

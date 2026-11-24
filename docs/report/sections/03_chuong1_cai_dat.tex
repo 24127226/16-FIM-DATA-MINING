@@ -1,86 +1,83 @@
-% Chương 1: Cài đặt
-% Phân công: III.A, III.B, III.D (Phạm Trần Anh Quân); III.C, III.E (Nguyễn Tiến Cường).
-\section{Chương 1: Cài đặt}
-\label{sec:03_chuong1_cai_dat}
+% Section 3: Chapter 1 - Implementation
+% Division: 3.1, 3.2, 3.4 (Member A - Pham Tran Anh Quan); 3.3, 3.5 (Member B - Nguyen Tien Cuong).
+\section{Chapter 1: Implementation}
+\label{sec:03_chapter1_implementation}
 
 % ---------------------------------------------------------------------------
-\subsection{Thuật toán Eclat theo bài báo gốc}
+\subsection{The Eclat Algorithm from the Original Paper}
 \label{subsec:eclat_algo}
-% Nội dung phần III.A do thành viên A biên soạn (Zaki 2000 §4.1, §4.2, §5.2; Hình F01).
+% To be completed by Member A (Zaki 2000 §4.1, §4.2, §5.2; Figure F01).
 
 % ---------------------------------------------------------------------------
-\subsection{Phân tích độ phức tạp}
+\subsection{Complexity Analysis}
 \label{subsec:complexity}
-% Nội dung phần III.B do thành viên A biên soạn.
+% To be completed by Member A.
 
 % ---------------------------------------------------------------------------
-\subsection{Kiến trúc phần mềm, đọc/ghi chuẩn SPMF và giao diện dòng lệnh}
+\subsection{Software Architecture, SPMF I/O, and Command-Line Interface}
 \label{subsec:arch_io}
 
-Hệ thống được tổ chức dưới dạng gói phần mềm Julia \texttt{EclatFIM} (phiên bản Julia~1.11.4) với cấu trúc phân tách thành ba môi trường phụ thuộc độc lập: môi trường lõi gọn nhẹ (chỉ phụ thuộc \texttt{DataStructures.jl} và thư viện chuẩn) phục vụ giao diện dòng lệnh và kiểm thử tự động; môi trường thực nghiệm (\texttt{scripts/}) phục vụ đo đạc hiệu năng và sinh biểu đồ; và môi trường ứng dụng phục vụ Chương~3. Cấu trúc mô-đun và luồng dữ liệu tổng thể của hệ thống được trình bày trong Hình~\ref{fig:f02_arch}.
+The system is structured as a standalone Julia package, \texttt{EclatFIM} (Julia~1.11.4), partitioned into three isolated dependency environments: a minimal root package (depending solely on \texttt{DataStructures.jl} and the standard library) for the command-line interface and automated test suite; an experimental environment (\texttt{scripts/}) for benchmarking and figure generation; and an application environment for Chapter~3. Figure~\ref{fig:f02_arch} illustrates the modular architecture and end-to-end data flow of the package.
 
-\begin{figure}[!t]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\columnwidth]{F02_architecture.pdf}
-\caption{Kiến trúc mô-đun và luồng dữ liệu của gói \texttt{EclatFIM}, thể hiện sự tách biệt giữa tầng đọc/ghi chuẩn SPMF, hợp đồng giao diện cấu hình (\texttt{EclatConfig}), lõi khai thác Eclat và các tầng kiểm chứng, thực nghiệm và ứng dụng.}
+\includegraphics[width=0.92\textwidth]{F02_architecture.pdf}
+\caption{Modular architecture and data flow of \texttt{EclatFIM}, separating SPMF-compliant I/O, the interface contract (\texttt{EclatConfig}), the core Eclat mining engine, and downstream verification, benchmarking, and application layers.}
 \label{fig:f02_arch}
 \end{figure}
 
-Thiết kế kiến trúc dựa trên ba nguyên tắc kỹ thuật chính:
+The software design centers on three architectural principles:
 \begin{enumerate}
-    \item \textbf{Hợp đồng giao diện độc lập:} Cấu trúc \texttt{TransactionDB} ánh xạ tập mã mặt hàng gốc (\texttt{Int64}, sắp tăng dần) sang không gian mã nội bộ liên tục $1 \ldots m$ (\texttt{Int32}), cho phép truy cập trực tiếp bằng mảng với chi phí bộ nhớ thấp. Cấu trúc \texttt{EclatConfig} phân tách các chiều tối ưu độc lập (\texttt{tidset}, \texttt{order}, \texttt{reuse}, \texttt{isect}, \texttt{level2}), bảo đảm bộ kiểm thử và hạ tầng thực nghiệm đánh giá đồng nhất mọi biến thể thuật toán mà không thay đổi giao diện gọi hàm.
-    \item \textbf{Cơ chế xuất theo dòng qua hàm gọi lại (\texttt{sink}):} Tại các ngưỡng hỗ trợ tối thiểu (minimum support, \texttt{minsup}) thấp, lực lượng tập kết quả có thể đạt hàng triệu tập phổ biến (frequent itemset). Hàm \texttt{eclat!(sink, db, minsup, cfg)} truyền từng tập phổ biến qua bộ đệm tái sử dụng tới \texttt{sink}, cho phép ghi trực tiếp ra tệp mà không tích lũy toàn bộ kết quả trong bộ nhớ chính.
-    \item \textbf{Khai thác đặc trưng ngôn ngữ Julia:} Điều phối đa phương thức (multiple dispatch) được áp dụng cho các phép toán trên tập mã giao dịch (tidset) và nhằm loại bỏ chi phí thu thập thống kê khi tham số \texttt{stats === nothing} ở giai đoạn biên dịch; biểu thức sinh (generator expression) được dùng cho thống kê độ dài giao dịch và liệt kê tập con khi sinh luật; các cấu trúc \texttt{BinaryMinHeap} và \texttt{counter} trong \texttt{DataStructures.jl} được dùng để trích xuất top-$k$ luật kết hợp theo độ nâng (lift) trong thời gian $O(n \log k)$ và thống kê tần suất mặt hàng.
+    \item \textbf{Decoupled Interface Contract:} The \texttt{TransactionDB} structure maps ascending original item identifiers (\texttt{Int64}) into contiguous internal codes $1 \ldots m$ (\texttt{Int32}), enabling compact array indexing rather than hash-table lookups. The \texttt{EclatConfig} structure decouples independent optimization axes (\texttt{tidset}, \texttt{order}, \texttt{reuse}, \texttt{isect}, \texttt{level2}), allowing a single test suite and benchmarking harness to evaluate every algorithmic variant uniformly without altering call sites.
+    \item \textbf{Streaming Output via Callback (\texttt{sink}):} At low minimum support (\texttt{minsup}) thresholds, frequent itemset collections may reach millions of patterns. The core routine \texttt{eclat!(sink, db, minsup, cfg)} emits each frequent itemset through a reusable prefix buffer to \texttt{sink}, allowing direct file streaming without accumulating the entire output set in main memory.
+    \item \textbf{Idiomatic Julia Features:} Multiple dispatch specializes tidset intersection operators and eliminates instrumentation overhead at compile time when \texttt{stats === nothing}; generator expressions compute transaction statistics and enumerate proper subsets during rule generation; and \texttt{BinaryMinHeap} and \texttt{counter} from \texttt{DataStructures.jl} extract top-$k$ association rules by lift in $O(n \log k)$ time and tally item frequencies during preprocessing.
 \end{enumerate}
 
-Để bảo đảm tính tương thích hoàn toàn với cài đặt tham chiếu (reference implementation) \texttt{spmf.jar}~\cite{fournier2014spmf} (Eclat v2.65), nhóm tiến hành kiểm chứng hộp đen hành vi đầu vào và quy đổi ngưỡng (kết quả lưu tại \texttt{results/spmf\_behavior.md}), từ đó chuẩn hóa tầng đọc/ghi như sau:
+To guarantee exact equivalence with the SPMF reference implementation~\cite{fournier2014spmf} (\texttt{spmf.jar}, Eclat v2.65), black-box behavioral experiments were conducted (documented in \texttt{results/spmf\_behavior.md}), establishing two critical I/O conventions:
 \begin{itemize}
-    \item \emph{Quy đổi ngưỡng đếm:} Cài đặt tham chiếu xác định ngưỡng đếm theo công thức $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ trên số thực dấu phẩy động \texttt{Float64}, trong đó chuỗi phần trăm \texttt{"p\%"} được chuyển thành $p/100$. Do đặc tính biểu diễn nhị phân (ví dụ $0{,}28 \times 25 = 7{,}000000000000001$ cho $\sigma_{\min} = 8$ thay vì $7$), hàm \texttt{minsup\_count} tái lập chính xác phép tính \texttt{Float64} này nhằm loại trừ sai lệch tại ranh giới.
-    \item \emph{Đọc/ghi định dạng SPMF:} Hàm \texttt{read\_spmf} bỏ qua dòng trống và các dòng siêu dữ liệu bắt đầu bằng \texttt{\#}, \texttt{\%}, \texttt{@}; chuẩn hóa mỗi giao dịch bằng cách sắp xếp tăng dần và loại bỏ phần tử trùng lặp. Hàm \texttt{write\_itemset} ánh xạ ngược mã nội bộ sang mã gốc tăng dần, không xuất tập rỗng và ghi đúng khuôn dạng \texttt{i1 i2 ... \#SUP: s}.
+    \item \emph{Support Threshold Conversion:} SPMF computes the integer support count threshold as $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ using IEEE~754 \texttt{Float64} arithmetic, converting percentage strings \texttt{"p\%"} to $p/100$. Because floating-point rounding can alter boundary outcomes (for example, $0.28 \times 25 = 7.000000000000001$, yielding $\sigma_{\min} = 8$ rather than $7$), \texttt{minsup\_count} reproduces this exact \texttt{Float64} computation to eliminate boundary discrepancies.
+    \item \emph{SPMF Parsing and Formatting:} The parser \texttt{read\_spmf} skips empty lines and metadata/comment lines prefixed by \texttt{\#}, \texttt{\%}, or \texttt{@}, and canonicalizes each transaction by sorting and deduplicating items. The writer \texttt{write\_itemset} maps internal codes back to ascending original identifiers, omits the empty itemset, and outputs lines in exact \texttt{i1 i2 ... \#SUP: s} format.
 \end{itemize}
 
-Giao diện dòng lệnh \texttt{demo.jl} được xây dựng thuần thư viện chuẩn, tiếp nhận tham số \texttt{--minsup} (cả dạng tỉ lệ lẫn phần trăm), \texttt{-o/--output} (mặc định \texttt{output.txt}; giá trị \texttt{"-"} xuất kết quả ra \texttt{stdout} và tóm tắt ra \texttt{stderr}), \texttt{--variant} và \texttt{--stats}, cùng quy ước mã thoát chuẩn $0$ (thành công), $1$ (lỗi tham số) và $2$ (lỗi dữ liệu hoặc vào/ra).
+The command-line interface \texttt{demo.jl} is implemented without external dependencies and supports \texttt{--minsup} (both ratio and percentage forms), \texttt{-o/--output} (defaulting to \texttt{output.txt}, with \texttt{"-"} streaming patterns to \texttt{stdout} and summary diagnostics to \texttt{stderr}), \texttt{--variant}, and \texttt{--stats}, returning standard exit codes $0$ (success), $1$ (invalid arguments), and $2$ (data or I/O error).
 
 % ---------------------------------------------------------------------------
-\subsection{Các kỹ thuật tối ưu}
+\subsection{Optimization Techniques}
 \label{subsec:optimizations}
-% Nội dung phần III.D do thành viên A biên soạn (Bảng B01, B03, B04).
+% To be completed by Member A (Tables B01, B03, B04 and ablation study v0..v6).
 
 % ---------------------------------------------------------------------------
-\subsection{Kiểm thử tự động và tỉ lệ khớp}
+\subsection{Automated Verification and Match Rate}
 \label{subsec:testing}
 
-Tính đúng đắn của cài đặt được xác minh độc lập thông qua quy trình kiểm chứng ba tầng trong thư mục \texttt{test/}:
+Correctness is verified independently of the core algorithm author through a three-tier automated testing pipeline located in \texttt{test/}:
 \begin{enumerate}
-    \item \textbf{Tầng 1 — Bộ kiểm chứng duyệt trâu (brute-force oracle):} Sinh $200$ cơ sở dữ liệu ngẫu nhiên với hạt giống cố định $1 \ldots 200$ ($m \le 12$, $N \le 30$, $\sigma_{\min}$ ngẫu nhiên), liệt kê toàn bộ $2^m - 1$ tập con khác rỗng bằng mặt nạ bit để đếm trực tiếp độ hỗ trợ (support) và đối chiếu tuyệt đối với từng biến thể Eclat đã cài đặt.
-    \item \textbf{Tầng 2 — Ví dụ chuẩn, trường hợp biên và kiểm thử I/O:} Xác minh kết quả trên hai tập chuẩn \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, đúng $15$ tập phổ biến) và \texttt{bookstore.txt} trong bài báo gốc~\cite{zaki2000scalable} (\texttt{minsup} $= 50\%$, đúng $19$ tập phổ biến, bao gồm hai tập tối đại \texttt{ACTW} và \texttt{CDW}); các trường hợp biên (CSDL rỗng, một giao dịch, giao dịch trùng lặp, \texttt{minsup} $= 100\%$, không có tập đạt ngưỡng, mã mặt hàng rời rạc lớn); kiểm thử \texttt{minsup\_count} trên toàn bộ $10$ ca ranh giới \texttt{Float64}; và kiểm thử mô-đun sinh luật kết hợp (\texttt{test\_rules.jl}) bằng đối chiếu tính tay.
-    \item \textbf{Tầng 3 — Đối chiếu trên dữ liệu benchmark:} Tỉ lệ khớp giữa tập kết quả của nhóm $\mathcal{F}_{\text{nhóm}}$ và cài đặt tham chiếu $\mathcal{F}_{\text{SPMF}}$ được định nghĩa tại \texttt{scripts/compare\_spmf.jl} như sau:
+    \item \textbf{Tier 1 — Brute-Force Oracle:} A standalone reference oracle enumerates all $2^m - 1$ non-empty subsets via bitmasks across $200$ randomly generated databases (fixed seeds $1 \ldots 200$, $m \le 12$, $N \le 30$, random $\sigma_{\min}$), verifying $100\%$ exact agreement for every implemented Eclat variant.
+    \item \textbf{Tier 2 — Canonical Datasets, Edge Cases, and I/O:} Automated tests validate \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, yielding $15$ itemsets) and \texttt{bookstore.txt} from Zaki~\cite{zaki2000scalable} (\texttt{minsup} $= 50\%$, yielding $19$ itemsets, including maximal patterns \texttt{ACTW} and \texttt{CDW}); boundary conditions (empty database, single transaction, identical transactions, \texttt{minsup} $= 100\%$, zero frequent items, large sparse item identifiers); all $10$ floating-point boundary cases of \texttt{minsup\_count}; and hand-verified association rule calculations in \texttt{test\_rules.jl}.
+    \item \textbf{Tier 3 — Large-Scale Benchmark Verification:} The comparator \texttt{scripts/compare\_spmf.jl} defines the exact match rate between the implementation's output $\mathcal{F}_{\text{ours}}$ and the SPMF reference output $\mathcal{F}_{\text{SPMF}}$ as:
     \begin{equation}
-        \text{Tỉ lệ khớp} = \frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|}
+        \text{Match Rate} = \frac{\left|\{X \in \mathcal{F}_{\text{ours}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{ours}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{ours}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
     \end{equation}
-    tính theo phần trăm ($\times 100\%$).
-    Với tập kết quả vượt quá $5 \times 10^6$ phần tử, quy trình tự động chuyển sang so khớp dấu vân tay (fingerprint): chuẩn hóa mỗi dòng theo mã mặt hàng tăng dần, băm SHA-256, trích xuất $64$~bit đầu và cộng dồn modulo $2^{64}$, bảo đảm tính bất biến theo thứ tự xuất.
+    For outputs exceeding $5 \times 10^6$ itemsets, comparison automatically switches to an order-invariant fingerprint mode: each canonicalized line is hashed with SHA-256, and the leading $64$ bits are accumulated modulo $2^{64}$.
 \end{enumerate}
 
-Quy trình tích hợp liên tục (GitHub Actions CI) thực thi tự động toàn bộ bộ kiểm thử trên môi trường Julia~1.11.4 sạch ở hai chế độ: mặc định và \texttt{--check-bounds=yes} (nhằm kiểm tra an toàn chỉ số mảng đối với các đoạn mã sử dụng \texttt{@inbounds}). Kết quả kiểm thử trên bốn bộ dữ liệu benchmark chuẩn (\texttt{chess}, \texttt{mushroom}, \texttt{retail}, \texttt{T10I4D100K}) và bộ kiểm thử đơn vị được tổng hợp trong Bảng~\ref{tab:b02_tests}.
+Continuous Integration (GitHub Actions) executes the entire test suite on a clean Julia~1.11.4 environment under both default settings and \texttt{--check-bounds=yes} to verify array-bounds safety for \texttt{@inbounds}-annotated loops. Table~\ref{tab:b02_tests} summarizes the automated verification results across unit tests and four benchmark datasets (\texttt{chess}, \texttt{mushroom}, \texttt{retail}, \texttt{T10I4D100K}).
 
-% Nguồn số liệu: kết quả thực thi `julia --project=. test/runtests.jl` (commit 52011a2)
-\begin{table}[!t]
+% Data source: `julia --project=. test/runtests.jl` (commit 52011a2)
+\begin{table}[H]
 \centering
-\caption{Tổng hợp kết quả kiểm thử tự động (\texttt{test/runtests.jl}) trên các phiên bản \texttt{v0}, \texttt{v1} ở hai chế độ mặc định và \texttt{--check-bounds=yes}.}
+\caption{Summary of automated test suite execution (\texttt{test/runtests.jl}) for variants \texttt{v0} and \texttt{v1} under default and \texttt{--check-bounds=yes} modes.}
 \label{tab:b02_tests}
-\resizebox{\columnwidth}{!}{%
 \begin{tabular}{llrr}
 \toprule
-Nhóm kiểm thử & Tệp nguồn & Khẳng định & Đạt \\
+Test Group & Source File & Assertions & Pass Rate \\
 \midrule
-Đọc/ghi SPMF, \texttt{minsup\_count} & \texttt{test\_io.jl} & 49 & 100\% \\
-Oracle 200 CSDL, tập chuẩn, ca biên & \texttt{test\_correctness.jl} & 62 & 100\% \\
-Luật kết hợp và \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
-Thống kê và đồng nhất 4 benchmark & \texttt{test\_benchmark.jl} & 16 & 100\% \\
+SPMF I/O and \texttt{minsup\_count} & \texttt{test\_io.jl} & 49 & 100\% \\
+200-DB brute-force oracle, toy, edge cases & \texttt{test\_correctness.jl} & 62 & 100\% \\
+Association rules and \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
+Statistics and cross-variant checks (4 benchmarks) & \texttt{test\_benchmark.jl} & 16 & 100\% \\
 \midrule
-\textbf{Tổng cộng} & \texttt{runtests.jl} & \textbf{352} & \textbf{100\%} \\
+\textbf{Total} & \texttt{runtests.jl} & \textbf{352} & \textbf{100\%} \\
 \bottomrule
-\end{tabular}%
-}
+\end{tabular}
 \end{table}
