@@ -32,4 +32,10 @@ end
     @testset "Tính đúng thuật toán (test_correctness.jl)" begin
         include("test_correctness.jl")
     end
+    @testset "Luật kết hợp (test_rules.jl)" begin
+        include("test_rules.jl")
+    end
+    @testset "Benchmark (test_benchmark.jl)" begin
+        include("test_benchmark.jl")
+    end
 end
