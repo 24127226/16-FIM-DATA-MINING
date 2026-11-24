@@ -57,10 +57,9 @@ function run_julia_worker(args::Vector{String})
         toy_db = read_spmf(toy_path)
         tmp = tempname()
         open(tmp, "w") do io
-            buf = Int32[]
-            eclat!(toy_db, 2, cfg) do items, sup
-                write_itemset(io, items, sup, toy_db, buf)
-            end
+            w = SPMFWriter(io, toy_db)
+            eclat!((items, sup) -> write_itemset!(w, items, sup), toy_db, 2, cfg)
+            close_writer!(w)
         end
         isfile(tmp) && rm(tmp)
     end
@@ -73,22 +72,21 @@ function run_julia_worker(args::Vector{String})
 
         n_tx = n_transactions(db)
         sigma_min = minsup_count(minsup_str, n_tx)
-        n_found = Ref(0)
-        buf = Int32[]
+        n_found = 0
 
         mkpath(dirname(out_path))
         t1 = time_ns()
         open(out_path, "w") do io
+            w = SPMFWriter(io, db)
             if n_tx > 0
-                eclat!(db, sigma_min, cfg) do items, sup
-                    n_found[] += 1
-                    write_itemset(io, items, sup, db, buf)
-                end
+                eclat!((items, sup) -> write_itemset!(w, items, sup), db, sigma_min, cfg)
             end
+            close_writer!(w)
+            n_found = w.count
         end
         t_mine_write_s = (time_ns() - t1) / 1e9
         rss_mb = Sys.maxrss() / 2^20
-        return (n_tx = n_tx, sigma_min = sigma_min, n_found = n_found[],
+        return (n_tx = n_tx, sigma_min = sigma_min, n_found = n_found,
                 t_read_s = t_read_s, t_mine_write_s = t_mine_write_s, rss_mb = rss_mb)
     end
 

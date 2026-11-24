@@ -156,6 +156,7 @@ end
     end
     lines = readlines(f1)
     open(f2, "w") do io
+        println(io, "@FILETYPE=FREQUENT_ITEMSETS")
         for line in reverse(lines)
             items, sup = parse_spmf_output_line(line)
             println(io, join(reverse(items), ' '), " #SUP: ", sup)
