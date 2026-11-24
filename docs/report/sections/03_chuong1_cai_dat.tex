@@ -1,5 +1,86 @@
-% Chương 1: Cài đặt (nội dung viết ở mốc M6)
+% Chương 1: Cài đặt
+% Phụ trách: III.A, III.B, III.D (A - Quân); III.C, III.E (B - Cường).
 \section{Chương 1: Cài đặt}
 \label{sec:03_chuong1_cai_dat}
 
-Thuật toán Eclat khai thác tập phổ biến (frequent itemset) bằng phép giao tidset.
+% ---------------------------------------------------------------------------
+\subsection{Thuật toán Eclat theo bài báo gốc}
+\label{subsec:eclat_algo}
+% (Phần của A - Quân: mô tả thuật toán theo Zaki 2000 §4.1, §4.2, §5.2 và Hình F01)
+\textit{[Đang hoàn thiện bởi thành viên A.]}
+
+% ---------------------------------------------------------------------------
+\subsection{Phân tích độ phức tạp}
+\label{subsec:complexity}
+% (Phần của A - Quân: bảng độ phức tạp phép giao Vector/BitVector, bộ nhớ đỉnh, mức 2)
+\textit{[Đang hoàn thiện bởi thành viên A.]}
+
+% ---------------------------------------------------------------------------
+\subsection{Kiến trúc phần mềm, đọc/ghi chuẩn SPMF và CLI}
+\label{subsec:arch_io}
+
+Hệ thống được tổ chức thành gói Julia \texttt{EclatFIM} (phiên bản Julia~1.11.4) với ba môi trường phụ thuộc tách biệt: môi trường gốc gọn nhẹ (chỉ phụ thuộc \texttt{DataStructures.jl} và thư viện chuẩn) phục vụ giao diện dòng lệnh và kiểm thử; môi trường \texttt{scripts/} dành cho thực nghiệm và vẽ biểu đồ; và môi trường ứng dụng cho Chương~3. Luồng xử lý dữ liệu và mối liên kết giữa các mô-đun được minh họa ở Hình~\ref{fig:f02_arch}.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{F02_architecture.pdf}
+\caption{Kiến trúc mô-đun và luồng dữ liệu của gói \texttt{EclatFIM}: tách biệt bộ đọc/ghi chuẩn SPMF, hợp đồng giao diện cấu hình (\texttt{EclatConfig}), lõi thuật toán Eclat và tầng ứng dụng.}
+\label{fig:f02_arch}
+\end{figure}
+
+Thiết kế phần mềm xoay quanh ba quyết định kỹ thuật chính:
+\begin{enumerate}
+    \item \textbf{Hợp đồng giao diện độc lập:} Kiểu \texttt{TransactionDB} ánh xạ mã mặt hàng (item) gốc kiểu \texttt{Int64} tăng dần sang mã nội bộ liên tục $1 \ldots m$ kiểu \texttt{Int32}, giúp lưu trữ gọn và truy cập trực tiếp bằng mảng thay vì bảng băm. Cấu hình \texttt{EclatConfig} tách các trục tối ưu độc lập (\texttt{tidset}, \texttt{order}, \texttt{reuse}, \texttt{isect}, \texttt{level2}), cho phép cùng một bộ kiểm thử và hạ tầng đo đánh giá mọi phiên bản mà không phải sửa mã nguồn.
+    \item \textbf{Xuất kết quả theo dòng qua hàm gọi lại (\texttt{sink}):} Ở ngưỡng hỗ trợ tối thiểu (minimum support, viết tắt \texttt{minsup}) thấp, số tập phổ biến (frequent itemset) có thể lên tới hàng triệu. Hàm \texttt{eclat!(sink, db, minsup, cfg)} truyền từng tập phổ biến qua bộ đệm dùng lại tới \texttt{sink}, cho phép ghi thẳng ra tệp mà không tích tụ kết quả trong bộ nhớ chính.
+    \item \textbf{Tận dụng đặc trưng của Julia:} Điều phối đa phương thức (multiple dispatch) được dùng cho các phép toán trên tập mã giao dịch (tidset) và để triệt tiêu hoàn toàn chi phí bộ đếm nội bộ khi \texttt{stats === nothing}; biểu thức sinh (generator expression) dùng để thống kê độ dài giao dịch và liệt kê tập con khi sinh luật; cấu trúc đống nhị phân \texttt{BinaryMinHeap} và \texttt{counter} của \texttt{DataStructures.jl} được dùng để chọn nhanh top-$k$ luật kết hợp theo độ nâng (lift) trong $O(n \log k)$ và đếm tần suất mặt hàng.
+\end{enumerate}
+
+\textbf{Đọc/ghi chuẩn SPMF và khớp hành vi ở ranh giới:} Qua thí nghiệm hộp đen trên cài đặt tham chiếu (reference implementation) \texttt{spmf.jar} (Eclat v2.65, ghi nhận tại \texttt{results/spmf\_behavior.md}), nhóm xác định hai chi tiết quyết định việc khớp $100\%$ với SPMF:
+\begin{itemize}
+    \item \emph{Quy đổi ngưỡng đếm:} SPMF tính $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ bằng số thực \texttt{Float64}, với chuỗi phần trăm \texttt{"p\%"} đổi thành $p/100$. Do sai số biểu diễn nhị phân (chẳng hạn $0{,}28 \times 25 = 7{,}000000000000001$ cho $\sigma_{\min} = 8$ thay vì $7$), hàm \texttt{minsup\_count} của nhóm áp dụng đúng phép toán \texttt{Float64} này để loại bỏ mọi sai lệch ở ranh giới.
+    \item \emph{Đếm giao dịch $N$ và định dạng tệp:} Hàm \texttt{read\_spmf} bỏ qua dòng rỗng và các dòng siêu dữ liệu bắt đầu bằng \texttt{\#}, \texttt{\%}, \texttt{@}; tự sắp xếp tăng dần và loại bỏ mã trùng trong mỗi giao dịch. Hàm \texttt{write\_itemset} đổi ngược mã nội bộ về mã gốc tăng dần, bỏ qua tập rỗng và ghi đúng chuẩn \texttt{i1 i2 ... \#SUP: s}.
+\end{itemize}
+
+Giao diện dòng lệnh \texttt{demo.jl} được tự viết không cần thư viện ngoài, hỗ trợ \texttt{--minsup} (nhận cả dạng tỉ lệ lẫn phần trăm), \texttt{-o/--output} (mặc định \texttt{output.txt}, hỗ trợ \texttt{"-"} để xuất ra \texttt{stdout} kèm tóm tắt trên \texttt{stderr}), \texttt{--variant} và \texttt{--stats}, với mã thoát chuẩn $0$ (thành công), $1$ (tham số sai) và $2$ (lỗi dữ liệu).
+
+% ---------------------------------------------------------------------------
+\subsection{Các kỹ thuật tối ưu}
+\label{subsec:optimizations}
+% (Phần của A - Quân: bảng B01, B03, B04 và phân tích cắt bỏ thành phần v0..v6)
+\textit{[Đang hoàn thiện bởi thành viên A.]}
+
+% ---------------------------------------------------------------------------
+\subsection{Kiểm thử tự động và tỉ lệ khớp}
+\label{subsec:testing}
+
+Để bảo đảm tính đúng độc lập với người cài đặt lõi thuật toán, bộ kiểm thử tự động trong \texttt{test/} áp dụng quy trình kiểm chứng 3 tầng:
+\begin{enumerate}
+    \item \textbf{Tầng 1 — Oracle duyệt trâu:} Sinh $200$ cơ sở dữ liệu ngẫu nhiên (hạt giống cố định $1 \ldots 200$, $m \le 12$, $N \le 30$, $\sigma_{\min}$ ngẫu nhiên), liệt kê toàn bộ $2^m - 1$ tập con khác rỗng bằng mặt nạ bit để đếm trực tiếp độ hỗ trợ (support) và đối chiếu $100\%$ với mọi phiên bản Eclat đã cài đặt.
+    \item \textbf{Tầng 2 — Ví dụ chuẩn, ca biên và I/O:} Kiểm chứng trên hai tập kinh điển \texttt{pasquier99.txt} (\texttt{minsup} $40\%$ cho đúng $15$ tập) và \texttt{bookstore.txt} trong bài báo gốc~\cite{zaki2000} (\texttt{minsup} $50\%$ cho đúng $19$ tập, gồm hai tập tối đại \texttt{ACTW} và \texttt{CDW}); các ca biên (CSDL rỗng, $1$ giao dịch, giao dịch trùng lặp, \texttt{minsup} $100\%$, không có tập đạt ngưỡng, mã item rời rạc lớn); kiểm thử \texttt{minsup\_count} trên toàn bộ $10$ ca số thực nhạy cảm đã ghi nhận từ SPMF; và kiểm thử sinh luật kết hợp (\texttt{test\_rules.jl}) trên ví dụ tính tay.
+    \item \textbf{Tầng 3 — Đối chiếu quy mô lớn:} Công cụ \texttt{scripts/compare\_spmf.jl} định nghĩa tỉ lệ khớp giữa tập kết quả của nhóm $\mathcal{F}_{\text{nhóm}}$ và cài đặt tham chiếu $\mathcal{F}_{\text{SPMF}}$ là:
+    \begin{equation}
+        \text{Tỉ lệ khớp} = \frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
+    \end{equation}
+    Khi số lượng tập vượt $5 \times 10^6$, bộ so sánh tự động chuyển sang chế độ dấu vân tay (fingerprint): chuẩn hóa từng dòng theo mã item tăng dần, băm SHA-256 lấy $64$~bit đầu rồi cộng dồn modulo $2^{64}$, độc lập hoàn toàn với thứ tự xuất dòng.
+\end{enumerate}
+
+Toàn bộ bộ kiểm thử được chạy tự động qua tích hợp liên tục (GitHub Actions CI) trên Julia~1.11.4 ở cả chế độ mặc định lẫn chế độ \texttt{--check-bounds=yes} nhằm phát hiện sớm mọi lỗi vượt chỉ số mảng ẩn sau \texttt{@inbounds}. Kết quả tổng hợp ở giai đoạn hiện tại được trình bày trong Bảng~\ref{tab:b02_tests}.
+
+% Nguồn số liệu: chạy thực tế `julia --project=. test/runtests.jl` (commit 432886f)
+\begin{table}[!t]
+\centering
+\caption{Tổng hợp kết quả kiểm thử tự động (\texttt{test/runtests.jl}) trên các phiên bản \texttt{v0}, \texttt{v1} và CI.}
+\label{tab:b02_tests}
+\begin{tabular}{llrr}
+\toprule
+Nhóm kiểm thử & Tệp nguồn & Số khẳng định & Kết quả \\
+\midrule
+Đọc/ghi SPMF, \texttt{minsup\_count} & \texttt{test\_io.jl} & 49 & Đạt 100\% \\
+Oracle 200 CSDL, toy, ca biên & \texttt{test\_correctness.jl} & 62 & Đạt 100\% \\
+Luật kết hợp và \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & Đạt 100\% \\
+Benchmark (tự bỏ qua nếu chưa tải) & \texttt{test\_benchmark.jl} & 1 & Đạt 100\% \\
+\midrule
+\textbf{Tổng cộng (thường \& check-bounds)} & \texttt{runtests.jl} & \textbf{337} & \textbf{Đạt 100\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
