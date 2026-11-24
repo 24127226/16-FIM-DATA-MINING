@@ -242,10 +242,74 @@ function plot_f07_tx_length(; csv_path = joinpath(RESULTS_DIR, "e6_tx_length.csv
     return true
 end
 
+# ---------------------------------------------------------------------------
+# F02: Sơ đồ kiến trúc phần mềm và luồng dữ liệu (mục III.C)
+# ---------------------------------------------------------------------------
+
+function _draw_box!(plt, x, y, w, h, title_str, sub_str; fill = :aliceblue, border = :navy)
+    xs = [x - w/2, x + w/2, x + w/2, x - w/2, x - w/2]
+    ys = [y - h/2, y - h/2, y + h/2, y + h/2, y - h/2]
+    plot!(plt, xs, ys; seriestype = :shape, fillcolor = fill, linecolor = border,
+          linewidth = 1.6, label = "")
+    annotate!(plt, x, y + h * 0.16, text(title_str, 9, "sans-serif", :black, :center))
+    annotate!(plt, x, y - h * 0.20, text(sub_str, 7, "sans-serif", :gray25, :center))
+end
+
+function _draw_arrow!(plt, x1, y1, x2, y2)
+    plot!(plt, [x1, x2], [y1, y2]; arrow = true, color = :gray20, linewidth = 1.5, label = "")
+end
+
+function plot_f02_architecture()
+    plt = plot(; xlims = (0, 10), ylims = (0, 6.2), framestyle = :none,
+               legend = false, size = (760, 420), margin = 2Plots.mm)
+
+    # Hàng 1: Luồng xử lý chính (trái -> phải)
+    _draw_box!(plt, 1.4, 4.7, 2.2, 1.3, "Dữ liệu SPMF", "benchmark / toy / apps";
+               fill = :whitesmoke, border = :gray40)
+    _draw_box!(plt, 4.9, 4.7, 2.7, 1.3, "src/utils.jl (B)", "read_spmf, minsup_count";
+               fill = :lightcyan, border = :teal)
+    _draw_box!(plt, 8.4, 4.7, 2.4, 1.3, "Hợp đồng giao diện", "TransactionDB, EclatConfig";
+               fill = :cornsilk, border = :darkorange)
+
+    # Hàng 2: Lõi thuật toán & các tầng tiêu thụ
+    _draw_box!(plt, 8.4, 2.5, 2.4, 1.3, "src/algorithm/ (A)", "eclat!, tidsets (v0..v6)";
+               fill = :lavender, border = :navy)
+    _draw_box!(plt, 4.9, 2.5, 2.7, 1.3, "Hàm gọi lại sink", "write_itemset / Dict / Stats";
+               fill = :lightcyan, border = :teal)
+    _draw_box!(plt, 1.4, 2.5, 2.2, 1.3, "CLI & Luật (B)", "demo.jl, src/rules.jl";
+               fill = :honeydew, border = :forestgreen)
+
+    # Hàng 3: Kiểm chứng, Thực nghiệm & Ứng dụng
+    _draw_box!(plt, 2.0, 0.75, 3.1, 1.0, "Kiểm chứng & CI (B)", "test/ (oracle 200 CSDL, SPMF)";
+               fill = :mistyrose, border = :crimson)
+    _draw_box!(plt, 5.5, 0.75, 2.9, 1.0, "Thực nghiệm (B + A)", "scripts/bench.jl -> CSV -> plots.jl";
+               fill = :aliceblue, border = :steelblue)
+    _draw_box!(plt, 8.6, 0.75, 2.3, 1.0, "Ứng dụng (B & A)", "Groceries & BoVW";
+               fill = :honeydew, border = :forestgreen)
+
+    # Mũi tên luồng dữ liệu
+    _draw_arrow!(plt, 2.5, 4.7, 3.55, 4.7)
+    _draw_arrow!(plt, 6.25, 4.7, 7.2, 4.7)
+    _draw_arrow!(plt, 8.4, 4.05, 8.4, 3.15)
+    _draw_arrow!(plt, 7.2, 2.5, 6.25, 2.5)
+    _draw_arrow!(plt, 3.55, 2.5, 2.5, 2.5)
+
+    # Mũi tên xuống hàng 3
+    _draw_arrow!(plt, 4.2, 1.85, 2.6, 1.25)
+    _draw_arrow!(plt, 5.1, 1.85, 5.4, 1.25)
+    _draw_arrow!(plt, 8.4, 1.85, 8.5, 1.25)
+
+    annotate!(plt, 5.0, 5.85, text("Kiến trúc mô-đun và luồng dữ liệu của EclatFIM", 11, "sans-serif", :black, :center))
+
+    save_figure(plt, "F02_architecture")
+    return true
+end
+
 function main(args::Vector{String})
-    targets = isempty(args) ? ["f11", "f03", "f04", "f06", "f07"] : lowercase.(args)
+    targets = isempty(args) ? ["f02", "f11", "f03", "f04", "f06", "f07"] : lowercase.(args)
     println("Vẽ hình vào $FIGURES_DIR...")
     drawn = 0
+    "f02" in targets && (drawn += plot_f02_architecture() ? 1 : 0)
     "f11" in targets && (drawn += plot_f11_groceries() ? 1 : 0)
     "f03" in targets && (drawn += plot_f03_time_vs_minsup() ? 1 : 0)
     "f04" in targets && (drawn += plot_f04_itemsets_vs_minsup() ? 1 : 0)
