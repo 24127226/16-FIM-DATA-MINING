@@ -38,4 +38,7 @@ end
     @testset "Benchmark (test_benchmark.jl)" begin
         include("test_benchmark.jl")
     end
+    @testset "Hiệu năng: không cấp phát, ổn định kiểu (test_performance.jl)" begin
+        include("test_performance.jl")
+    end
 end
