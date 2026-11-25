@@ -9,11 +9,13 @@
 # Tidset luôn tăng dần vì được dựng bằng cách duyệt giao dịch theo tid tăng dần.
 # Dùng Int32 thay vì Int64 vì tốn một nửa bộ nhớ mà vẫn đủ cho tới khoảng 2 tỉ giao dịch.
 #
-# Hai nhóm hàm:
+# Ba nhóm hàm:
 #   - intersect_merge(a, b): bản cơ bản (v0), cấp phát mảng kết quả mới;
 #   - isect_*!(dst, dpos, a, ao, la, b, bo, lb, ...): ghi kết quả vào vùng nhớ có sẵn
 #     dst[dpos : dpos+c-1], không cấp phát (dùng cho v2 trở đi). Tidset nguồn là đoạn
-#     a[ao : ao+la-1] và b[bo : bo+lb-1] của các buffer dùng lại.
+#     a[ao : ao+la-1] và b[bo : bo+lb-1] của các buffer dùng lại;
+#   - and_count!, and_extract!: tidset dạng mảng bit (BitVector, v4 trở đi), bit thứ tid = 1
+#     nếu giao dịch tid chứa tập. Mỗi phép toán xử lý 64 giao dịch một lúc.
 #
 # Quy ước tên tham số dùng chung trong file:
 #   dst, dpos : mảng đích và vị trí bắt đầu ghi kết quả;
@@ -168,6 +170,62 @@ Kết quả (khi `c ≥ minsup`) giống hệt `isect_merge!`.
             i += 1
         else
             j += 1
+        end
+    end
+    return c
+end
+
+# ---------------------------------------------------------------------------
+# Tidset dạng mảng bit (BitVector)
+# ---------------------------------------------------------------------------
+# BitVector lưu bit trong trường `chunks::Vector{UInt64}` (64 giao dịch mỗi word) và luôn giữ các
+# bit thừa của word cuối bằng 0. Phép AND giữ nguyên tính chất đó, nên có thể làm việc thẳng trên
+# từng word: nhanh hơn nhiều so với duyệt từng bit.
+#
+# Ví dụ: tid 1..64 nằm trong word 1, tid 65..128 nằm trong word 2, ...; tid t ứng với bit thứ
+# (t - 1) mod 64 của word thứ ⌊(t - 1) / 64⌋ + 1.
+# Vì sao nhanh trên dữ liệu dày: một phép AND trên 2 word xử lý 64 giao dịch cùng lúc, và
+# count_ones đếm số bit 1 bằng một lệnh máy (popcnt). Bù lại, chi phí luôn là N/64 word,
+# kể cả khi tidset rất ngắn; vì vậy dữ liệu thưa thì dạng vector vẫn lợi hơn (lý do có bản lai v6).
+
+"""
+    and_count!(dst, a, b) -> c
+
+`dst = a .& b` theo từng word 64-bit, trả về số bit 1 (= support của tập mới).
+Không cấp phát; vòng lặp được vector hóa (`@simd`). O(N / 64), không phụ thuộc support.
+"""
+@inline function and_count!(dst::BitVector, a::BitVector, b::BitVector)
+    dc = dst.chunks         # mảng word 64 bit bên trong mỗi BitVector
+    ac = a.chunks
+    bc = b.chunks
+    c = 0                   # tổng số bit 1 = số giao dịch chứa tập mới
+    # @simd: cho phép CPU xử lý nhiều word trong một lệnh (vector hóa), vì các vòng lặp độc lập nhau.
+    @inbounds @simd for w in eachindex(dc)
+        v = ac[w] & bc[w]   # AND bit: bit = 1 khi giao dịch có mặt ở CẢ HAI tidset
+        dc[w] = v           # lưu tidset mới vào dst
+        c += count_ones(v)  # đếm số bit 1 trong word này
+    end
+    return c
+end
+
+"""
+    and_extract!(dst, dpos, a, b) -> c
+
+Tính `a .& b` và ghi **danh sách tid** (vị trí các bit 1, tăng dần) vào `dst[dpos:dpos+c-1]`.
+Dùng khi bản lai (v6) chuyển một lớp từ dạng bitset sang dạng vector. O(N / 64 + c).
+"""
+@inline function and_extract!(dst::Vector{Int32}, dpos::Int, a::BitVector, b::BitVector)
+    ac = a.chunks
+    bc = b.chunks
+    c = 0                                  # số tid đã ghi vào dst
+    @inbounds for w in eachindex(ac)       # duyệt từng word, theo thứ tự tid tăng dần
+        v = ac[w] & bc[w]                  # 64 giao dịch của word w: bit 1 = có trong phần giao
+        base = (w - 1) << 6                # (w - 1) * 64: số giao dịch nằm trong các word đứng trước
+        while v != 0                       # còn bit 1 nào trong word thì lấy ra từng bit
+            # trailing_zeros(v) = vị trí bit 1 thấp nhất (0..63) → tid = base + vị trí + 1.
+            dst[dpos+c] = Int32(base + trailing_zeros(v) + 1)
+            c += 1
+            v &= v - 1                     # xóa bit 1 thấp nhất
         end
     end
     return c
