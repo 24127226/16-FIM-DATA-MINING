@@ -58,7 +58,7 @@ julia --project=. demo.jl [options] --minsup <threshold> <input_file>
 **Options:**
 - `--minsup 0.01 | 1%`: required support threshold in `(0, 1]` or `(0%, 100%]`.
 - `-o, --output FILE`: SPMF-formatted output path (default: `output.txt`; use `"-"` to stream patterns to `stdout`).
-- `--variant v0..v6`: Eclat variant to execute (default: `v0`).
+- `--variant v0..v6`: Eclat variant to execute (default: `v6`).
 - `--stats`: report internal counters (`EclatStats`; disabled during timing runs).
 - `-h, --help`: display usage information.
 

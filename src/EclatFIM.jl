@@ -22,6 +22,7 @@ export Rule, rules, top_k
 include("structures.jl")
 include("utils.jl")
 include("algorithm/tidsets.jl")
+include("algorithm/level2.jl")
 include("algorithm/eclat.jl")
 include("rules.jl")
 
