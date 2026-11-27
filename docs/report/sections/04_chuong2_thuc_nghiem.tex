@@ -1,5 +1,180 @@
 % Section 4: Chapter 2 - Experiments and Evaluation
+% Primary author: Member B (Nguyen Tien Cuong); complexity/memory interpretation integrated with Member A.
 \section{Chapter 2: Experiments and Evaluation}
 \label{sec:04_chapter2_experiments}
 
-% To be completed after finalizing variants v2..v6 and executing official benchmark runs (E1-E9).
+% ---------------------------------------------------------------------------
+\subsection{Experimental Setup and Measurement Protocol}
+\label{subsec:exp_setup}
+
+All official benchmarks were executed on a fixed reference machine (\texttt{results/ENV.md}): 11th Gen Intel Core i5-11400H (2.70~GHz, 12 hardware threads, 15.8~GiB RAM, Windows~x64), running Julia~1.11.4 (single-threaded) and OpenJDK~25.0.5.1 LTS for the SPMF reference binary (\texttt{spmf.jar}, Eclat~v2.65, SHA-256 prefix \texttt{bb371b99}).
+
+Four canonical benchmark datasets from the FIMI and SPMF repositories (mirrored publicly on Hugging Face with SHA-256 verification) cover both dense and sparse regimes (Table~\ref{tab:b06_datasets}). Every dataset's measured statistics ($N$, $m$, $\bar{L}$) match the project specification table exactly, including the FIMI 8,124-transaction version of \texttt{mushroom}.
+
+% Data source: data/benchmark/README.md
+\begin{table}[H]
+\centering
+\caption{Benchmark datasets used in Chapter~2 evaluation (re-measured statistics verified against specification).}
+\label{tab:b06_datasets}
+\begin{tabular}{lrrrll}
+\toprule
+Dataset & $N$ & $m$ & $\bar{L}$ & Regime & Experiments \\
+\midrule
+\texttt{chess} & 3,196 & 75 & 37.00 & Dense, long patterns & E1--E4, E9 \\
+\texttt{mushroom} & 8,124 & 119 & 23.00 & Dense, moderate $m$ & E1--E4, E9 \\
+\texttt{retail} & 88,162 & 16,470 & 10.31 & Sparse, real-world & E1--E5, E9 \\
+\texttt{T10I4D100K} & 100,000 & 870 & 10.10 & Sparse, synthetic & E1--E4, E9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Measurement Protocol:} Each dataset is evaluated across a locked 7-point descending \texttt{minsup} grid (\texttt{results/minsup\_grid.csv}). Every timing measurement runs inside a fresh operating-system process with 3 repetitions (reporting the median). Inside each Julia worker process, a warm-up run on \texttt{pasquier99.txt} precedes timing via \texttt{time\_ns()}, separating algorithm time (\texttt{t\_algo\_s}) from full process wall time (\texttt{t\_wall\_s}, which includes JIT or JVM startup). Internal instrumentation (\texttt{EclatStats}) is strictly disabled during timing runs and measured in a separate pass. Both \texttt{EclatFIM} and SPMF stream outputs to disk on the same drive.
+
+% ---------------------------------------------------------------------------
+\subsection{E1: Correctness Verification Against SPMF}
+\label{subsec:exp_e1}
+
+\textbf{Hypothesis (H1):} Both the baseline (\texttt{v0}) and fully optimized hybrid (\texttt{v6}) variants must match SPMF \texttt{Eclat} with $100\%$ exact agreement across every dataset and support level.
+
+\textbf{Results:} Across all $4 \times 7 \times 2 = 56$ evaluation runs (\texttt{results/e1\_correctness.csv}), both \texttt{v0} and \texttt{v6} achieve a \textbf{$100.00\%$ exact match rate} with zero missing itemsets, zero extraneous itemsets, and zero support discrepancies (Table~\ref{tab:b05_correctness}).
+
+% Data source: results/e1_correctness.csv
+\begin{table}[H]
+\centering
+\caption{Correctness verification summary (E1) comparing \texttt{EclatFIM} (\texttt{v0}, \texttt{v6}) against SPMF \texttt{Eclat} across all 7 \texttt{minsup} levels per benchmark.}
+\label{tab:b05_correctness}
+\begin{tabular}{llrrrr}
+\toprule
+Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & Mismatches & Match Rate \\
+\midrule
+\texttt{chess} & 95\% $\to$ 65\% & 77 $\to$ 111,239 & 14 & 0 & \textbf{100.00\%} \\
+\texttt{mushroom} & 70\% $\to$ 18\% & 31 $\to$ 57,413 & 14 & 0 & \textbf{100.00\%} \\
+\texttt{retail} & 10\% $\to$ 0.1\% & 9 $\to$ 7,589 & 14 & 0 & \textbf{100.00\%} \\
+\texttt{T10I4D100K} & 5\% $\to$ 0.2\% & 10 $\to$ 13,255 & 14 & 0 & \textbf{100.00\%} \\
+\midrule
+\textbf{Total} & \textbf{28 grid points} & — & \textbf{56} & \textbf{0} & \textbf{100.00\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion:} Hypothesis~H1 is fully confirmed. Exact floating-point threshold conversion (\texttt{minsup\_count}) and metadata-aware SPMF parsing completely eliminate boundary divergences.
+
+% ---------------------------------------------------------------------------
+\subsection{E2 \& E3: Runtime and Output Size Scaling with \texttt{minsup}}
+\label{subsec:exp_e2_e3}
+
+\textbf{Hypotheses (H2, H3, H8, H9):} Lowering \texttt{minsup} causes exponential growth in output size (especially on dense datasets); \texttt{v6} should substantially outperform \texttt{v0} and SPMF \texttt{Eclat} (which uses boxed \texttt{HashSet<Integer>}) and remain competitive with SPMF \texttt{Eclat\_bitset}.
+
+\textbf{Results:} Figure~\ref{fig:f03_time} compares median algorithm runtime across all four benchmarks (\texttt{results/e2\_time.csv}), while Figure~\ref{fig:f04_itemsets} contrasts frequent itemset counts between dense and sparse regimes. At the lowest \texttt{minsup} of each grid:
+\begin{itemize}
+    \item \textbf{\texttt{chess} (65\%, 111,239 itemsets):} \texttt{v6} runs in \textbf{0.1046~s} vs.\ \texttt{v0} (0.8484~s, $8.1\times$ slower), SPMF \texttt{Eclat} (4.997~s, $47.8\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.112~s).
+    \item \textbf{\texttt{mushroom} (18\%, 57,413 itemsets):} \texttt{v6} runs in \textbf{0.0794~s} vs.\ \texttt{v0} (0.4709~s, $5.9\times$ slower), SPMF \texttt{Eclat} (1.209~s, $15.2\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.093~s).
+    \item \textbf{\texttt{retail} (0.1\%, 7,589 itemsets):} \texttt{v6} runs in \textbf{0.1823~s} vs.\ \texttt{v0} (5.543~s, $30.4\times$ slower), SPMF \texttt{Eclat} (0.804~s, $4.4\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.654~s, $3.6\times$ slower).
+    \item \textbf{\texttt{T10I4D100K} (0.2\%, 13,255 itemsets):} \texttt{v6} runs in \textbf{0.1955~s} vs.\ \texttt{v0} (2.6044~s, $13.3\times$ slower), SPMF \texttt{Eclat} (0.752~s, $3.8\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.247~s).
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{F03_time_vs_minsup.pdf}
+\caption{Median algorithm runtime versus descending \texttt{minsup} across four benchmark datasets (3 repetitions, log y-axis). \texttt{EclatFIM (v6)} outperforms both \texttt{v0} and SPMF variants at low \texttt{minsup} on all four datasets.}
+\label{fig:f03_time}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{F04_itemsets_vs_minsup.pdf}
+\caption{Frequent itemset count versus descending \texttt{minsup} for dense (\texttt{chess}, \texttt{mushroom}) versus sparse (\texttt{retail}, \texttt{T10I4D100K}) datasets.}
+\label{fig:f04_itemsets}
+\end{figure}
+
+\textbf{Explanation:} On dense datasets, 64-bit SIMD \texttt{BitVector} intersections in \texttt{v6} achieve $O(N/64)$ cost per pair, crushing \texttt{HashSet}-based SPMF \texttt{Eclat} by $15\times$--$48\times$. On sparse \texttt{retail} ($m = 16{,}470$), the upper-triangular level-2 array eliminates almost all infrequent item pairs before any tidset intersection occurs, while hybrid switching avoids the $O(N/64)$ penalty of sparse bitsets—yielding a $30.4\times$ speedup over \texttt{v0} and $3.6\times$ over SPMF \texttt{Eclat\_bitset}. Notice also that for short runs ($< 0.2$~s), full process wall time (\texttt{t\_wall\_s} $\approx 3.2$~s for Julia vs.\ $\approx 0.4$~s for JVM) is dominated by Julia's first-invocation JIT startup (confirming H9).
+
+% ---------------------------------------------------------------------------
+\subsection{E4: Peak Memory Footprint at Median \texttt{minsup}}
+\label{subsec:exp_e4}
+
+\textbf{Hypothesis (H2, H7):} On dense datasets ($\rho > 1/32$), \texttt{BitVector} tidsets ($N/8$ bytes) occupy far less memory than \texttt{Vector\{Int32\}} ($4\sigma$ bytes); on sparse datasets ($\rho < 1/32$), \texttt{v6}'s hybrid rule retains compact vector tidsets and avoids bitset memory blowup.
+
+\textbf{Results:} Figure~\ref{fig:f05_memory} reports peak live tidset bytes (\texttt{EclatStats}) and added process RSS above the 158.9~MiB Julia baseline at the median \texttt{minsup} level (\texttt{results/e4\_memory.csv}). On \texttt{chess} (80\%), peak live tidset memory drops by \textbf{$33.4\times$} (from 901.4~KiB in \texttt{v0} to 27.0~KiB in \texttt{v6}); on \texttt{mushroom} (35\%), it drops by \textbf{$23.1\times$} (from 1,168.9~KiB to 50.6~KiB). Conversely, on sparse \texttt{retail} (1%), SPMF \texttt{Eclat\_bitset} allocates 840.8~MiB of JVM heap for sparse bitsets, whereas \texttt{EclatFIM (v6)} stays in compact vector representation (826.0~KiB live tidsets, 120.8~MiB delta RSS).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{F05_peak_memory.pdf}
+\caption{Peak live tidset memory (left, log scale) and added process RSS (right) at median \texttt{minsup} (\texttt{chess} 80\%, \texttt{mushroom} 35\%, \texttt{retail} 1\%, \texttt{T10I4D100K} 1\%).}
+\label{fig:f05_memory}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{E5: Scalability on Nested Retail Subsets}
+\label{subsec:exp_e5}
+
+\textbf{Hypothesis (H4):} With relative \texttt{minsup} fixed ($0.2\%$), runtime should scale linearly with database size $N$ because tidset lengths grow proportionally to $N$ while the frequent pattern lattice remains nearly invariant.
+
+\textbf{Results:} Figure~\ref{fig:f06_scalability} plots median runtime across nested subsets $10\% \subset 25\% \subset 50\% \subset 75\% \subset 100\%$ of \texttt{retail} (\texttt{results/e5\_scalability.csv}). Linear regression confirms strong linearity for \texttt{v0} ($R^2 = 0.9968$, 0.317~s $\to$ 1.771~s), SPMF \texttt{Eclat} ($R^2 = 0.9575$, 0.257~s $\to$ 0.685~s), and SPMF \texttt{Eclat\_bitset} ($R^2 = 0.9788$, 0.265~s $\to$ 0.633~s). For \texttt{v6}, runtime stays nearly flat between 0.119~s and 0.134~s ($R^2 = 0.5291$) because the optimized mining kernel executes in milliseconds and is dominated by fixed per-invocation overhead.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{F06_scalability.pdf}
+\caption{Scalability on nested \texttt{retail} subsets ($10\%$ to $100\%$, \texttt{minsup} $= 0.2\%$) with linear regression fits and $R^2$.}
+\label{fig:f06_scalability}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{E6: Impact of Average Transaction Length ($\bar{L}$)}
+\label{subsec:exp_e6}
+
+\textbf{Hypothesis (H5):} Increasing average transaction length $\bar{L}$ at fixed $N = 50{,}000$, $m = 1{,}000$, and \texttt{minsup} $= 1\%$ increases co-occurrence density and pattern depth, causing superlinear/exponential growth in output size and runtime (Zaki~\cite{zaki2000scalable}, Appendix~A).
+
+\textbf{Results:} As target $\bar{L}$ increases from $5$ to $30$ (\texttt{results/e6\_tx\_length.csv}, Figure~\ref{fig:f07_txlen}), frequent itemsets expand $18.6\times$ (from 828 to 15,432) and maximum pattern length increases from 8 to 11. Runtime escalates $16.8\times$ for \texttt{v0} (0.241~s $\to$ 4.058~s) and $9.0\times$ for SPMF \texttt{Eclat} (0.148~s $\to$ 1.335~s). In contrast, \texttt{v6} remains highly resilient (0.1065~s $\to$ 0.1405~s, achieving a \textbf{$28.9\times$ speedup over \texttt{v0}} and \textbf{$9.5\times$ over SPMF \texttt{Eclat}} at $\bar{L} = 30$) due to level-2 triangular pruning, adaptive galloping, and zero-allocation buffer reuse.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{F07_tx_length.pdf}
+\caption{Effect of average transaction length $\bar{L} \in \{5, 10, 15, 20, 25, 30\}$ on synthetic datasets ($N = 50{,}000$, $m = 1{,}000$, \texttt{minsup} $= 1\%$, seed $= 42$).}
+\label{fig:f07_txlen}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{E9: Comparison Against Apriori and FP-Growth}
+\label{subsec:exp_e9}
+
+\textbf{Hypothesis (H6):} Eclat should substantially outperform Apriori (especially when candidate counts explode) and remain competitive with FP-Growth.
+
+\textbf{Results:} Figure~\ref{fig:f09_apriori_fp} compares \texttt{EclatFIM (v6)} against SPMF \texttt{Apriori} and \texttt{FPGrowth\_itemsets} (\texttt{results/e9\_vs\_apriori\_fp.csv}). At the lowest \texttt{minsup} per dataset, \texttt{v6} outperforms SPMF \texttt{Apriori} by \textbf{$307\times$ on \texttt{retail}} (0.156~s vs.\ 47.934~s) and \textbf{$40.7\times$ on \texttt{T10I4D100K}} (0.184~s vs.\ 7.467~s), and also outperforms SPMF \texttt{FP-Growth} across all four benchmarks ($2.3\times$--$5.4\times$ faster).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{F09_vs_apriori_fp.pdf}
+\caption{Comparison of \texttt{EclatFIM (v6)} against SPMF \texttt{Apriori} and \texttt{FPGrowth\_itemsets} across all four benchmarks (log y-axis).}
+\label{fig:f09_apriori_fp}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{Strengths, Weaknesses vs.\ SPMF, and Future Optimization Proposals}
+\label{subsec:strengths_proposals}
+
+Table~\ref{tab:b07_strengths} synthesizes the empirical trade-offs between \texttt{EclatFIM (v6)} and SPMF based on experiments E1--E9.
+
+\begin{table}[H]
+\centering
+\caption{Comparative assessment of \texttt{EclatFIM (v6)} versus SPMF (Table~B07).}
+\label{tab:b07_strengths}
+\begin{tabular}{p{2.6cm}p{3.6cm}p{3.6cm}p{4.6cm}}
+\toprule
+Dimension & \texttt{EclatFIM (v6)} & SPMF & Evidence \& Explanation \\
+\midrule
+Dense speed & Fastest (0.079--0.105~s) & \texttt{Eclat\_bitset} close; \texttt{Eclat} $15\times$--$48\times$ slower & E2: SIMD 64-bit \texttt{BitVector} + zero-alloc workspace avoids Java boxed \texttt{HashSet}. \\
+Sparse speed & Fastest (0.182--0.196~s) & $3.6\times$--$4.4\times$ slower on \texttt{retail} & E2, E6: triangular level-2 pruning + adaptive galloping + hybrid switch. \\
+Memory usage & Low across both regimes & \texttt{Eclat\_bitset} spikes to 841~MiB on \texttt{retail} & E4: hybrid representation prevents bitset blowup when $\rho < 1/32$. \\
+Cold startup & Higher wall time ($\approx 3.1$~s) & Fast JVM startup ($\approx 0.35$~s) & E2: Julia JIT compilation dominates very short single-shot runs. \\
+I/O throughput & 0.325~s read (\texttt{accidents}), 0.045~s write (255k) & Comparable buffered Java I/O & Byte-level \texttt{parse\_spmf} + 1~MiB buffered \texttt{SPMFWriter}. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Concrete Future Optimization Proposals:}
+\begin{enumerate}
+    \item \textbf{Diffset Representation (dEclat~\cite{zaki2003fast}):} On ultra-dense datasets (e.g., \texttt{chess} at $\texttt{minsup} < 50\%$ or \texttt{accidents}), storing transaction differences $d(PX) = t(P) \setminus t(PX)$ shrinks set cardinalities dramatically as recursion deepens, reducing both intersection cost and memory footprint beyond \texttt{BitVector}.
+    \item \textbf{Parallel Top-Level Equivalence Classes (\texttt{Threads.@spawn}):} Because prefix-based equivalence classes at depth~1 are completely independent (Zaki~\cite{zaki2000scalable}, §4.2), assigning each root class to a thread-local \texttt{Workspace} can deliver near-linear multi-core speedups on our 12-thread CPU with zero lock contention.
+    \item \textbf{Eliminating Cold JIT Latency via \texttt{PrecompileTools.jl} / Sysimage:} E2 showed that Julia's $\approx 3$~s cold startup exceeds algorithm runtime on short workloads. Precompiling concrete workloads into a custom sysimage would bring wall time down to parity with JVM startup.
+\end{enumerate}

@@ -18,9 +18,10 @@ const FIGURES_DIR = joinpath(RESULTS_DIR, "figures")
 
 # Bảng màu và kiểu đường cố định theo KE_HOACH_DU_AN.md mục 11.3
 const STYLE_MAP = Dict{Tuple{String,String},NamedTuple{(:label,:color,:ls,:marker),Tuple{String,Symbol,Symbol,Symbol}}}(
-    ("julia", "best")              => (label = "Nhóm (tốt nhất)",   color = :navy,       ls = :solid,   marker = :circle),
-    ("julia", "v0")                => (label = "Nhóm (v0)",         color = :deepskyblue,ls = :dash,    marker = :square),
-    ("julia", "v1")                => (label = "Nhóm (v1)",         color = :steelblue,  ls = :solid,   marker = :circle),
+    ("julia", "best")              => (label = "EclatFIM (v6)",     color = :navy,       ls = :solid,   marker = :circle),
+    ("julia", "v6")                => (label = "EclatFIM (v6)",     color = :navy,       ls = :solid,   marker = :circle),
+    ("julia", "v0")                => (label = "EclatFIM (v0)",     color = :deepskyblue,ls = :dash,    marker = :square),
+    ("julia", "v1")                => (label = "EclatFIM (v1)",     color = :steelblue,  ls = :solid,   marker = :circle),
     ("spmf",  "Eclat")             => (label = "SPMF Eclat",        color = :darkorange, ls = :solid,   marker = :diamond),
     ("spmf",  "Eclat_bitset")      => (label = "SPMF Eclat_bitset", color = :crimson,    ls = :solid,   marker = :utriangle),
     ("spmf",  "Apriori")           => (label = "SPMF Apriori",      color = :gray45,     ls = :dashdot, marker = :xcross),
@@ -110,7 +111,7 @@ end
 # F03: E2 — Thời gian theo minsup (trục y log, minsup giảm dần từ trái sang phải)
 # ---------------------------------------------------------------------------
 
-function plot_f03_time_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv"), best_variant = "v1")
+function plot_f03_time_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv"), best_variant = "v6")
     if !isfile(csv_path)
         @info "Bỏ qua F03: chưa có $csv_path"
         return false
@@ -123,7 +124,7 @@ function plot_f03_time_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv
     subplots = Plots.Plot[]
     for ds in datasets
         sub = filter(r -> r.dataset == ds, agg)
-        p = plot(title = string(ds), xlabel = "minsup (%)", ylabel = "Thời gian (s)",
+        p = plot(title = string(ds), xlabel = "minsup (%)", ylabel = "Algorithm Time (s)",
                  yscale = :log10, xflip = true, legend = :topleft)
         for g in groupby(sub, [:impl, :variant])
             impl = string(first(g.impl))
@@ -131,7 +132,7 @@ function plot_f03_time_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv
             key  = (impl == "julia" && var == best_variant && var != "v0") ? ("julia", "best") : (impl, var)
             st   = get(STYLE_MAP, key, (label = "$impl-$var", color = :black, ls = :solid, marker = :circle))
             ord  = sortperm(g.minsup_pct; rev = true)
-            ys   = max.(g.med[ord], 1e-6)
+            ys   = max.(g.med[ord], 1e-5)
             plot!(p, g.minsup_pct[ord], ys; label = st.label, color = st.color,
                   linestyle = st.ls, marker = st.marker)
         end
@@ -140,13 +141,13 @@ function plot_f03_time_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv
 
     nrows = cld(length(subplots), 2)
     plt = plot(subplots...; layout = (nrows, min(2, length(subplots))),
-               size = (900, 340 * nrows), margin = 4Plots.mm)
+               size = (920, 340 * nrows), margin = 4Plots.mm)
     save_figure(plt, "F03_time_vs_minsup")
     return true
 end
 
 # ---------------------------------------------------------------------------
-# F04: E3 — Số tập phổ biến theo minsup (2 khung: dày & thưa, trục y log)
+# F04: E3 — Frequent Itemsets vs minsup (dense vs sparse, log y-axis)
 # ---------------------------------------------------------------------------
 
 function plot_f04_itemsets_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time.csv"))
@@ -159,9 +160,9 @@ function plot_f04_itemsets_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time
     agg = combine(groupby(df, [:dataset, :minsup_pct]), :n_itemsets => first => :n_itemsets)
 
     dense_names  = Set(["chess", "mushroom", "accidents"])
-    p_dense  = plot(title = "Dữ liệu dày", xlabel = "minsup (%)", ylabel = "Số tập phổ biến",
+    p_dense  = plot(title = "Dense Datasets", xlabel = "minsup (%)", ylabel = "Frequent Itemsets",
                     yscale = :log10, xflip = true, legend = :topleft)
-    p_sparse = plot(title = "Dữ liệu thưa", xlabel = "minsup (%)", ylabel = "Số tập phổ biến",
+    p_sparse = plot(title = "Sparse Datasets", xlabel = "minsup (%)", ylabel = "Frequent Itemsets",
                     yscale = :log10, xflip = true, legend = :topleft)
 
     for g in groupby(agg, :dataset)
@@ -172,13 +173,49 @@ function plot_f04_itemsets_vs_minsup(; csv_path = joinpath(RESULTS_DIR, "e2_time
         plot!(target, g.minsup_pct[ord], ys; label = ds, marker = :circle)
     end
 
-    plt = plot(p_dense, p_sparse; layout = (1, 2), size = (900, 360), margin = 4Plots.mm)
+    plt = plot(p_dense, p_sparse; layout = (1, 2), size = (920, 360), margin = 4Plots.mm)
     save_figure(plt, "F04_itemsets_vs_minsup")
     return true
 end
 
 # ---------------------------------------------------------------------------
-# F06: E5 — Scalability (hồi quy tuyến tính & R²)
+# F05: E4 — Peak Memory at Median minsup (v0 vs v6: tidset peak KiB & process delta RSS)
+# ---------------------------------------------------------------------------
+
+function plot_f05_memory(; csv_path = joinpath(RESULTS_DIR, "e4_memory.csv"))
+    if !isfile(csv_path)
+        @info "Bỏ qua F05: chưa có $csv_path"
+        return false
+    end
+    df = CSV.read(csv_path, DataFrame)
+    jdf = filter(r -> string(r.impl) == "julia", df)
+    datasets = unique(string.(jdf.dataset))
+    x = 1:length(datasets)
+    w = 0.34
+
+    tid_v0 = [Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v0", jdf).tidset_peak_bytes)) / 1024.0 for d in datasets]
+    tid_v6 = [Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v6", jdf).tidset_peak_bytes)) / 1024.0 for d in datasets]
+
+    rss_v0 = [max(0.1, Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v0", jdf).delta_rss_mb))) for d in datasets]
+    rss_v6 = [max(0.1, Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v6", jdf).delta_rss_mb))) for d in datasets]
+
+    p1 = bar(x .- w/2, tid_v0; bar_width = w, label = "EclatFIM (v0)", color = :deepskyblue,
+             xticks = (x, datasets), ylabel = "Peak Live Tidset (KiB)", title = "Peak Tidset Memory (EclatStats)",
+             yscale = :log10, legend = :topright)
+    bar!(p1, x .+ w/2, tid_v6; bar_width = w, label = "EclatFIM (v6)", color = :navy)
+
+    p2 = bar(x .- w/2, rss_v0; bar_width = w, label = "EclatFIM (v0)", color = :deepskyblue,
+             xticks = (x, datasets), ylabel = "Process Delta RSS (MiB)", title = "Added Process Memory (RSS - Baseline)",
+             legend = :topright)
+    bar!(p2, x .+ w/2, rss_v6; bar_width = w, label = "EclatFIM (v6)", color = :navy)
+
+    plt = plot(p1, p2; layout = (1, 2), size = (920, 360), margin = 4Plots.mm)
+    save_figure(plt, "F05_peak_memory")
+    return true
+end
+
+# ---------------------------------------------------------------------------
+# F06: E5 — Scalability (linear regression & R²)
 # ---------------------------------------------------------------------------
 
 function plot_f06_scalability(; csv_path = joinpath(RESULTS_DIR, "e5_scalability.csv"))
@@ -189,15 +226,17 @@ function plot_f06_scalability(; csv_path = joinpath(RESULTS_DIR, "e5_scalability
     df = CSV.read(csv_path, DataFrame)
     agg = aggregate_medians(df, [:n_tx, :impl, :variant], :t_algo_s)
 
-    plt = plot(xlabel = "Số giao dịch (N)", ylabel = "Thời gian (s)",
-               title = "Khả năng mở rộng (Scalability) trên Retail", legend = :topleft,
-               size = (640, 400), margin = 5Plots.mm)
+    plt = plot(xlabel = "Number of Transactions (N)", ylabel = "Algorithm Time (s)",
+               title = "Scalability on Retail Subsets (minsup = 0.2%)", legend = :topleft,
+               size = (680, 420), margin = 5Plots.mm)
 
     for g in groupby(agg, [:impl, :variant])
+        impl = string(first(g.impl))
+        var  = string(first(g.variant))
+        st   = get(STYLE_MAP, (impl, var), (label = "$impl-$var", color = :black, ls = :solid, marker = :circle))
         ord = sortperm(g.n_tx)
         xs = Float64.(g.n_tx[ord])
         ys = Float64.(g.med[ord])
-        # Hồi quy tuyến tính y = a*x + b và tính R²
         x̄, ȳ = mean(xs), mean(ys)
         a = sum((xs .- x̄) .* (ys .- ȳ)) / max(sum((xs .- x̄).^2), 1e-12)
         b = ȳ - a * x̄
@@ -206,9 +245,9 @@ function plot_f06_scalability(; csv_path = joinpath(RESULTS_DIR, "e5_scalability
         ss_tot = max(sum((ys .- ȳ).^2), 1e-12)
         r2 = 1.0 - ss_res / ss_tot
 
-        lbl = "$(first(g.impl))-$(first(g.variant)) (R² = $(round(r2; digits=4)))"
-        scatter!(plt, xs, ys; label = lbl)
-        plot!(plt, xs, ŷ; label = "", linestyle = :dash)
+        lbl = "$(st.label) (R² = $(round(r2; digits=4)))"
+        scatter!(plt, xs, ys; label = lbl, color = st.color, marker = st.marker)
+        plot!(plt, xs, ŷ; label = "", color = st.color, linestyle = :dash)
     end
 
     save_figure(plt, "F06_scalability")
@@ -216,7 +255,7 @@ function plot_f06_scalability(; csv_path = joinpath(RESULTS_DIR, "e5_scalability
 end
 
 # ---------------------------------------------------------------------------
-# F07: E6 — Ảnh hưởng của độ dài giao dịch trung bình L̄
+# F07: E6 — Effect of Average Transaction Length L̄
 # ---------------------------------------------------------------------------
 
 function plot_f07_tx_length(; csv_path = joinpath(RESULTS_DIR, "e6_tx_length.csv"))
@@ -227,17 +266,58 @@ function plot_f07_tx_length(; csv_path = joinpath(RESULTS_DIR, "e6_tx_length.csv
     df = CSV.read(csv_path, DataFrame)
     agg = aggregate_medians(df, [:avg_len, :impl, :variant], :t_algo_s)
 
-    plt = plot(xlabel = "Độ dài giao dịch trung bình (L̄)", ylabel = "Thời gian (s)",
-               title = "Ảnh hưởng của độ dài giao dịch (dữ liệu tổng hợp)",
-               yscale = :log10, legend = :topleft, size = (640, 400), margin = 5Plots.mm)
+    plt = plot(xlabel = "Target Average Transaction Length (L̄)", ylabel = "Algorithm Time (s)",
+               title = "Impact of Transaction Length (Synthetic, N = 50,000, minsup = 1%)",
+               yscale = :log10, legend = :topleft, size = (680, 420), margin = 5Plots.mm)
 
     for g in groupby(agg, [:impl, :variant])
+        impl = string(first(g.impl))
+        var  = string(first(g.variant))
+        st   = get(STYLE_MAP, (impl, var), (label = "$impl-$var", color = :black, ls = :solid, marker = :circle))
         ord = sortperm(g.avg_len)
-        plot!(plt, g.avg_len[ord], max.(g.med[ord], 1e-6);
-              label = "$(first(g.impl))-$(first(g.variant))", marker = :circle)
+        plot!(plt, g.avg_len[ord], max.(g.med[ord], 1e-5);
+              label = st.label, color = st.color, linestyle = st.ls, marker = st.marker)
     end
 
     save_figure(plt, "F07_tx_length")
+    return true
+end
+
+# ---------------------------------------------------------------------------
+# F09: E9 — EclatFIM (v6) vs SPMF Apriori and FP-Growth (H6)
+# ---------------------------------------------------------------------------
+
+function plot_f09_vs_apriori_fp(; csv_path = joinpath(RESULTS_DIR, "e9_vs_apriori_fp.csv"))
+    if !isfile(csv_path)
+        @info "Bỏ qua F09: chưa có $csv_path"
+        return false
+    end
+    df = CSV.read(csv_path, DataFrame)
+    df.minsup_pct = minsup_to_pct.(df.minsup)
+    agg = aggregate_medians(df, [:dataset, :minsup_pct, :impl, :variant], :t_algo_s)
+
+    datasets = unique(agg.dataset)
+    subplots = Plots.Plot[]
+    for ds in datasets
+        sub = filter(r -> r.dataset == ds, agg)
+        p = plot(title = string(ds), xlabel = "minsup (%)", ylabel = "Algorithm Time (s)",
+                 yscale = :log10, xflip = true, legend = :topleft)
+        for g in groupby(sub, [:impl, :variant])
+            impl = string(first(g.impl))
+            var  = string(first(g.variant))
+            st   = get(STYLE_MAP, (impl, var), (label = "$impl-$var", color = :black, ls = :solid, marker = :circle))
+            ord  = sortperm(g.minsup_pct; rev = true)
+            ys   = max.(g.med[ord], 1e-5)
+            plot!(p, g.minsup_pct[ord], ys; label = st.label, color = st.color,
+                  linestyle = st.ls, marker = st.marker)
+        end
+        push!(subplots, p)
+    end
+
+    nrows = cld(length(subplots), 2)
+    plt = plot(subplots...; layout = (nrows, min(2, length(subplots))),
+               size = (920, 340 * nrows), margin = 4Plots.mm)
+    save_figure(plt, "F09_vs_apriori_fp")
     return true
 end
 
@@ -305,15 +385,17 @@ function plot_f02_architecture()
 end
 
 function main(args::Vector{String})
-    targets = isempty(args) ? ["f02", "f11", "f03", "f04", "f06", "f07"] : lowercase.(args)
+    targets = isempty(args) ? ["f02", "f11", "f03", "f04", "f05", "f06", "f07", "f09"] : lowercase.(args)
     println("Vẽ hình vào $FIGURES_DIR...")
     drawn = 0
     "f02" in targets && (drawn += plot_f02_architecture() ? 1 : 0)
     "f11" in targets && (drawn += plot_f11_groceries() ? 1 : 0)
     "f03" in targets && (drawn += plot_f03_time_vs_minsup() ? 1 : 0)
     "f04" in targets && (drawn += plot_f04_itemsets_vs_minsup() ? 1 : 0)
+    "f05" in targets && (drawn += plot_f05_memory() ? 1 : 0)
     "f06" in targets && (drawn += plot_f06_scalability() ? 1 : 0)
     "f07" in targets && (drawn += plot_f07_tx_length() ? 1 : 0)
+    "f09" in targets && (drawn += plot_f09_vs_apriori_fp() ? 1 : 0)
     println("Hoàn tất: đã vẽ $drawn bộ hình.")
 end
 

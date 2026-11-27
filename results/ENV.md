@@ -1,16 +1,16 @@
 # Môi trường đo
 
-Sinh bởi `scripts/env_info.jl` lúc 2026-11-17 20:12.
+Sinh bởi `scripts/env_info.jl` lúc 2026-11-27 23:12.
 
 | Thành phần | Giá trị |
 |---|---|
 | Hệ điều hành | NT (x86_64-w64-mingw32) |
-| CPU | Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz |
-| Số luồng CPU | 4 |
-| RAM | 10.1 GiB |
+| CPU | 11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz |
+| Số luồng CPU | 12 |
+| RAM | 15.8 GiB |
 | Julia | 1.11.4 |
 | Số luồng Julia | 1 |
-| Java | openjdk version "25.0.5" 2026-10-20 LTS |
-| spmf.jar (SHA-256) | `2cc2d89e39909230ea0455da4a1c79b389dc98ca04b0670befb63e679b5e2ea0` |
+| Java | openjdk version "25.0.5.1" 2026-11-17 LTS |
+| spmf.jar (SHA-256) | `bb371b99b3bfd58fbce6b92e0ea3ccda5f9d1fd173bfe8e40f177672117159ba` |
 | Phiên bản Eclat của SPMF | v2.65 |
-| Commit | (chưa có git) |
+| Commit | 55931e8 |

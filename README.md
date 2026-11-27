@@ -82,14 +82,14 @@ julia --project=. test/runtests.jl
 julia --project=. --check-bounds=yes test/runtests.jl
 ```
 
-**Latest verified test output (Julia `1.11.4`, with benchmark datasets loaded):**
+**Latest verified test output (Julia `1.11.4`, all 7 variants `v0`–`v6` + 4 benchmarks verified 100% against SPMF):**
 
 ```text
-Test Summary: | Pass  Total  Time
-EclatFIM      |  352    352  6.8s
+Test Summary: |  Pass  Total   Time
+EclatFIM      | 10474  10474  11.8s
 ```
 
-Both default and `--check-bounds=yes` runs pass `352 / 352` assertions and are automatically verified on every push via GitHub Actions CI (`.github/workflows/ci.yml`).
+Both default and `--check-bounds=yes` runs pass `10,474 / 10,474` assertions and are automatically verified on every push via GitHub Actions CI (`.github/workflows/ci.yml`).
 
 ---
 
