@@ -1,13 +1,13 @@
 # Kết quả Ứng dụng 1: Phân tích giỏ hàng (Groceries)
 
-Sinh bởi `apps/groceries/run_groceries.jl` ngày 2026-11-24 bằng `EclatFIM` (`v1`, seed = 42).
+Sinh bởi `apps/groceries/run_groceries.jl` ngày 2026-11-28 bằng `EclatFIM` (`v6`, seed = 42).
 
 ## 1. So sánh phương án biến đổi dữ liệu (Bảng B08)
 
 | Phương án | N | m | L̄ | Mật độ ρ | Tập phổ biến (1%) | Luật (conf ≥ 0,3) | Thời gian (s) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 169 mặt hàng gốc (chọn) | 9835 | 169 | 4.41 | 2.61% | 333 | 125 | 0.0115 |
-| Gộp 12 nhóm hàng cấp cao | 9835 | 12 | 3.12 | 25.98% | 477 | 2232 | 0.0024 |
+| 169 mặt hàng gốc (chọn) | 9835 | 169 | 4.41 | 2.61% | 333 | 125 | 0.0012 |
+| Gộp 12 nhóm hàng cấp cao | 9835 | 12 | 3.12 | 25.98% | 477 | 2232 | 0.0008 |
 
 - Phương án 169 mặt hàng gốc có mật độ **2.61%**, tiệm cận ngưỡng cân bằng lý thuyết `1/32 ≈ 3,125%` giữa biểu diễn `Vector` và `BitVector` của Eclat.
 - Phương án gom 12 nhóm hàng làm mật độ tăng lên **25.98%**, dẫn đến gia tăng mạnh số tập phổ biến và số luật nhưng làm giảm tính cụ thể của luật.

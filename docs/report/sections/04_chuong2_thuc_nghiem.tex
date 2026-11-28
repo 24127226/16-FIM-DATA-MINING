@@ -12,10 +12,11 @@ All official benchmarks were executed on a fixed reference machine (\texttt{resu
 Four canonical benchmark datasets from the FIMI and SPMF repositories (mirrored publicly on Hugging Face with SHA-256 verification) cover both dense and sparse regimes (Table~\ref{tab:b06_datasets}). Every dataset's measured statistics ($N$, $m$, $\bar{L}$) match the project specification table exactly, including the FIMI 8,124-transaction version of \texttt{mushroom}.
 
 % Data source: data/benchmark/README.md
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Benchmark datasets used in Chapter~2 evaluation (re-measured statistics verified against specification).}
 \label{tab:b06_datasets}
+\small
 \begin{tabular}{lrrrll}
 \toprule
 Dataset & $N$ & $m$ & $\bar{L}$ & Regime & Experiments \\
@@ -39,10 +40,11 @@ Dataset & $N$ & $m$ & $\bar{L}$ & Regime & Experiments \\
 \textbf{Results:} Across all $4 \times 7 \times 2 = 56$ evaluation runs (\texttt{results/e1\_correctness.csv}), both \texttt{v0} and \texttt{v6} achieve a \textbf{$100.00\%$ exact match rate} with zero missing itemsets, zero extraneous itemsets, and zero support discrepancies (Table~\ref{tab:b05_correctness}).
 
 % Data source: results/e1_correctness.csv
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Correctness verification summary (E1) comparing \texttt{EclatFIM} (\texttt{v0}, \texttt{v6}) against SPMF \texttt{Eclat} across all 7 \texttt{minsup} levels per benchmark.}
 \label{tab:b05_correctness}
+\small
 \begin{tabular}{llrrrr}
 \toprule
 Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & Mismatches & Match Rate \\
@@ -73,16 +75,16 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
     \item \textbf{\texttt{T10I4D100K} (0.2\%, 13,255 itemsets):} \texttt{v6} runs in \textbf{0.1955~s} vs.\ \texttt{v0} (2.6044~s, $13.3\times$ slower), SPMF \texttt{Eclat} (0.752~s, $3.8\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.247~s).
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth]{F03_time_vs_minsup.pdf}
+\includegraphics[width=0.68\textwidth]{F03_time_vs_minsup.pdf}
 \caption{Median algorithm runtime versus descending \texttt{minsup} across four benchmark datasets (3 repetitions, log y-axis). \texttt{EclatFIM (v6)} outperforms both \texttt{v0} and SPMF variants at low \texttt{minsup} on all four datasets.}
 \label{fig:f03_time}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth]{F04_itemsets_vs_minsup.pdf}
+\includegraphics[width=0.68\textwidth]{F04_itemsets_vs_minsup.pdf}
 \caption{Frequent itemset count versus descending \texttt{minsup} for dense (\texttt{chess}, \texttt{mushroom}) versus sparse (\texttt{retail}, \texttt{T10I4D100K}) datasets.}
 \label{fig:f04_itemsets}
 \end{figure}
@@ -97,9 +99,9 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 
 \textbf{Results:} Figure~\ref{fig:f05_memory} reports peak live tidset bytes (\texttt{EclatStats}) and added process RSS above the 158.9~MiB Julia baseline at the median \texttt{minsup} level (\texttt{results/e4\_memory.csv}). On \texttt{chess} (80\%), peak live tidset memory drops by \textbf{$33.4\times$} (from 901.4~KiB in \texttt{v0} to 27.0~KiB in \texttt{v6}); on \texttt{mushroom} (35\%), it drops by \textbf{$23.1\times$} (from 1,168.9~KiB to 50.6~KiB). Conversely, on sparse \texttt{retail} (1%), SPMF \texttt{Eclat\_bitset} allocates 840.8~MiB of JVM heap for sparse bitsets, whereas \texttt{EclatFIM (v6)} stays in compact vector representation (826.0~KiB live tidsets, 120.8~MiB delta RSS).
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth]{F05_peak_memory.pdf}
+\includegraphics[width=0.68\textwidth]{F05_peak_memory.pdf}
 \caption{Peak live tidset memory (left, log scale) and added process RSS (right) at median \texttt{minsup} (\texttt{chess} 80\%, \texttt{mushroom} 35\%, \texttt{retail} 1\%, \texttt{T10I4D100K} 1\%).}
 \label{fig:f05_memory}
 \end{figure}
@@ -112,9 +114,9 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 
 \textbf{Results:} Figure~\ref{fig:f06_scalability} plots median runtime across nested subsets $10\% \subset 25\% \subset 50\% \subset 75\% \subset 100\%$ of \texttt{retail} (\texttt{results/e5\_scalability.csv}). Linear regression confirms strong linearity for \texttt{v0} ($R^2 = 0.9968$, 0.317~s $\to$ 1.771~s), SPMF \texttt{Eclat} ($R^2 = 0.9575$, 0.257~s $\to$ 0.685~s), and SPMF \texttt{Eclat\_bitset} ($R^2 = 0.9788$, 0.265~s $\to$ 0.633~s). For \texttt{v6}, runtime stays nearly flat between 0.119~s and 0.134~s ($R^2 = 0.5291$) because the optimized mining kernel executes in milliseconds and is dominated by fixed per-invocation overhead.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.86\textwidth]{F06_scalability.pdf}
+\includegraphics[width=0.62\textwidth]{F06_scalability.pdf}
 \caption{Scalability on nested \texttt{retail} subsets ($10\%$ to $100\%$, \texttt{minsup} $= 0.2\%$) with linear regression fits and $R^2$.}
 \label{fig:f06_scalability}
 \end{figure}
@@ -127,9 +129,9 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 
 \textbf{Results:} As target $\bar{L}$ increases from $5$ to $30$ (\texttt{results/e6\_tx\_length.csv}, Figure~\ref{fig:f07_txlen}), frequent itemsets expand $18.6\times$ (from 828 to 15,432) and maximum pattern length increases from 8 to 11. Runtime escalates $16.8\times$ for \texttt{v0} (0.241~s $\to$ 4.058~s) and $9.0\times$ for SPMF \texttt{Eclat} (0.148~s $\to$ 1.335~s). In contrast, \texttt{v6} remains highly resilient (0.1065~s $\to$ 0.1405~s, achieving a \textbf{$28.9\times$ speedup over \texttt{v0}} and \textbf{$9.5\times$ over SPMF \texttt{Eclat}} at $\bar{L} = 30$) due to level-2 triangular pruning, adaptive galloping, and zero-allocation buffer reuse.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.86\textwidth]{F07_tx_length.pdf}
+\includegraphics[width=0.62\textwidth]{F07_tx_length.pdf}
 \caption{Effect of average transaction length $\bar{L} \in \{5, 10, 15, 20, 25, 30\}$ on synthetic datasets ($N = 50{,}000$, $m = 1{,}000$, \texttt{minsup} $= 1\%$, seed $= 42$).}
 \label{fig:f07_txlen}
 \end{figure}
@@ -138,16 +140,7 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 \subsection{E9: Comparison Against Apriori and FP-Growth}
 \label{subsec:exp_e9}
 
-\textbf{Hypothesis (H6):} Eclat should substantially outperform Apriori (especially when candidate counts explode) and remain competitive with FP-Growth.
-
-\textbf{Results:} Figure~\ref{fig:f09_apriori_fp} compares \texttt{EclatFIM (v6)} against SPMF \texttt{Apriori} and \texttt{FPGrowth\_itemsets} (\texttt{results/e9\_vs\_apriori\_fp.csv}). At the lowest \texttt{minsup} per dataset, \texttt{v6} outperforms SPMF \texttt{Apriori} by \textbf{$307\times$ on \texttt{retail}} (0.156~s vs.\ 47.934~s) and \textbf{$40.7\times$ on \texttt{T10I4D100K}} (0.184~s vs.\ 7.467~s), and also outperforms SPMF \texttt{FP-Growth} across all four benchmarks ($2.3\times$--$5.4\times$ faster).
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.96\textwidth]{F09_vs_apriori_fp.pdf}
-\caption{Comparison of \texttt{EclatFIM (v6)} against SPMF \texttt{Apriori} and \texttt{FPGrowth\_itemsets} across all four benchmarks (log y-axis).}
-\label{fig:f09_apriori_fp}
-\end{figure}
+\textbf{Hypothesis (H6)} is confirmed: at the lowest \texttt{minsup} per dataset (\texttt{results/e9\_vs\_apriori\_fp.csv}), \texttt{EclatFIM (v6)} outperforms SPMF \texttt{Apriori} by $307\times$ on \texttt{retail} (0.156~s vs.\ 47.934~s) and $40.7\times$ on \texttt{T10I4D100K} (0.184~s vs.\ 7.467~s), and outperforms SPMF \texttt{FPGrowth\_itemsets} by $2.3\times$--$5.4\times$ across all four benchmarks. Full curves are presented in Appendix~\ref{subsec:appendix_e9} (Figure~\ref{fig:f09_apriori_fp}).
 
 % ---------------------------------------------------------------------------
 \subsection{E8: Ablation Study of the Optimizations (\texttt{v0} $\to$ \texttt{v6})}
@@ -179,9 +172,9 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 
 \textbf{Setup:} \texttt{scripts/bench\_density.jl} compares \texttt{v3} (tid lists) with \texttt{v4} (bitsets) on three sources: (i)~synthetic data with controlled density ($N = 50{,}000$, 30 items, each present independently with probability $p$ from $0.003$ to $0.4$, threshold $\sigma_{\min} = \lceil 0.8\,p^2 N \rceil$ so that 2-itemsets are frequent); (ii)~the four benchmarks at the highest, median, and lowest \texttt{minsup} of the grid; (iii)~the 12 image encodings of Application~2. The density of a database is the mean support of its frequent items divided by $N$. Because many points are compared relative to each other, each point is measured in one warmed-up process, taking the minimum of 3 runs (\texttt{results/e7\_density.csv}).
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.72\textwidth]{F08_density_bitset_vs_vector.pdf}
+\includegraphics[width=0.58\textwidth]{F08_density_bitset_vs_vector.pdf}
 \caption{Time ratio of tid lists (\texttt{v3}) to bitsets (\texttt{v4}) versus tidset density $\rho$ (both axes logarithmic). A ratio above 1 means bitsets are faster. Line: synthetic data; markers: benchmarks (highest, median, lowest \texttt{minsup}) and the 12 image encodings of Application~2; dashed vertical line: memory break-even $\rho = 1/32$ (Figure F08).}
 \label{fig:f08_density}
 \end{figure}
@@ -195,37 +188,8 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 % ---------------------------------------------------------------------------
 \subsection{E10: Live Tidset Memory over the Search}
 \label{subsec:exp_e10}
-% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
 
-\textbf{Hypothesis (H7):} The paper observes that memory peaks while the 2-itemsets at the start of each class are built, and then decreases because tidsets shrink with depth (Lemma~6; Fig.~22 of~\cite{zaki2000scalable}).
-
-\textbf{Setup:} \texttt{scripts/bench\_memory\_trace.jl} records the number of live tidset bytes (\texttt{EclatStats.bytes\_current}) after every emitted itemset, sampled at up to 4,000 points per run, for the tid-list variant (\texttt{v3}) and the bitset variant (\texttt{v4}). It uses one dense dataset (\texttt{chess}) and one sparse dataset from the same IBM synthetic family as the paper (\texttt{T10I4D100K}), each at its median \texttt{minsup} (\texttt{results/e10\_memory\_trace.csv}).
-
-% Data source: results/e10_memory_trace.md
-\begin{table}[H]
-\centering
-\caption{Live tidset memory over the search (E10).}
-\label{tab:e10_memory}
-\begin{tabular}{@{}llrrrrrr@{}}
-\toprule
-Dataset & Variant & Itemsets & Peak & Mean & Peak/mean & Peak at itemset \# & Length at peak \\
-\midrule
-\texttt{chess} (80\%) & \texttt{v3} & 8,227 & 0.731~MiB & 0.529~MiB & 1.38 & 5,492 & 10 \\
- & \texttt{v4} & 8,227 & 0.026~MiB & 0.019~MiB & 1.42 & 3,014 & 8 \\
-\texttt{T10I4D100K} (1\%) & \texttt{v3} & 385 & 3.049~MiB & 3.036~MiB & 1.00 & 200 & 3 \\
- & \texttt{v4} & 385 & 4.508~MiB & 4.472~MiB & 1.01 & 200 & 3 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.96\textwidth]{F10_memory_trace.pdf}
-\caption{Live tidset memory after each emitted frequent itemset (E10) for tid lists (\texttt{v3}) and bitsets (\texttt{v4}).}
-\label{fig:f10_memory_trace}
-\end{figure}
-
-\textbf{Results and explanation:} With this implementation, H7 is \emph{not} confirmed: the memory curve is nearly flat, with a peak only 1.38--1.42 times the mean on \texttt{chess} and 1.00--1.01 times on \texttt{T10I4D100K} (Table~\ref{tab:e10_memory}, Figure~\ref{fig:f10_memory_trace}). On \texttt{T10I4D100K}, almost all of the 3.0--4.5~MiB are the tidsets of the root class, which stay alive during the whole search; the child classes are tiny because only 10 of the 385 frequent itemsets have more than one item. On \texttt{chess}, the peak of \texttt{v3} occurs at an itemset of length 10, i.e.\ at the end of the deepest path: dense tidsets shrink slowly (every support is at least 80\% of the transactions), so the sum over the open classes is largest along the longest path. The difference from the paper comes from the traversal: the paper builds all child classes of a class before recursing, whereas this implementation recurses immediately and keeps only one class per depth (Section~\ref{subsec:eclat_algo}), so it never holds the tidsets of all 2-itemsets of a large class at the same time. Bitsets reduce the peak 28-fold on dense \texttt{chess} (0.731 to 0.026~MiB), but increase it by 48\% on sparse \texttt{T10I4D100K} (3.05 to 4.51~MiB), consistent with the $\rho = 1/32$ break-even of Table~\ref{tab:complexity}.
+Tracing live tidset bytes after every emitted itemset (\texttt{results/e10\_memory\_trace.csv}, full table and Figure~\ref{fig:f10_memory_trace} in Appendix~\ref{subsec:appendix_e10}) shows that \textbf{H7 is not confirmed} for our depth-first workspace traversal: unlike the paper's level-buffered traversal, our engine keeps only one active class per depth, yielding a nearly flat memory profile (peak/mean $1.38$--$1.42$ on \texttt{chess}, $1.00$--$1.01$ on \texttt{T10I4D100K}). Bitsets reduce peak live tidset memory $28\times$ on dense \texttt{chess} (0.731 to 0.026~MiB) but increase it $48\%$ on sparse \texttt{T10I4D100K} (3.05 to 4.51~MiB).
 
 % ---------------------------------------------------------------------------
 \subsection{Strengths, Weaknesses vs.\ SPMF, and Future Optimization Proposals}
@@ -233,10 +197,11 @@ Dataset & Variant & Itemsets & Peak & Mean & Peak/mean & Peak at itemset \# & Le
 
 Table~\ref{tab:b07_strengths} synthesizes the empirical trade-offs between \texttt{EclatFIM (v6)} and SPMF based on experiments E1--E9.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Comparative assessment of \texttt{EclatFIM (v6)} versus SPMF (Table~B07).}
 \label{tab:b07_strengths}
+\small
 \begin{tabular}{p{2.6cm}p{3.6cm}p{3.6cm}p{4.6cm}}
 \toprule
 Dimension & \texttt{EclatFIM (v6)} & SPMF & Evidence \& Explanation \\
