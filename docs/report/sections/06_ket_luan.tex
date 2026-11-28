@@ -1,5 +1,16 @@
 % Section 6: Conclusion and Future Work
+% Drafted by Member A after Chapter 2 and Application 2 were completed; to be reviewed jointly.
 \section{Conclusion and Future Work}
 \label{sec:06_conclusion}
 
-% To be completed jointly after finalizing Chapter 2 experiments and Application 2.
+\textbf{Summary.} This project implemented the Eclat algorithm of Zaki~\cite{zaki2000scalable} from scratch in Julia as the package \texttt{EclatFIM}, following the three ideas of the paper: support counting by tidset intersection, prefix-based equivalence classes, and bottom-up depth-first search. Seven variants \texttt{v0}--\texttt{v6} share one code base and differ by exactly one optimization each, which made every optimization measurable in isolation.
+
+\textbf{Correctness.} The three-tier verification (a brute-force oracle on 200 random databases, canonical and edge-case datasets, and SPMF on four benchmarks) reached a 100\% exact match with SPMF Eclat on all 56 runs of E1, including the floating-point boundary cases of the support threshold.
+
+\textbf{Performance.} At the lowest \texttt{minsup} of each benchmark, the default variant \texttt{v6} was $3.8$--$48\times$ faster than SPMF Eclat and also faster than SPMF \texttt{Eclat\_bitset} on all four benchmarks (E2), kept its runtime between 0.12 and 0.13~s on all \texttt{retail} subsets while the baseline \texttt{v0} grew linearly with the number of transactions (E5), and outperformed SPMF Apriori by up to $307\times$ (E9). The ablation study (E8) showed where these gains come from:
+buffer reuse and bitsets dominate on dense data (up to $38\times$ over the baseline on \texttt{chess}), while early termination and the triangular level-2 array dominate on sparse data (up to $65\times$ on \texttt{retail}).
+E7 located the time break-even between bitsets and tid lists near $\rho \approx 0.004$, an order of magnitude below the memory break-even $1/32$, and E10 showed that immediate recursion keeps live tidset memory almost flat during the search, unlike the level-by-level construction of the paper. No single variant was fastest on every dataset; the hybrid \texttt{v6} was chosen as the default because it never needs more tidset memory than the more compact of the two representations.
+
+\textbf{Applications.} On the Groceries dataset, ranking rules by lift instead of confidence removed the popularity bias of \emph{whole milk} and produced rules whose lift stayed above 1.5 for all of the top 10 on a held-out 20\% split. On Caltech-101 images, frequent visual-word itemsets mined by \texttt{EclatFIM} formed readable, class-specific geometric configurations; 80 binary pattern features alone classified 75.8\% of the test images correctly (chance: 25\%), and the patterns exposed a background bias in the \emph{Faces\_easy} category that a black-box classifier would hide.
+
+\textbf{Limitations and future work.} The implementation is single-threaded, its representation switch uses a memory criterion rather than a time criterion, and Application~2 uses four categories and 400 images. The proposals of Section~\ref{subsec:strengths_proposals} (diffsets, parallel root classes, a precompiled system image, and a time-based switching rule) address the first two points directly; extending Application~2 to more categories, spatially aware encodings, and pattern-based detection of mislabeled images addresses the third.

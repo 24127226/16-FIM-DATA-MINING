@@ -2,5 +2,48 @@
 \section{Background and Related Work}
 \label{sec:02_background}
 
-% To be completed by Member A: formal FIM definitions, Apriori, FP-Growth, Eclat vertical layout,
-% bitset representations (DLG), diffsets (dEclat), Bag of Visual Words, and emerging patterns.
+% ---------------------------------------------------------------------------
+\subsection{The Frequent Itemset Mining Problem}
+\label{subsec:fim_problem}
+
+Let $\mathcal{I}$ be a set of items with $m = |\mathcal{I}|$, and let $\mathcal{D} = \{T_1, \dots, T_N\}$ be a transaction database in which every transaction $T_j \subseteq \mathcal{I}$ is identified by its transaction identifier (tid) $j$. For an itemset $X \subseteq \mathcal{I}$, the \emph{tidset} of $X$ is
+\begin{equation}
+t(X) = \{\, j : X \subseteq T_j \,\},
+\label{eq:tidset}
+\end{equation}
+its (absolute) support is $\sigma(X) = |t(X)|$, and its relative support is $s(X) = \sigma(X)/N$. Given a minimum support $\texttt{minsup} \in (0, 1]$, the corresponding count threshold is $\sigma_{\min} = \lceil \texttt{minsup} \cdot N \rceil$. \emph{Frequent itemset mining} (FIM) enumerates every non-empty itemset $X$ with $\sigma(X) \ge \sigma_{\min}$ together with its support. We denote the output by $\mathcal{F}$ and the average transaction length by $\bar{L}$.
+
+The search space contains $2^m - 1$ candidate itemsets, so every FIM algorithm relies on the \emph{anti-monotone} (Apriori) property: if $X \subseteq Y$ then $t(Y) \subseteq t(X)$, hence $\sigma(Y) \le \sigma(X)$. Consequently, every subset of a frequent itemset is frequent, and every superset of an infrequent itemset is infrequent.
+
+Frequent itemsets are the input of \emph{association rule} generation~\cite{agrawal1993mining}. For a rule $X \Rightarrow Y$ with $X \cap Y = \emptyset$,
+\begin{equation}
+\mathrm{conf}(X \Rightarrow Y) = \frac{\sigma(X \cup Y)}{\sigma(X)}, \qquad
+\mathrm{lift}(X \Rightarrow Y) = \frac{\mathrm{conf}(X \Rightarrow Y)}{s(Y)}.
+\label{eq:rule}
+\end{equation}
+Confidence estimates $P(Y \mid X)$; lift compares it with the baseline probability $P(Y)$, so $\mathrm{lift} > 1$ means that $X$ and $Y$ co-occur more often than under independence~\cite{brin1997dynamic}.
+
+% ---------------------------------------------------------------------------
+\subsection{Algorithmic Approaches}
+\label{subsec:fim_approaches}
+
+\textbf{Horizontal layout, level-wise search.} Apriori~\cite{agrawal1994fast} generates the candidates of size $k$ from the frequent itemsets of size $k-1$, prunes every candidate that has an infrequent subset, and rescans the database to count the survivors. The number of database scans equals the length of the longest frequent itemset, and the number of candidates can explode at level~2.
+
+\textbf{Prefix trees.} FP-Growth~\cite{han2000mining} compresses the database into a prefix tree (FP-tree) after two scans and mines it recursively through conditional trees, without generating candidates. The tree compresses dense data well but offers little compression on sparse data.
+
+\textbf{Vertical layout.} Eclat~\cite{zaki2000scalable}, the algorithm implemented in this project, stores each item together with its tidset and obtains the support of a new itemset by intersecting tidsets, so the database is never rescanned. The original paper partitions the subset lattice into prefix-based equivalence classes that are solved independently in main memory, proposes counting 2-itemsets with an upper-triangular array, and reports that Eclat outperforms Apriori by more than an order of magnitude on synthetic data (§7 of~\cite{zaki2000scalable}). Two alternative tidset representations belong to this family: \emph{bitsets}, as in DLG~\cite{yen1996efficient}, which keeps one bit vector per item and computes support with bitwise AND; and \emph{diffsets} in dEclat~\cite{zaki2003fast}, which store only the difference between the tidsets of a prefix and its extension and are very compact on dense data.
+
+\textbf{Implementation studies.} The FIMI'03 workshop~\cite{goethals2004advances} standardized the benchmark datasets (Chess, Mushroom, Retail, Accidents, T10I4D100K) and showed that implementation quality (data structures, memory layout, cache behavior) affects performance as much as the choice of algorithm. The SPMF library~\cite{fournier2014spmf} provides Java reference implementations of more than 200 pattern mining algorithms; this project uses SPMF strictly as a black box to verify results and compare performance.
+
+% ---------------------------------------------------------------------------
+\subsection{Applications Considered in This Project}
+\label{subsec:applications_background}
+
+Market basket analysis is the classical application of association rules, with the Groceries dataset distributed by the \texttt{arules} package~\cite{hahsler2005arules} as a standard benchmark (Section~\ref{sec:05_chapter3_applications}, Application~1).
+
+For images, the \emph{bag of visual words} (BoVW) model~\cite{sivic2003video,csurka2004visual} quantizes local descriptors, such as SIFT~\cite{lowe2004distinctive} or histograms of oriented gradients~\cite{dalal2005histograms}, into \emph{visual words} using $k$-means clustering~\cite{arthur2007kmeans}. Each image then becomes a transaction whose items are visual words, and frequent itemsets become recurring visual patterns. \emph{Emerging patterns}~\cite{dong1999efficient} are itemsets that are frequent in one class but rare in the others; they are ranked by the growth rate
+\begin{equation}
+GR_c(X) = \frac{s_c(X)}{s_{\neg c}(X)},
+\label{eq:growth_rate}
+\end{equation}
+where $s_c$ and $s_{\neg c}$ are the relative supports inside class $c$ and inside all other classes. A pattern with $s_{\neg c}(X) = 0$ has $GR_c(X) = \infty$ and is called a \emph{jumping emerging pattern}. Application~2 (Section~\ref{subsec:app2_bovw}) uses this measure on the Caltech-101 dataset~\cite{feifei2004learning}.

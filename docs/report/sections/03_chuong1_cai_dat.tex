@@ -6,12 +6,123 @@
 % ---------------------------------------------------------------------------
 \subsection{The Eclat Algorithm from the Original Paper}
 \label{subsec:eclat_algo}
-% To be completed by Member A (Zaki 2000 §4.1, §4.2, §5.2; Figure F01).
+
+Eclat combines three ideas from the original paper~\cite{zaki2000scalable}.
+
+\emph{Support counting by tidset intersection} (§4.1, Lemmas~4--5). A transaction contains $X \cup Y$ if and only if it contains both $X$ and $Y$, hence
+\begin{equation}
+t(X \cup Y) = t(X) \cap t(Y), \qquad \sigma(X \cup Y) = |t(X) \cap t(Y)|.
+\label{eq:intersection}
+\end{equation}
+The tidsets of the single items therefore suffice to compute the support of every itemset without rescanning the database. Lemma~6 adds that $X \subseteq Y$ implies $t(Y) \subseteq t(X)$: tidsets shrink as itemsets grow, so intersections deeper in the search become cheaper.
+
+\emph{Prefix-based equivalence classes} (§4.2, Lemma~7). Fix a total order $\prec$ on the items and write every itemset in that order. Two $k$-itemsets belong to the same class $[P]$ if they share the prefix $P$ formed by their first $k-1$ items. Every itemset of $[P]$ is generated from the \emph{atoms} of the class, i.e.\ the itemsets $P \cup \{x\}$, and no information from other classes is needed, so each class is an independent sub-problem that fits in main memory.
+
+\emph{Bottom-up search} (§4.3 and Fig.~12 of~\cite{zaki2000scalable}). Inside a class, the tidsets of every pair of atoms $A_i, A_j$ with $i < j$ are intersected; each pair that reaches $\sigma_{\min}$ becomes an atom of the child class $[A_i]$, which is then solved recursively. Restricting the pairs to $i < j$ guarantees that every itemset is generated exactly once. Algorithm~\ref{alg:eclat} is the project's realization of these three ideas, and Figure~\ref{fig:f01} runs it on the bookstore example of the paper.
+
+\begin{algorithm}[H]
+\caption{Eclat: depth-first search over prefix classes}
+\label{alg:eclat}
+\begin{algorithmic}[1]
+\Require horizontal database $\mathcal{D}$, count threshold $\sigma_{\min}$
+\Ensure every pair $(X, \sigma(X))$ with $\sigma(X) \ge \sigma_{\min}$
+\State $\mathcal{F}_1 \gets \{x : \sigma(x) \ge \sigma_{\min}\}$, sorted by $\prec$ \Comment{first scan of $\mathcal{D}$}
+\State build $t(x)$ for every $x \in \mathcal{F}_1$ \Comment{second scan of $\mathcal{D}$}
+\State output every $(x, |t(x)|)$; \Call{BottomUp}{$(x, t(x))_{x \in \mathcal{F}_1}$}
+\Procedure{BottomUp}{$A_1, \dots, A_k$} \Comment{the atoms of one class}
+  \For{$i = 1, \dots, k-1$}
+    \State $C \gets$ empty list
+    \For{$j = i+1, \dots, k$}
+      \State $t \gets t(A_i) \cap t(A_j)$ \Comment{Eq.~\eqref{eq:intersection}}
+      \If{$|t| \ge \sigma_{\min}$}
+        \State append $(A_i \cup A_j, t)$ to $C$; output $(A_i \cup A_j, |t|)$
+      \EndIf
+    \EndFor
+    \If{$C$ is not empty}
+      \State \Call{BottomUp}{$C$} \Comment{solve the child class $[A_i]$ immediately}
+    \EndIf
+  \EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\footnotesize, x=1.25cm, y=1.1cm,
+  nodeset/.style={draw, rounded corners=1pt, align=center, inner sep=2pt, minimum width=1.15cm},
+  nodepruned/.style={nodeset, densely dashed, draw=gray, text=gray},
+  >={Stealth[length=4pt]}]
+\node[anchor=west] at (-0.3, 0.75) {(a) Root class $[\emptyset]$: items and their tidsets};
+\node[nodeset] (A) at (0.4, 0) {A\\1345};
+\node[nodeset] (C) at (2.0, 0) {C\\123456};
+\node[nodeset] (D) at (3.6, 0) {D\\2456};
+\node[nodeset] (T) at (5.2, 0) {T\\1356};
+\node[nodeset] (W) at (6.8, 0) {W\\12345};
+\node[anchor=west] at (-0.3, -0.85) {(b) Class $[A]$ and its descendants};
+\node[nodeset] (AC) at (0.4, -1.6) {AC\\1345};
+\node[nodepruned] (AD) at (2.0, -1.6) {AD\\45};
+\node[nodeset] (AT) at (3.6, -1.6) {AT\\135};
+\node[nodeset] (AW) at (5.2, -1.6) {AW\\1345};
+\node[nodeset] (ACT) at (0.4, -2.85) {ACT\\135};
+\node[nodeset] (ACW) at (2.0, -2.85) {ACW\\1345};
+\node[nodeset] (ATW) at (3.6, -2.85) {ATW\\135};
+\node[nodeset] (ACTW) at (0.4, -4.1) {ACTW\\135};
+\draw[->] (A) -- (AC);
+\draw[->, gray] (A) -- (AD);
+\draw[->] (A) -- (AT);
+\draw[->] (A) -- (AW);
+\draw[->] (AC) -- (ACT);
+\draw[->] (AC) -- (ACW);
+\draw[->] (AT) -- (ATW);
+\draw[->] (ACT) -- (ACTW);
+\node[anchor=west, align=left, font=\scriptsize] at (2.6, -4.1)
+  {$t(AC) = t(A) \cap t(C) = 1345$, $\sigma(AC) = 4$\\
+   $t(ACT) = t(AC) \cap t(AT) = 135$, $\sigma(ACT) = 3$};
+\end{tikzpicture}
+\caption{Algorithm~\ref{alg:eclat} on the bookstore example of the paper (Figs.~1 and~4 of~\cite{zaki2000scalable}; $N = 6$, $\sigma_{\min} = 3$, tidsets written as concatenated tids). Each itemset is intersected with its later siblings to build its child class. $AD$ occurs in only 2 transactions, so it is pruned (dashed box) and spawns no child class. The full run produces exactly the 19 frequent itemsets reported in the paper, using 17 intersections of which 3 fall below $\sigma_{\min}$ (Figure F01).}
+\label{fig:f01}
+\end{figure}
+
+The implementation keeps all three ideas; the differences from the paper listed below never change the output.
+(i)~The paper assumes the database is already stored vertically on disk. The assignment provides horizontal SPMF files, so the implementation converts them to the vertical layout with two scans (lines~1--2).
+(ii)~The paper counts 2-itemsets with an upper-triangular array over the horizontal data (§5.1) before partitioning into classes. The baseline (\texttt{v0}) follows Algorithm~\ref{alg:eclat} literally and intersects every pair in the root class; the triangular array is an optimization measured separately (variant \texttt{v5}, Section~\ref{subsec:optimizations}).
+(iii)~The pseudocode in Fig.~12 of the paper builds all child classes of a class before recursing, so tidsets of two consecutive levels are kept alive. The implementation recurses immediately after building each child class (line~14), so only one class per depth is alive at any time; variant \texttt{v2} exploits this to reuse one buffer per depth.
+(iv)~Item order $\prec$: \texttt{v0} uses the item code order, as in the paper's example; the optimized variants order items by ascending support.
+As in the paper, candidates are not checked against their subsets before intersection: §5.2 of~\cite{zaki2000scalable} notes that such pruning brings almost no benefit, because by Lemma~6 deep intersections are already cheap.
 
 % ---------------------------------------------------------------------------
 \subsection{Complexity Analysis}
 \label{subsec:complexity}
-% To be completed by Member A.
+
+Let $m_f = |\mathcal{F}_1|$ be the number of frequent items, $\ell$ the length of the longest frequent itemset, $w = 64$ the machine word size, and $\rho(X) = \sigma(X)/N$ the \emph{density} of a tidset. Table~\ref{tab:complexity} summarizes the cost of the main operations; Chapter~2 uses it to predict and explain the measurements.
+
+\begin{table}[H]
+\centering
+\caption{Cost of the main operations of Eclat.}
+\label{tab:complexity}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}p{4.6cm}p{11.0cm}@{}}
+\toprule
+Operation & Cost \\
+\midrule
+Intersecting two sorted tid lists & $O(\sigma(X) + \sigma(Y))$ with a two-pointer merge; $O\!\left(\sigma(X) \log \frac{\sigma(Y)}{\sigma(X)}\right)$ with galloping (exponential) search~\cite{bentley1976almost} when $\sigma(Y) \gg \sigma(X)$ \\
+Intersecting two bitset tidsets & $N/w$ word-level AND operations, independent of $\sigma$ \\
+Memory of one tidset & \texttt{Int32} tid list: $4\sigma$ bytes; bitset: $N/8$ bytes; equal when $\rho = 1/32$ \\
+Number of intersections & $I = \sum_{[P]} \binom{|[P]|}{2} \le |\mathcal{F}| \cdot m_f$ \\
+2-itemsets by pairwise intersection & $\binom{m_f}{2}$ intersections \\
+2-itemsets by triangular array & $\sum_{j=1}^{N} \binom{|T_j \cap \mathcal{F}_1|}{2} \le N \bar{L}^2/2$ increments and $\binom{m_f}{2}$ counters \\
+Live tidset memory during the search & $\sum_{d=1}^{\ell} \sum_{X \in [P_d]} \mathrm{size}(t(X))$, where $[P_d]$ is the open class at depth $d$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Time versus output size.} Every intersection produces exactly one candidate, namely a frequent itemset of the parent class extended by one sibling atom, so $I \le |\mathcal{F}| \cdot m_f$. Mining time is therefore proportional to the number of frequent itemsets times the cost of one intersection. When \texttt{minsup} decreases, $|\mathcal{F}|$ can grow exponentially and the running time grows with it. Appendix~A of~\cite{zaki2000scalable} shows that this explosion is inherent to the problem: deciding whether a frequent itemset of a given size exists is NP-complete, and counting the maximal frequent itemsets is \#P-complete. An implementation can only reduce the cost per itemset; it cannot avoid the growth of the output.
+
+\emph{Scaling with the number of transactions $N$.} At a fixed relative \texttt{minsup}, every support scales with $N$, so the cost of one intersection grows linearly with $N$ for both tidset representations. If the subsets are sampled uniformly, $\mathcal{F}$ stays nearly unchanged, hence the running time is linear in $N$ (hypothesis H4, tested by E5). The paper also reports linear scale-up in the number of transactions (Fig.~21a).
+
+\emph{Scaling with the transaction length $\bar{L}$.} A transaction of length $L$ contains $2^L - 1$ non-empty subsets. Appendix~A of the paper gives the bound $O(2^{L_{\max}} \cdot N)$ for enumeration when the longest transaction has $L_{\max}$ items: linear in $N$ but exponential in the transaction length. When $\bar{L}$ grows at fixed $N$ and \texttt{minsup}, long itemsets become frequent, so $|\mathcal{F}|$, $I$, and the depth $\ell$ can grow faster than linearly (H5, tested by E6).
+
+\emph{Memory.} The depth-first search keeps only the tidsets of the classes on the current path. By Lemma~6, tidsets at larger depths are smaller, so peak memory usually occurs while the 2-itemsets of a large root class are being built, as the paper observes in Fig.~22 (H7, tested by E10). The two tidset representations break even in memory at $\rho = 1/32$: dense data ($\rho$ large) favors bitsets, sparse data favors tid lists (H2, tested by E7).
 
 % ---------------------------------------------------------------------------
 \subsection{Software Architecture, SPMF I/O, and Command-Line Interface}
@@ -44,7 +155,100 @@ The command-line interface \texttt{demo.jl} is implemented without external depe
 % ---------------------------------------------------------------------------
 \subsection{Optimization Techniques}
 \label{subsec:optimizations}
-% To be completed by Member A (Tables B01, B03, B04 and ablation study v0..v6).
+
+Seven variants \texttt{v0}--\texttt{v6} share a single code base. Each variant adds \emph{exactly one} change to the previous one (Table~\ref{tab:b01_variants}), so the difference between two consecutive variants measures the contribution of that single change (an \emph{ablation study}). A variant is a value of \texttt{EclatConfig}; the mining code selects the intersection routine from the \emph{type} of the configuration option (\texttt{Val\{:merge\}} or \texttt{Val\{:adaptive\}}) through multiple dispatch, so the choice is resolved at compile time and the hot loop contains no branch on the configuration. The \texttt{EclatStats} counters use the same mechanism: when counting is disabled, the counter argument has type \texttt{Nothing} and every counting call is compiled away, so timing runs are not slowed down by instrumentation.
+
+% Data source: src/structures.jl (VARIANTS)
+\begin{table}[H]
+\centering
+\caption{The seven variants (Table B01). Each row adds exactly one change to the row above; the right column lists the \texttt{EclatConfig} field that differs.}
+\label{tab:b01_variants}
+\begin{tabular}{@{}lp{10.6cm}l@{}}
+\toprule
+Variant & Change & Field \\
+\midrule
+\texttt{v0} & Baseline, literally Algorithm~\ref{alg:eclat}: sorted \texttt{Int32} tid lists, a new array allocated for every intersection, items in code order, 2-itemsets by pairwise intersection & --- \\
+\texttt{v1} & + items ordered by ascending support & \texttt{order} \\
+\texttt{v2} & + one reusable buffer per recursion depth: no allocation in the hot loop & \texttt{reuse} \\
+\texttt{v3} & + adaptive intersection: early termination and galloping search & \texttt{isect} \\
+\texttt{v4} & + bitset tidsets (\texttt{BitVector}) & \texttt{tidset} \\
+\texttt{v5} & + 2-itemsets counted with an upper-triangular array (§5.1 of~\cite{zaki2000scalable}) & \texttt{level2} \\
+\texttt{v6} & + hybrid representation: switch from bitsets to tid lists once tidsets are sparse enough; the default variant & \texttt{tidset} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{v1, item order.} An atom placed later in a class has fewer candidate extensions, because it is only intersected with the atoms after it. Placing rare items first means that the classes with many siblings have short tidsets and usually produce few frequent itemsets, while the most frequent item, which has the longest tidset, comes last and gets the smallest class. The total number of intersections and the total tidset length therefore decrease (hypothesis H3).
+
+\emph{v2, buffer reuse.} At each depth, the tidsets of all atoms of the open class are written consecutively into one \texttt{Vector\{Int32\}} buffer of that depth, together with their start offsets and lengths. The next child class overwrites the previous one, which is valid because the search is depth-first and only one class per depth is alive (difference (iii) in Section~\ref{subsec:eclat_algo}). After the first few classes the buffers are large enough and the mining loop no longer allocates. The test suite asserts \texttt{@allocated} $= 0$ for the intersection routines, and the total allocation on a test database drops from 9.91~MiB (\texttt{v0}) to 0.27~MiB (\texttt{v2}).
+
+\emph{v3, adaptive intersection.} Three refinements for intersecting sorted arrays $a$ and $b$ with $|a| \le |b|$: (i)~if $|a| < \sigma_{\min}$ the result cannot be frequent and the routine returns immediately; (ii)~during the merge, the routine stops as soon as the number of common elements found so far plus the number of elements remaining in the shorter array is below $\sigma_{\min}$; (iii)~when $|b| \ge 16|a|$, it scans $a$ and locates each element in $b$ with galloping search (steps of 1, 2, 4, \dots{} followed by binary search~\cite{bentley1976almost}), at cost $O(|a| \log(|b|/|a|))$ instead of $O(|a| + |b|)$. Large length ratios are common on sparse data, when a rare item is intersected with a frequent one.
+
+\emph{v4, bitsets.} A tidset is a \texttt{BitVector} of $N$ bits. Intersection is a word-wise AND over the 64-bit \texttt{chunks} field, written as an \texttt{@inbounds @simd} loop so that the compiler emits vector instructions; the support is the sum of \texttt{count\_ones} over the words. The cost of $N/64$ word operations is independent of the support, and the $N/8$ bytes of memory are smaller than a tid list when $\rho > 1/32$ (Table~\ref{tab:complexity}).
+
+\emph{v5, triangular array.} Instead of $\binom{m_f}{2}$ intersections in the root class, one scan of the horizontal data accumulates the count of every pair of frequent items in an upper-triangular array of $\binom{m_f}{2}$ \texttt{UInt32} counters; the pair $(r, s)$ with $r < s$ is stored at index $(r-1)(2m_f - r)/2 + (s - r)$. Tidsets are then intersected only for the pairs already known to be frequent, and an atom with a single frequent pair needs no intersection at all. If the array would exceed $2^{28}$ cells (1~GiB), the implementation falls back to pairwise intersection.
+
+\emph{v6, hybrid representation.} The root class uses bitsets if the average density of the frequent items is at least $1/32$. When the child class of atom $A_i$ is built, the support of every itemset in that class is bounded by $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; if this bound is below $N/32$, the child class is built directly as tid lists (by extracting the positions of the set bits of the AND), and every deeper class keeps using tid lists. Dense data thus uses bitsets near the root, while tidsets that have shrunk deeper in the search switch to the more compact form. On sparse data (root density below $1/32$, as in \texttt{retail} and \texttt{T10I4D100K}), \texttt{v6} uses tid lists from the start, i.e.\ it equals \texttt{v3} plus the triangular array.
+
+\textbf{Measured improvement (E8).} Every variant is measured at the median and at the lowest \texttt{minsup} of the Chapter~2 grid for each benchmark (\texttt{scripts/bench\_ablation.jl}; protocol in Section~\ref{subsec:exp_e8}). Table~\ref{tab:b03_ablation_time} reports the mining-plus-writing time (file reading is identical for all variants and excluded), and Table~\ref{tab:b04_ablation_counters} the internal counters that explain the changes. All variants return exactly the same frequent itemsets.
+
+% Data source: results/e8_ablation.csv, results/e8_ablation_low.csv (machine: results/ENV_A.md)
+\begin{table}[H]
+\centering
+\caption{Ablation \texttt{v0} $\to$ \texttt{v6} (Table B03): mining and writing time in milliseconds (median of 3 runs, or 5 runs below one second). Bold: fastest variant per column. Last row: speedup of the fastest variant over \texttt{v0}.}
+\label{tab:b03_ablation_time}
+\small
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+ & \multicolumn{4}{c}{Median \texttt{minsup}} & \multicolumn{4}{c}{Lowest \texttt{minsup}} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+Variant & \texttt{chess} & \texttt{mushroom} & \texttt{retail} & \texttt{T10I4D100K} & \texttt{chess} & \texttt{mushroom} & \texttt{retail} & \texttt{T10I4D100K} \\
+ & 80\% & 35\% & 1\% & 1\% & 65\% & 18\% & 0.1\% & 0.2\% \\
+\midrule
+\texttt{v0} & 143.0 & 64.6 & 91.8 & 1940.0 & 1615.8 & 880.9 & 10251.6 & 4388.7 \\
+\texttt{v1} & 117.4 & 35.1 & 75.0 & 1892.0 & 1573.9 & 705.5 & 6292.3 & 4373.7 \\
+\texttt{v2} & 35.7 & 19.2 & 75.2 & 1625.3 & 453.1 & 207.7 & 5752.7 & 4149.9 \\
+\texttt{v3} & 56.2 & 18.8 & 39.6 & 836.0 & 754.2 & 285.3 & 2211.9 & 2938.9 \\
+\texttt{v4} & \textbf{3.9} & \textbf{2.0} & \textbf{20.5} & 96.1 & \textbf{42.5} & \textbf{24.5} & 3848.5 & 364.5 \\
+\texttt{v5} & 5.8 & 3.9 & 34.0 & \textbf{40.8} & 47.2 & 28.1 & \textbf{157.4} & \textbf{85.8} \\
+\texttt{v6} & 4.9 & 4.0 & 27.2 & 197.0 & 44.7 & 28.1 & 382.3 & 310.0 \\
+\midrule
+Speedup & $36.7\times$ & $32.3\times$ & $4.5\times$ & $47.5\times$ & $38.0\times$ & $36.0\times$ & $65.1\times$ & $51.2\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Data source: results/e8_counters_low.csv (lowest minsup)
+\begin{table}[H]
+\centering
+\caption{Internal counters of E8 at the lowest \texttt{minsup} (Table B04): number of tidset intersections (in parentheses: fraction whose result falls below $\sigma_{\min}$), level-2 pairs skipped by the triangular array, time spent building 2-itemsets, and peak live tidset memory. Only the rows where a counter changes are shown; the full tables are in \texttt{results/e8\_B04\_low.md} and \texttt{results/e8\_B04.md}.}
+\label{tab:b04_ablation_counters}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Dataset & Variant & Intersections (failed) & Pairs skipped & Level-2 time & Peak tidset \\
+\midrule
+\texttt{chess} 65\% & \texttt{v0} & 140,742 (21.0\%) & 0 & 4.3~ms & 1.48~MiB \\
+ & \texttt{v1} & 114,007 (2.5\%) & 0 & 9.2~ms & 1.09~MiB \\
+ & \texttt{v4} & 114,007 (2.5\%) & 0 & 0.0~ms & 0.04~MiB \\
+ & \texttt{v5} & 113,908 (2.4\%) & 98 & 2.0~ms & 0.04~MiB \\
+\texttt{mushroom} 18\% & \texttt{v0} & 65,010 (11.8\%) & 0 & 30.6~ms & 1.73~MiB \\
+ & \texttt{v1} & 58,730 (2.3\%) & 0 & 42.8~ms & 1.36~MiB \\
+ & \texttt{v4} & 58,730 (2.3\%) & 0 & 0.2~ms & 0.15~MiB \\
+\texttt{retail} 0.1\% & \texttt{v0} & 3,932,582 (99.9\%) & 0 & 6317~ms & 4.19~MiB \\
+ & \texttt{v1} & 2,244,719 (99.8\%) & 0 & 5557~ms & 2.66~MiB \\
+ & \texttt{v3} & 2,244,719 (99.8\%) & 0 & 2896~ms & 2.66~MiB \\
+ & \texttt{v4} & 2,244,719 (99.8\%) & 0 & 3665~ms & 22.45~MiB \\
+ & \texttt{v5} & 8,038 (33.9\%) & 2,236,526 & 74~ms & 22.45~MiB \\
+ & \texttt{v6} & 8,038 (33.9\%) & 2,236,526 & 124~ms & 2.66~MiB \\
+\texttt{T10I4D100K} 0.2\% & \texttt{v3} & 292,768 (95.7\%) & 0 & 2777~ms & 3.85~MiB \\
+ & \texttt{v4} & 292,768 (95.7\%) & 0 & 324~ms & 9.34~MiB \\
+ & \texttt{v5} & 22,430 (44.4\%) & 270,297 & 34~ms & 9.34~MiB \\
+ & \texttt{v6} & 22,430 (44.4\%) & 270,297 & 136~ms & 3.85~MiB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At the lowest \texttt{minsup}, the fastest variant is $36$--$65\times$ faster than \texttt{v0} on every benchmark, and $4.5$--$48\times$ at the median \texttt{minsup}. No single variant is fastest everywhere: \texttt{v4} wins on the dense datasets and \texttt{v5} on the sparse ones. On the dense datasets \texttt{v6} stays within 15\% of the fastest variant at the lowest \texttt{minsup} (and within 2~ms at the median \texttt{minsup}, where every run takes only a few milliseconds), and it never needs more tidset memory than the more compact representation, which is why it is the default of the command-line interface. Section~\ref{subsec:exp_e8} compares each step with its hypothesis. In addition, the test suite asserts that the intersection routines allocate no memory and are type-stable (\texttt{@allocated} $= 0$, \texttt{@inferred}; Table~\ref{tab:b02_tests}).
 
 % ---------------------------------------------------------------------------
 \subsection{Automated Verification and Match Rate}
@@ -63,21 +267,22 @@ Correctness is verified independently of the core algorithm author through a thr
 
 Continuous Integration (GitHub Actions) executes the entire test suite on a clean Julia~1.11.4 environment under both default settings and \texttt{--check-bounds=yes} to verify array-bounds safety for \texttt{@inbounds}-annotated loops. Table~\ref{tab:b02_tests} summarizes the automated verification results across unit tests and four benchmark datasets (\texttt{chess}, \texttt{mushroom}, \texttt{retail}, \texttt{T10I4D100K}).
 
-% Data source: `julia --project=. test/runtests.jl` (commit 52011a2)
+% Data source: `julia --project=. test/runtests.jl` (commit ba256aa, all variants v0-v6; per-file counts from the same run)
 \begin{table}[H]
 \centering
-\caption{Summary of automated test suite execution (\texttt{test/runtests.jl}) for variants \texttt{v0} and \texttt{v1} under default and \texttt{--check-bounds=yes} modes.}
+\caption{Summary of automated test suite execution (\texttt{test/runtests.jl}) for all seven variants \texttt{v0}--\texttt{v6} under default and \texttt{--check-bounds=yes} modes.}
 \label{tab:b02_tests}
 \begin{tabular}{llrr}
 \toprule
 Test Group & Source File & Assertions & Pass Rate \\
 \midrule
-SPMF I/O and \texttt{minsup\_count} & \texttt{test\_io.jl} & 49 & 100\% \\
-200-DB brute-force oracle, toy, edge cases & \texttt{test\_correctness.jl} & 62 & 100\% \\
+SPMF I/O and \texttt{minsup\_count} & \texttt{test\_io.jl} & 62 & 100\% \\
+200-DB brute-force oracle, toy, edge cases & \texttt{test\_correctness.jl} & 129 & 100\% \\
 Association rules and \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
-Statistics and cross-variant checks (4 benchmarks) & \texttt{test\_benchmark.jl} & 16 & 100\% \\
+Statistics, cross-variant and SPMF checks (4 benchmarks) & \texttt{test\_benchmark.jl} & 52 & 100\% \\
+Intersection kernels: random inputs, zero allocation, type stability & \texttt{test\_performance.jl} & 10,006 & 100\% \\
 \midrule
-\textbf{Total} & \texttt{runtests.jl} & \textbf{352} & \textbf{100\%} \\
+\textbf{Total} & \texttt{runtests.jl} & \textbf{10,474} & \textbf{100\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
