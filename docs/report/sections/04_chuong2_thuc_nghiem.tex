@@ -1,224 +1,209 @@
-% Section 4: Chapter 2 - Experiments and Evaluation
-% Primary author: Member B (Nguyen Tien Cuong); complexity/memory interpretation integrated with Member A.
-\section{Chapter 2: Experiments and Evaluation}
+% Mục 4: Chương 2 - Thực nghiệm và Đánh giá
+\section{Chương 2: Thực nghiệm và Đánh giá}
 \label{sec:04_chapter2_experiments}
 
 % ---------------------------------------------------------------------------
-\subsection{Experimental Setup and Measurement Protocol}
+\subsection{Thiết lập thực nghiệm và Quy trình đo}
 \label{subsec:exp_setup}
 
-All official benchmarks were executed on a fixed reference machine (\texttt{results/ENV.md}): 11th Gen Intel Core i5-11400H (2.70~GHz, 12 hardware threads, 15.8~GiB RAM, Windows~x64), running Julia~1.11.4 (single-threaded) and OpenJDK~25.0.5.1 LTS for the SPMF reference binary (\texttt{spmf.jar}, Eclat~v2.65, SHA-256 prefix \texttt{bb371b99}).
+Toàn bộ thí nghiệm benchmark chính thức được thực thi trên một máy cố định (\texttt{results/ENV.md}): Intel Core i5-11400H (2{,}70~GHz, 12 luồng, 15{,}8~GiB RAM, Windows~x64), Julia~1.11.4 (đơn luồng) và OpenJDK~25.0.5.1 LTS cho SPMF (\texttt{spmf.jar}, Eclat~v2.65, đầu mã SHA-256 \texttt{bb371b99}).
 
-Four canonical benchmark datasets from the FIMI and SPMF repositories (mirrored publicly on Hugging Face with SHA-256 verification) cover both dense and sparse regimes (Table~\ref{tab:b06_datasets}). Every dataset's measured statistics ($N$, $m$, $\bar{L}$) match the project specification table exactly, including the FIMI 8,124-transaction version of \texttt{mushroom}.
+Bốn tập benchmark chuẩn từ FIMI/SPMF (được lưu công khai trên Hugging Face kèm mã kiểm tra SHA-256) bao phủ cả hai chế độ dữ liệu dày đặc và thưa (Bảng~\ref{tab:b06_datasets}). Toàn bộ thông số đo lại ($N$, $m$, $\bar{L}$) khớp tuyệt đối với đặc tả đề bài, bao gồm bản FIMI 8.124 giao dịch của \texttt{mushroom}.
 
-% Data source: data/benchmark/README.md
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Benchmark datasets used in Chapter~2 evaluation (re-measured statistics verified against specification).}
+\caption{Bốn tập dữ liệu benchmark sử dụng trong Chương~2 (Bảng~B06).}
 \label{tab:b06_datasets}
-\small
-\begin{tabular}{lrrrll}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrll@{}}
 \toprule
-Dataset & $N$ & $m$ & $\bar{L}$ & Regime & Experiments \\
+Tập dữ liệu & $N$ & $m$ & $\bar{L}$ & Đặc trưng & Thí nghiệm \\
 \midrule
-\texttt{chess} & 3,196 & 75 & 37.00 & Dense, long patterns & E1--E4, E9 \\
-\texttt{mushroom} & 8,124 & 119 & 23.00 & Dense, moderate $m$ & E1--E4, E9 \\
-\texttt{retail} & 88,162 & 16,470 & 10.31 & Sparse, real-world & E1--E5, E9 \\
-\texttt{T10I4D100K} & 100,000 & 870 & 10.10 & Sparse, synthetic & E1--E4, E9 \\
+\texttt{chess} & 3,196 & 75 & 37.00 & Dày, mẫu dài & E1--E4, E9 \\
+\texttt{mushroom} & 8,124 & 119 & 23.00 & Dày, $m$ vừa & E1--E4, E9 \\
+\texttt{retail} & 88,162 & 16,470 & 10.31 & Thưa, thực tế & E1--E5, E9 \\
+\texttt{T10I4D100K} & 100,000 & 870 & 10.10 & Thưa, tổng hợp & E1--E4, E9 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-\textbf{Measurement Protocol:} Each dataset is evaluated across a locked 7-point descending \texttt{minsup} grid (\texttt{results/minsup\_grid.csv}). Every timing measurement runs inside a fresh operating-system process with 3 repetitions (reporting the median). Inside each Julia worker process, a warm-up run on \texttt{pasquier99.txt} precedes timing via \texttt{time\_ns()}, separating algorithm time (\texttt{t\_algo\_s}) from full process wall time (\texttt{t\_wall\_s}, which includes JIT or JVM startup). Internal instrumentation (\texttt{EclatStats}) is strictly disabled during timing runs and measured in a separate pass. Both \texttt{EclatFIM} and SPMF stream outputs to disk on the same drive.
+\textbf{Quy trình đo:} Mỗi tập dữ liệu được đo trên lưới 7 mức \texttt{minsup} giảm dần cố định (\texttt{results/minsup\_grid.csv}). Mỗi phép đo chạy trong một tiến trình hệ điều hành độc lập, lặp 3 lần lấy trung vị. Bên trong mỗi tiến trình Julia, một lượt chạy làm nóng (\emph{warm-up}) trên \texttt{pasquier99.txt} được thực hiện trước khi bấm giờ bằng \texttt{time\_ns()}, tách riêng thời gian thuật toán (\texttt{t\_algo\_s}) khỏi tổng thời gian tiến trình (\texttt{t\_wall\_s} gồm khởi động JIT/JVM). Bộ đếm \texttt{EclatStats} luôn tắt khi đo thời gian. Cả \texttt{EclatFIM} và SPMF đều ghi luồng đầu ra lên cùng ổ đĩa.
 
 % ---------------------------------------------------------------------------
-\subsection{E1: Correctness Verification Against SPMF}
+\subsection{E1: Kiểm chứng tính đúng đắn với SPMF}
 \label{subsec:exp_e1}
 
-\textbf{Hypothesis (H1):} Both the baseline (\texttt{v0}) and fully optimized hybrid (\texttt{v6}) variants must match SPMF \texttt{Eclat} with $100\%$ exact agreement across every dataset and support level.
+\textbf{Giả thuyết (H1):} Cả bản cơ bản (\texttt{v0}) lẫn bản tối ưu mặc định (\texttt{v6}) phải khớp tuyệt đối $100\%$ với SPMF \texttt{Eclat} trên mọi tập dữ liệu và mức hỗ trợ.
 
-\textbf{Results:} Across all $4 \times 7 \times 2 = 56$ evaluation runs (\texttt{results/e1\_correctness.csv}), both \texttt{v0} and \texttt{v6} achieve a \textbf{$100.00\%$ exact match rate} with zero missing itemsets, zero extraneous itemsets, and zero support discrepancies (Table~\ref{tab:b05_correctness}).
+\textbf{Kết quả:} Trên toàn bộ $4 \times 7 \times 2 = 56$ lượt chạy (\texttt{results/e1\_correctness.csv}), cả \texttt{v0} và \texttt{v6} đạt \textbf{tỉ lệ khớp $100{,}00\%$}, với 0 tập thiếu, 0 tập thừa và 0 sai lệch độ hỗ trợ (Bảng~\ref{tab:b05_correctness}). Giả thuyết~H1 được khẳng định hoàn toàn nhờ cơ chế chuyển đổi \texttt{minsup\_count} chính xác theo IEEE~754 và bộ đọc chuẩn SPMF.
 
-% Data source: results/e1_correctness.csv
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Correctness verification summary (E1) comparing \texttt{EclatFIM} (\texttt{v0}, \texttt{v6}) against SPMF \texttt{Eclat} across all 7 \texttt{minsup} levels per benchmark.}
+\caption{Tổng hợp kiểm chứng tính đúng đắn E1 giữa \texttt{EclatFIM} (\texttt{v0}, \texttt{v6}) và SPMF \texttt{Eclat} trên 7 mức \texttt{minsup} mỗi tập (Bảng~B05).}
 \label{tab:b05_correctness}
-\small
-\begin{tabular}{llrrrr}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}llrrrr@{}}
 \toprule
-Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & Mismatches & Match Rate \\
+Tập dữ liệu & Lưới \texttt{minsup} & Số tập (Cao $\to$ Thấp) & Lượt & Lệch & Khớp \\
 \midrule
-\texttt{chess} & 95\% $\to$ 65\% & 77 $\to$ 111,239 & 14 & 0 & \textbf{100.00\%} \\
-\texttt{mushroom} & 70\% $\to$ 18\% & 31 $\to$ 57,413 & 14 & 0 & \textbf{100.00\%} \\
-\texttt{retail} & 10\% $\to$ 0.1\% & 9 $\to$ 7,589 & 14 & 0 & \textbf{100.00\%} \\
-\texttt{T10I4D100K} & 5\% $\to$ 0.2\% & 10 $\to$ 13,255 & 14 & 0 & \textbf{100.00\%} \\
+\texttt{chess} & 95\% $\to$ 65\% & 77 $\to$ 111,239 & 14 & 0 & \textbf{100\%} \\
+\texttt{mushroom} & 70\% $\to$ 18\% & 31 $\to$ 57,413 & 14 & 0 & \textbf{100\%} \\
+\texttt{retail} & 10\% $\to$ 0.1\% & 9 $\to$ 7,589 & 14 & 0 & \textbf{100\%} \\
+\texttt{T10I4D100K} & 5\% $\to$ 0.2\% & 10 $\to$ 13,255 & 14 & 0 & \textbf{100\%} \\
 \midrule
-\textbf{Total} & \textbf{28 grid points} & — & \textbf{56} & \textbf{0} & \textbf{100.00\%} \\
+\textbf{Tổng cộng} & \textbf{28 điểm lưới} & --- & \textbf{56} & \textbf{0} & \textbf{100\%} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-\textbf{Conclusion:} Hypothesis~H1 is fully confirmed. Exact floating-point threshold conversion (\texttt{minsup\_count}) and metadata-aware SPMF parsing completely eliminate boundary divergences.
-
 % ---------------------------------------------------------------------------
-\subsection{E2 \& E3: Runtime and Output Size Scaling with \texttt{minsup}}
+\subsection{E2 \& E3: Thời gian chạy và Số tập phổ biến theo \texttt{minsup}}
 \label{subsec:exp_e2_e3}
 
-\textbf{Hypotheses (H2, H3, H8, H9):} Lowering \texttt{minsup} causes exponential growth in output size (especially on dense datasets); \texttt{v6} should substantially outperform \texttt{v0} and SPMF \texttt{Eclat} (which uses boxed \texttt{HashSet<Integer>}) and remain competitive with SPMF \texttt{Eclat\_bitset}.
+\textbf{Giả thuyết (H2, H3, H8, H9):} Giảm \texttt{minsup} làm số tập phổ biến tăng theo hàm mũ (đặc biệt trên dữ liệu dày); \texttt{v6} phải vượt trội \texttt{v0} và SPMF \texttt{Eclat} (dùng \texttt{HashSet<Integer>} đóng hộp) và cạnh tranh với SPMF \texttt{Eclat\_bitset}.
 
-\textbf{Results:} Figure~\ref{fig:f03_time} compares median algorithm runtime across all four benchmarks (\texttt{results/e2\_time.csv}), while Figure~\ref{fig:f04_itemsets} contrasts frequent itemset counts between dense and sparse regimes. At the lowest \texttt{minsup} of each grid:
+\textbf{Kết quả:} Hình~\ref{fig:f03_time} so sánh thời gian thuật toán trung vị trên 4 tập benchmark (\texttt{results/e2\_time.csv}) và Hình~\ref{fig:f04_itemsets} đối chiếu tốc độ bùng nổ số lượng tập phổ biến giữa dữ liệu dày và thưa. Tại mức \texttt{minsup} thấp nhất mỗi lưới:
 \begin{itemize}
-    \item \textbf{\texttt{chess} (65\%, 111,239 itemsets):} \texttt{v6} runs in \textbf{0.1046~s} vs.\ \texttt{v0} (0.8484~s, $8.1\times$ slower), SPMF \texttt{Eclat} (4.997~s, $47.8\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.112~s).
-    \item \textbf{\texttt{mushroom} (18\%, 57,413 itemsets):} \texttt{v6} runs in \textbf{0.0794~s} vs.\ \texttt{v0} (0.4709~s, $5.9\times$ slower), SPMF \texttt{Eclat} (1.209~s, $15.2\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.093~s).
-    \item \textbf{\texttt{retail} (0.1\%, 7,589 itemsets):} \texttt{v6} runs in \textbf{0.1823~s} vs.\ \texttt{v0} (5.543~s, $30.4\times$ slower), SPMF \texttt{Eclat} (0.804~s, $4.4\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.654~s, $3.6\times$ slower).
-    \item \textbf{\texttt{T10I4D100K} (0.2\%, 13,255 itemsets):} \texttt{v6} runs in \textbf{0.1955~s} vs.\ \texttt{v0} (2.6044~s, $13.3\times$ slower), SPMF \texttt{Eclat} (0.752~s, $3.8\times$ slower), and SPMF \texttt{Eclat\_bitset} (0.247~s).
+    \item \textbf{\texttt{chess} (65\%, 111.239 tập):} \texttt{v6} chạy \textbf{0,1046~s} so với \texttt{v0} (0,8484~s, chậm hơn $8{,}1\times$), SPMF \texttt{Eclat} (4,997~s, chậm hơn $47{,}8\times$) và SPMF \texttt{Eclat\_bitset} (0,112~s).
+    \item \textbf{\texttt{mushroom} (18\%, 57.413 tập):} \texttt{v6} chạy \textbf{0,0794~s} so với \texttt{v0} (0,4709~s, $5{,}9\times$), SPMF \texttt{Eclat} (1,209~s, $15{,}2\times$) và SPMF \texttt{Eclat\_bitset} (0,093~s).
+    \item \textbf{\texttt{retail} (0,1\%, 7.589 tập):} \texttt{v6} chạy \textbf{0,1823~s} so với \texttt{v0} (5,543~s, $30{,}4\times$), SPMF \texttt{Eclat} (0,804~s, $4{,}4\times$) và SPMF \texttt{Eclat\_bitset} (0,654~s, $3{,}6\times$).
+    \item \textbf{\texttt{T10I4D100K} (0,2\%, 13.255 tập):} \texttt{v6} chạy \textbf{0,1955~s} so với \texttt{v0} (2,6044~s, $13{,}3\times$), SPMF \texttt{Eclat} (0,752~s, $3{,}8\times$) và SPMF \texttt{Eclat\_bitset} (0,247~s).
 \end{itemize}
 
-\begin{figure}[!htbp]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.68\textwidth]{F03_time_vs_minsup.pdf}
-\caption{Median algorithm runtime versus descending \texttt{minsup} across four benchmark datasets (3 repetitions, log y-axis). \texttt{EclatFIM (v6)} outperforms both \texttt{v0} and SPMF variants at low \texttt{minsup} on all four datasets.}
+\includegraphics[width=0.82\textwidth]{F03_time_vs_minsup.pdf}
+\caption{Thời gian thuật toán trung vị theo \texttt{minsup} giảm dần trên 4 tập benchmark (3 lần chạy, trục tung log). \texttt{EclatFIM (v6)} nhanh nhất tại \texttt{minsup} thấp trên cả 4 tập (Hình~F03).}
 \label{fig:f03_time}
-\end{figure}
+\end{figure*}
 
-\begin{figure}[!htbp]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.68\textwidth]{F04_itemsets_vs_minsup.pdf}
-\caption{Frequent itemset count versus descending \texttt{minsup} for dense (\texttt{chess}, \texttt{mushroom}) versus sparse (\texttt{retail}, \texttt{T10I4D100K}) datasets.}
+\includegraphics[width=0.82\textwidth]{F04_itemsets_vs_minsup.pdf}
+\caption{Số lượng tập phổ biến theo \texttt{minsup} giảm dần: dữ liệu dày đặc (\texttt{chess}, \texttt{mushroom}) tăng theo hàm mũ nhanh hơn hẳn dữ liệu thưa (\texttt{retail}, \texttt{T10I4D100K}) (Hình~F04).}
 \label{fig:f04_itemsets}
-\end{figure}
+\end{figure*}
 
-\textbf{Explanation:} On dense datasets, 64-bit SIMD \texttt{BitVector} intersections in \texttt{v6} achieve $O(N/64)$ cost per pair, crushing \texttt{HashSet}-based SPMF \texttt{Eclat} by $15\times$--$48\times$. On sparse \texttt{retail} ($m = 16{,}470$), the upper-triangular level-2 array eliminates almost all infrequent item pairs before any tidset intersection occurs, while hybrid switching avoids the $O(N/64)$ penalty of sparse bitsets—yielding a $30.4\times$ speedup over \texttt{v0} and $3.6\times$ over SPMF \texttt{Eclat\_bitset}. Notice also that for short runs ($< 0.2$~s), full process wall time (\texttt{t\_wall\_s} $\approx 3.2$~s for Julia vs.\ $\approx 0.4$~s for JVM) is dominated by Julia's first-invocation JIT startup (confirming H9).
+\textbf{Giải thích:} Trên dữ liệu dày, giao \texttt{BitVector} 64-bit SIMD của \texttt{v6} đạt chi phí $O(N/64)$ mỗi cặp, vượt SPMF \texttt{Eclat} tới $15$--$48\times$. Trên tập thưa \texttt{retail} ($m = 16.470$), mảng tam giác mức~2 loại hầu hết cặp không phổ biến trước khi giao tidset, đồng thời chuyển đổi lai tránh chi phí $O(N/64)$ của bitset thưa -- nhanh hơn \texttt{v0} $30{,}4\times$ và SPMF \texttt{Eclat\_bitset} $3{,}6\times$. Ở các lần chạy rất ngắn ($<0{,}2$~s), tổng thời gian tiến trình của Julia (\texttt{t\_wall\_s} $\approx 3{,}2$~s so với JVM $\approx 0{,}4$~s) bị chi phối bởi biên dịch JIT lần đầu (khẳng định H9).
 
 % ---------------------------------------------------------------------------
-\subsection{E4: Peak Memory Footprint at Median \texttt{minsup}}
+\subsection{E4: Mức sử dụng bộ nhớ đỉnh tại \texttt{minsup} trung bình}
 \label{subsec:exp_e4}
 
-\textbf{Hypothesis (H2, H7):} On dense datasets ($\rho > 1/32$), \texttt{BitVector} tidsets ($N/8$ bytes) occupy far less memory than \texttt{Vector\{Int32\}} ($4\sigma$ bytes); on sparse datasets ($\rho < 1/32$), \texttt{v6}'s hybrid rule retains compact vector tidsets and avoids bitset memory blowup.
+\textbf{Giả thuyết (H2, H7):} Trên dữ liệu dày ($\rho > 1/32$), \texttt{BitVector} ($N/8$ byte) gọn hơn nhiều so với \texttt{Vector\{Int32\}} ($4\sigma$ byte); trên dữ liệu thưa ($\rho < 1/32$), luật chuyển đổi lai của \texttt{v6} giữ biểu diễn danh sách gọn để tránh phình bộ nhớ bitset.
 
-\textbf{Results:} Figure~\ref{fig:f05_memory} reports peak live tidset bytes (\texttt{EclatStats}) and added process RSS above the 158.9~MiB Julia baseline at the median \texttt{minsup} level (\texttt{results/e4\_memory.csv}). On \texttt{chess} (80\%), peak live tidset memory drops by \textbf{$33.4\times$} (from 901.4~KiB in \texttt{v0} to 27.0~KiB in \texttt{v6}); on \texttt{mushroom} (35\%), it drops by \textbf{$23.1\times$} (from 1,168.9~KiB to 50.6~KiB). Conversely, on sparse \texttt{retail} (1%), SPMF \texttt{Eclat\_bitset} allocates 840.8~MiB of JVM heap for sparse bitsets, whereas \texttt{EclatFIM (v6)} stays in compact vector representation (826.0~KiB live tidsets, 120.8~MiB delta RSS).
+\textbf{Kết quả:} Hình~\ref{fig:f05_memory} trình bày bộ nhớ tidset sống cực đại (\texttt{EclatStats}) và phần RSS tiến trình tăng thêm trên nền 158,9~MiB của Julia (\texttt{results/e4\_memory.csv}). Trên \texttt{chess} (80\%), bộ nhớ tidset sống giảm \textbf{$33{,}4\times$} (từ 901,4~KiB ở \texttt{v0} xuống 27,0~KiB ở \texttt{v6}); trên \texttt{mushroom} (35\%), giảm \textbf{$23{,}1\times$} (1.168,9~KiB xuống 50,6~KiB). Ngược lại, trên tập thưa \texttt{retail} (1\%), SPMF \texttt{Eclat\_bitset} cấp phát tới 840,8~MiB heap JVM cho bitset thưa, còn \texttt{EclatFIM (v6)} giữ dạng danh sách gọn (826,0~KiB tidset sống, 120,8~MiB delta RSS).
 
-\begin{figure}[!htbp]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.68\textwidth]{F05_peak_memory.pdf}
-\caption{Peak live tidset memory (left, log scale) and added process RSS (right) at median \texttt{minsup} (\texttt{chess} 80\%, \texttt{mushroom} 35\%, \texttt{retail} 1\%, \texttt{T10I4D100K} 1\%).}
+\includegraphics[width=0.82\textwidth]{F05_peak_memory.pdf}
+\caption{Bộ nhớ tidset sống cực đại (trái, thang log) và RSS tăng thêm (phải) tại \texttt{minsup} trung bình (\texttt{chess} 80\%, \texttt{mushroom} 35\%, \texttt{retail} 1\%, \texttt{T10I4D100K} 1\%) (Hình~F05).}
 \label{fig:f05_memory}
-\end{figure}
+\end{figure*}
 
 % ---------------------------------------------------------------------------
-\subsection{E5: Scalability on Nested Retail Subsets}
+\subsection{E5: Khả năng mở rộng trên các tập con lồng nhau của \texttt{retail}}
 \label{subsec:exp_e5}
 
-\textbf{Hypothesis (H4):} With relative \texttt{minsup} fixed ($0.2\%$), runtime should scale linearly with database size $N$ because tidset lengths grow proportionally to $N$ while the frequent pattern lattice remains nearly invariant.
+\textbf{Giả thuyết (H4):} Khi cố định \texttt{minsup} tương đối ($0{,}2\%$), thời gian chạy tăng tuyến tính theo kích thước $N$ vì độ dài tidset tỉ lệ thuận với $N$ trong khi dàn tập phổ biến gần như không đổi.
 
-\textbf{Results:} Figure~\ref{fig:f06_scalability} plots median runtime across nested subsets $10\% \subset 25\% \subset 50\% \subset 75\% \subset 100\%$ of \texttt{retail} (\texttt{results/e5\_scalability.csv}). Linear regression confirms strong linearity for \texttt{v0} ($R^2 = 0.9968$, 0.317~s $\to$ 1.771~s), SPMF \texttt{Eclat} ($R^2 = 0.9575$, 0.257~s $\to$ 0.685~s), and SPMF \texttt{Eclat\_bitset} ($R^2 = 0.9788$, 0.265~s $\to$ 0.633~s). For \texttt{v6}, runtime stays nearly flat between 0.119~s and 0.134~s ($R^2 = 0.5291$) because the optimized mining kernel executes in milliseconds and is dominated by fixed per-invocation overhead.
+\textbf{Kết quả:} Hình~\ref{fig:f06_scalability} biểu diễn thời gian trung vị trên các tập con lồng nhau $10\% \subset 25\% \subset 50\% \subset 75\% \subset 100\%$ của \texttt{retail} (\texttt{results/e5\_scalability.csv}). Hồi quy tuyến tính xác nhận xu hướng tuyến tính rõ rệt ở \texttt{v0} ($R^2 = 0{,}9968$, 0,317~s $\to$ 1,771~s), SPMF \texttt{Eclat} ($R^2 = 0{,}9575$, 0,257~s $\to$ 0,685~s) và SPMF \texttt{Eclat\_bitset} ($R^2 = 0{,}9788$, 0,265~s $\to$ 0,633~s). Riêng \texttt{v6} giữ thời gian gần như phẳng trong khoảng 0,119--0,134~s ($R^2 = 0{,}5291$) vì nhân khai thác đã tối ưu chỉ tốn vài mili-giây và bị chi phối bởi chi phí cố định mỗi lượt gọi.
 
-\begin{figure}[!htbp]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.62\textwidth]{F06_scalability.pdf}
-\caption{Scalability on nested \texttt{retail} subsets ($10\%$ to $100\%$, \texttt{minsup} $= 0.2\%$) with linear regression fits and $R^2$.}
+\includegraphics[width=\columnwidth]{F06_scalability.pdf}
+\caption{Khả năng mở rộng trên các tập con lồng nhau của \texttt{retail} ($10\%$ đến $100\%$, \texttt{minsup} $= 0{,}2\%$) kèm đường hồi quy tuyến tính và $R^2$ (Hình~F06).}
 \label{fig:f06_scalability}
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\subsection{E6: Impact of Average Transaction Length ($\bar{L}$)}
+\subsection{E6: Ảnh hưởng của độ dài giao dịch trung bình ($\bar{L}$)}
 \label{subsec:exp_e6}
 
-\textbf{Hypothesis (H5):} Increasing average transaction length $\bar{L}$ at fixed $N = 50{,}000$, $m = 1{,}000$, and \texttt{minsup} $= 1\%$ increases co-occurrence density and pattern depth, causing superlinear/exponential growth in output size and runtime (Zaki~\cite{zaki2000scalable}, Appendix~A).
+\textbf{Giả thuyết (H5):} Tăng độ dài giao dịch trung bình $\bar{L}$ với $N = 50.000$, $m = 1.000$ và \texttt{minsup} $= 1\%$ cố định làm tăng mật độ đồng xuất hiện và độ sâu tìm kiếm, gây tăng siêu tuyến tính về kích thước đầu ra và thời gian chạy~\cite{zaki2000scalable}.
 
-\textbf{Results:} As target $\bar{L}$ increases from $5$ to $30$ (\texttt{results/e6\_tx\_length.csv}, Figure~\ref{fig:f07_txlen}), frequent itemsets expand $18.6\times$ (from 828 to 15,432) and maximum pattern length increases from 8 to 11. Runtime escalates $16.8\times$ for \texttt{v0} (0.241~s $\to$ 4.058~s) and $9.0\times$ for SPMF \texttt{Eclat} (0.148~s $\to$ 1.335~s). In contrast, \texttt{v6} remains highly resilient (0.1065~s $\to$ 0.1405~s, achieving a \textbf{$28.9\times$ speedup over \texttt{v0}} and \textbf{$9.5\times$ over SPMF \texttt{Eclat}} at $\bar{L} = 30$) due to level-2 triangular pruning, adaptive galloping, and zero-allocation buffer reuse.
+\textbf{Kết quả:} Khi $\bar{L}$ tăng từ 5 lên 30 (\texttt{results/e6\_tx\_length.csv}, Hình~\ref{fig:f07_txlen}), số tập phổ biến tăng $18{,}6\times$ (828 lên 15.432) và độ dài cực đại tăng từ 8 lên 11. Thời gian tăng $16{,}8\times$ ở \texttt{v0} (0,241~s $\to$ 4,058~s) và $9{,}0\times$ ở SPMF \texttt{Eclat} (0,148~s $\to$ 1,335~s). Ngược lại, \texttt{v6} rất ổn định (0,1065~s $\to$ 0,1405~s, nhanh hơn \textbf{$28{,}9\times$ so với \texttt{v0}} và \textbf{$9{,}5\times$ so với SPMF \texttt{Eclat}} tại $\bar{L} = 30$) nhờ mảng tam giác mức~2, tìm kiếm nhảy bước và bộ đệm không cấp phát.
 
-\begin{figure}[!htbp]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.62\textwidth]{F07_tx_length.pdf}
-\caption{Effect of average transaction length $\bar{L} \in \{5, 10, 15, 20, 25, 30\}$ on synthetic datasets ($N = 50{,}000$, $m = 1{,}000$, \texttt{minsup} $= 1\%$, seed $= 42$).}
+\includegraphics[width=\columnwidth]{F07_tx_length.pdf}
+\caption{Ảnh hưởng của độ dài giao dịch trung bình $\bar{L} \in \{5, 10, 15, 20, 25, 30\}$ trên dữ liệu tổng hợp ($N = 50.000$, $m = 1.000$, \texttt{minsup} $= 1\%$, seed $= 42$) (Hình~F07).}
 \label{fig:f07_txlen}
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\subsection{E9: Comparison Against Apriori and FP-Growth}
+\subsection{E9: So sánh với Apriori và FP-Growth}
 \label{subsec:exp_e9}
 
-\textbf{Hypothesis (H6)} is confirmed: at the lowest \texttt{minsup} per dataset (\texttt{results/e9\_vs\_apriori\_fp.csv}), \texttt{EclatFIM (v6)} outperforms SPMF \texttt{Apriori} by $307\times$ on \texttt{retail} (0.156~s vs.\ 47.934~s) and $40.7\times$ on \texttt{T10I4D100K} (0.184~s vs.\ 7.467~s), and outperforms SPMF \texttt{FPGrowth\_itemsets} by $2.3\times$--$5.4\times$ across all four benchmarks. Full curves are presented in Appendix~\ref{subsec:appendix_e9} (Figure~\ref{fig:f09_apriori_fp}).
+\textbf{Giả thuyết (H6)} được khẳng định: tại \texttt{minsup} thấp nhất mỗi tập (\texttt{results/e9\_vs\_apriori\_fp.csv}), \texttt{EclatFIM (v6)} nhanh hơn SPMF \texttt{Apriori} tới \textbf{$307\times$} trên \texttt{retail} (0,156~s so với 47,934~s) và \textbf{$40{,}7\times$} trên \texttt{T10I4D100K} (0,184~s so với 7,467~s), đồng thời vượt SPMF \texttt{FPGrowth\_itemsets} từ $2{,}3\times$ đến $5{,}4\times$ trên cả 4 tập chuẩn. Đồ thị chi tiết được trình bày tại Phụ lục~\ref{subsec:appendix_e9} (Hình~\ref{fig:f09_apriori_fp}).
 
 % ---------------------------------------------------------------------------
-\subsection{E8: Ablation Study of the Optimizations (\texttt{v0} $\to$ \texttt{v6})}
+\subsection{E8: Phân rã đóng góp từng tối ưu (\texttt{v0} $\to$ \texttt{v6})}
 \label{subsec:exp_e8}
-% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
 
-\textbf{Hypotheses (H2, H3, H8):} Ordering items by ascending support reduces the number of intersections (H3); bitsets beat tid lists on dense data (H2); the triangular array removes most level-2 intersections on sparse data with many frequent items (H8). Section~\ref{subsec:optimizations} describes each variant.
+\textbf{Giả thuyết (H2, H3, H8):} Sắp mục theo độ hỗ trợ tăng dần làm giảm số phép giao (H3); bitset thắng danh sách tid trên dữ liệu dày (H2); mảng tam giác loại bỏ phần lớn phép giao mức~2 trên dữ liệu thưa nhiều mục (H8).
 
-\textbf{Setup:} \texttt{scripts/bench\_ablation.jl} measures the seven variants at the median and at the lowest \texttt{minsup} of each benchmark, using the same protocol as E2 (one fresh Julia process per run started by \texttt{scripts/run\_one.jl}, warm-up on a toy dataset, \texttt{time\_ns()}, median of 3 runs or 5 runs below one second, output written to a file). A separate untimed run of each configuration collects the \texttt{EclatStats} counters (decision D20). Because these runs were made on a second machine (Appendix~\ref{subsec:appendix_reproduce}), only ratios between variants are compared, never absolute times against E2. Results are in Tables~\ref{tab:b03_ablation_time} and~\ref{tab:b04_ablation_counters} (\texttt{results/e8\_*.csv}).
-
-\textbf{Results, step by step} (lowest \texttt{minsup} unless stated otherwise):
+\textbf{Kết quả từng bước} (tại \texttt{minsup} thấp nhất trong Bảng~\ref{tab:b03_ablation_time} và Bảng~\ref{tab:b04_ablation_counters} ở Phụ lục~\ref{subsec:appendix_e8_counters}):
 \begin{itemize}
-    \item \textbf{\texttt{v1}, item order (H3): confirmed.} The number of intersections drops by 19\% on \texttt{chess}, 10\% on \texttt{mushroom}, and 43\% on \texttt{retail}; failing intersections drop $10.6\times$ on \texttt{chess} (29,532 to 2,797) and $5.6\times$ on \texttt{mushroom}; peak tidset memory decreases accordingly (\texttt{retail}: 4.19 to 2.66~MiB). Time improves by $1.6\times$ on \texttt{retail} and $1.2\times$ on \texttt{mushroom}, but hardly on \texttt{chess} and \texttt{T10I4D100K}, where the baseline is dominated by memory allocation and by level-2 intersections, respectively.
-    \item \textbf{\texttt{v2}, buffer reuse: large gain on dense data.} \texttt{v2} is $3.5\times$ faster than \texttt{v1} on \texttt{chess} and $3.4\times$ on \texttt{mushroom}, where each run performs 59,000--114,000 intersections and \texttt{v1} allocates a new array for each of them. On sparse data the gain is only $5$--$9\%$, because the time is spent intersecting long level-2 tidsets, not allocating.
-    \item \textbf{\texttt{v3}, adaptive intersection: helps on sparse data, hurts on dense data.} \texttt{retail} becomes $2.6\times$ faster and \texttt{T10I4D100K} $1.4\times$ faster, because 99.8\% and 95.7\% of their intersections fail and early termination stops them after a few elements. On \texttt{chess} only 2.5\% of the intersections fail and the two tid lists usually have similar lengths, so the extra checks never pay off: \texttt{v3} is $1.7\times$ slower than \texttt{v2} on \texttt{chess} and $1.4\times$ slower on \texttt{mushroom}.
-    \item \textbf{\texttt{v4}, bitsets (H2): confirmed on dense data.} \texttt{v4} is $17.7\times$ faster than \texttt{v3} on \texttt{chess} and $11.6\times$ on \texttt{mushroom}, with $9$--$27\times$ smaller peak tidset memory. On \texttt{retail}, \texttt{v4} is $1.7\times$ slower than \texttt{v3} and needs $8.4\times$ more memory (22.45 versus 2.66~MiB), as predicted for sparse data. \texttt{T10I4D100K} is sparse ($\rho \approx 0.013$) yet \texttt{v4} is $8.1\times$ faster than \texttt{v3} there, while using $2.4\times$ more memory: in time, bitsets pay off at much lower densities than the memory break-even $1/32$ (E7, Section~\ref{subsec:exp_e7}).
-    \item \textbf{\texttt{v5}, triangular array (H8): confirmed on sparse data.} On \texttt{retail} the array skips 2,236,526 infrequent pairs, the number of intersections falls from 2.24 million to 8,038, and the time falls $24.5\times$; on \texttt{T10I4D100K} intersections fall from 292,768 to 22,430 and time $4.2\times$. On the dense datasets, where few items are frequent (98 and 558 pairs skipped), counting pairs costs slightly more than it saves ($11$--$15\%$ slower than \texttt{v4}). At the median \texttt{minsup} of \texttt{retail} (1\%), \texttt{v5} is also slower than \texttt{v4} (34.0 versus 20.5~ms): with only 2,458 intersections in total, one scan of 88,162 transactions to count pairs costs more than the bitset intersections it avoids. The triangular array pays off when $\binom{m_f}{2}$ is large compared with $N\bar{L}^2$, not in every case.
-    \item \textbf{\texttt{v6}, hybrid representation: trades time for memory on sparse data.} On the dense datasets \texttt{v6} keeps bitsets everywhere (no switch) and matches \texttt{v4}/\texttt{v5}. On \texttt{retail} at 0.1\% and on \texttt{T10I4D100K}, the root density is below $1/32$, so \texttt{v6} uses tid lists: peak tidset memory returns to the \texttt{v3} level (22.45 to 2.66~MiB on \texttt{retail}; 9.34 to 3.85~MiB on \texttt{T10I4D100K}), but \texttt{v6} is $2.4\times$ and $3.6\times$ slower than \texttt{v5}, consistent with E7: at these densities, tid-list intersections are slower than bitset intersections.
+    \item \textbf{\texttt{v1} (thứ tự mục, H3):} Khẳng định. Số phép giao giảm 19\% trên \texttt{chess}, 10\% trên \texttt{mushroom} và 43\% trên \texttt{retail}; phép giao thất bại giảm $10{,}6\times$ trên \texttt{chess} và $5{,}6\times$ trên \texttt{mushroom}; bộ nhớ tidset đỉnh giảm tương ứng (\texttt{retail}: 4,19 xuống 2,66~MiB).
+    \item \textbf{\texttt{v2} (tái sử dụng bộ đệm):} Cải thiện mạnh trên dữ liệu dày ($3{,}5\times$ trên \texttt{chess}, $3{,}4\times$ trên \texttt{mushroom}) nơi có 59.000--114.000 phép giao cấp phát mảng mới; trên dữ liệu thưa chỉ tăng 5--9\% do thời gian chủ yếu nằm ở giao mức~2.
+    \item \textbf{\texttt{v3} (giao thích nghi):} Lợi trên dữ liệu thưa (\texttt{retail} nhanh hơn $2{,}6\times$, \texttt{T10I4D100K} $1{,}4\times$) vì 95{,}7--99{,}8\% phép giao thất bại nên dừng sớm phát huy tối đa; ngược lại chậm hơn $1{,}4$--$1{,}7\times$ trên dữ liệu dày nơi chỉ 2,5\% phép giao thất bại.
+    \item \textbf{\texttt{v4} (bitset, H2):} Nhanh hơn \texttt{v3} tới $17{,}7\times$ trên \texttt{chess} và $11{,}6\times$ trên \texttt{mushroom}, đồng thời giảm bộ nhớ $9$--$27\times$. Trên \texttt{retail} chậm hơn $1{,}7\times$ và tốn bộ nhớ gấp $8{,}4\times$ (22,45 so với 2,66~MiB). Đáng chú ý, trên \texttt{T10I4D100K} tuy mật độ thấp ($\rho \approx 0{,}013$) nhưng \texttt{v4} vẫn nhanh hơn \texttt{v3} $8{,}1\times$ dù tốn RAM gấp $2{,}4\times$.
+    \item \textbf{\texttt{v5} (mảng tam giác, H8):} Trên \texttt{retail} bỏ qua 2.236.526 cặp không phổ biến, giảm số phép giao từ 2,24 triệu xuống 8.038 và tăng tốc $24{,}5\times$; trên \texttt{T10I4D100K} tăng tốc $4{,}2\times$. Trên dữ liệu dày (ít mục phổ biến) chi phí quét đếm cặp làm chậm nhẹ 11--15\%.
+    \item \textbf{\texttt{v6} (biểu diễn lai):} Đánh đổi nhẹ thời gian lấy bộ nhớ trên dữ liệu thưa: bộ nhớ đỉnh quay về mức tối ưu của \texttt{v3} (2,66~MiB trên \texttt{retail}; 3,85~MiB trên \texttt{T10I4D100K}) trong khi vẫn giữ tốc độ tương đương \texttt{v4}/\texttt{v5} trên dữ liệu dày.
 \end{itemize}
 
-\textbf{Conclusion:} Every optimization has a measurable effect, and every effect matches the complexity analysis once the condition under which it applies is taken into account: allocation-free buffers and bitsets help when there are many intersections on dense tidsets, early termination and the triangular array help when most candidates fail. Because the conditions differ between datasets, no single variant is fastest everywhere; the fastest variant is $36$--$65\times$ faster than the baseline at the lowest \texttt{minsup}.
-
 % ---------------------------------------------------------------------------
-\subsection{E7: Bitsets versus Tid Lists as a Function of Density}
+\subsection{E7: Bitset so với Danh sách tid theo mật độ $\rho$}
 \label{subsec:exp_e7}
-% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
 
-\textbf{Hypothesis (H2):} By Table~\ref{tab:complexity}, a tid list costs $4\sigma$ bytes and $O(\sigma)$ time per intersection, while a bitset costs $N/8$ bytes and $N/64$ AND operations regardless of $\sigma$. In memory the two representations break even at density $\rho = \sigma/N = 1/32$. In time the break-even point may differ from $1/32$: one 64-bit AND is much cheaper than one branching merge step, but the adaptive intersection of \texttt{v3} can stop early.
+\textbf{Thiết lập:} \texttt{scripts/bench\_density.jl} so sánh \texttt{v3} và \texttt{v4} trên ba nguồn: dữ liệu tổng hợp có kiểm soát mật độ ($N = 50.000$, 30 mục, $p \in [0{,}003; 0{,}4]$), 4 tập benchmark (3 mức \texttt{minsup}), và 12 phép mã hóa ảnh của Ứng dụng~2 (\texttt{results/e7\_density.csv}).
 
-\textbf{Setup:} \texttt{scripts/bench\_density.jl} compares \texttt{v3} (tid lists) with \texttt{v4} (bitsets) on three sources: (i)~synthetic data with controlled density ($N = 50{,}000$, 30 items, each present independently with probability $p$ from $0.003$ to $0.4$, threshold $\sigma_{\min} = \lceil 0.8\,p^2 N \rceil$ so that 2-itemsets are frequent); (ii)~the four benchmarks at the highest, median, and lowest \texttt{minsup} of the grid; (iii)~the 12 image encodings of Application~2. The density of a database is the mean support of its frequent items divided by $N$. Because many points are compared relative to each other, each point is measured in one warmed-up process, taking the minimum of 3 runs (\texttt{results/e7\_density.csv}).
-
-\begin{figure}[!htbp]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.58\textwidth]{F08_density_bitset_vs_vector.pdf}
-\caption{Time ratio of tid lists (\texttt{v3}) to bitsets (\texttt{v4}) versus tidset density $\rho$ (both axes logarithmic). A ratio above 1 means bitsets are faster. Line: synthetic data; markers: benchmarks (highest, median, lowest \texttt{minsup}) and the 12 image encodings of Application~2; dashed vertical line: memory break-even $\rho = 1/32$ (Figure F08).}
+\includegraphics[width=\columnwidth]{F08_density_bitset_vs_vector.pdf}
+\caption{Tỉ số thời gian giữa danh sách tid (\texttt{v3}) và bitset (\texttt{v4}) theo mật độ $\rho$ (hai trục log; $>1$ nghĩa là bitset nhanh hơn). Đường đứt dọc là điểm hòa vốn bộ nhớ $\rho = 1/32$ (Hình~F08).}
 \label{fig:f08_density}
 \end{figure}
 
-\textbf{Results:} (Figure~\ref{fig:f08_density}) \emph{Memory:} on synthetic data, the memory ratio (tid lists over bitsets) crosses 1 at $\rho \approx 0.058$, the same order as the theoretical $1/32 \approx 0.031$. \emph{Time:} bitsets are faster at almost every synthetic density; the estimated time break-even is $\rho \approx 0.0036$, nearly ten times below $1/32$, and the advantage grows to $48\times$ at $\rho = 0.4$. On real data, bitsets are $2$--$44\times$ faster on the dense benchmarks, up to $18\times$ faster on the image encodings, and even $7.6$--$8.3\times$ faster on \texttt{T10I4D100K} at 1\% and 0.2\% although its density ($0.013$--$0.021$) is below $1/32$. Tid lists win only where almost no intersection succeeds: \texttt{retail} at 0.1\% ($\rho = 0.0036$, bitsets $1.27\times$ slower) and the position-encoded image schemes (d), whose items are frequent but whose pairs almost never are (both representations take under one millisecond there).
-
-\textbf{Explanation:} The memory break-even lies slightly above $1/32$ because the formula $4\sigma$ versus $N/8$ holds only for root-class tidsets; deeper tidsets are much sparser (a pair of items has density about $\rho^2$), which favors tid lists. For time, density alone does not decide. On the synthetic data the threshold makes most pairs frequent, so a tid-list intersection cannot stop early and every branching merge step costs more than a 64-bit AND covering 64 transactions. On \texttt{retail} at 0.1\%, more than 99\% of the intersections fall below the threshold (Table~\ref{tab:b04_ablation_counters}); the adaptive intersection of \texttt{v3} stops after a few elements, whereas a bitset always processes all $N/64$ words.
-
-\textbf{Conclusion:} H2 holds for memory and only partially for time: the time break-even depends on the fraction of failing intersections, not on density alone. The hybrid \texttt{v6}, which switches representation at the \emph{memory} break-even $1/32$, therefore saves memory on sparse data but can be slower than the faster of the two pure representations, which motivates a time-based switching rule (Section~\ref{subsec:strengths_proposals}).
+\textbf{Kết quả \& Giải thích (Hình~\ref{fig:f08_density}):} Về \emph{bộ nhớ}, tỉ số hòa vốn trên dữ liệu tổng hợp nằm ở $\rho \approx 0{,}058$, cùng bậc với lý thuyết $1/32 \approx 0{,}031$ (hơi cao hơn vì tidset ở tầng sâu có mật độ khoảng $\rho^2$, có lợi cho danh sách tid). Về \emph{thời gian}, điểm hòa vốn rơi xuống tận $\rho \approx 0{,}0036$ -- thấp hơn gần $10\times$ so với $1/32$, và bitset nhanh tới $48\times$ ở $\rho = 0{,}4$ vì một phép AND 64-bit xử lý 64 giao dịch cùng lúc mà không rẽ nhánh. Danh sách tid chỉ thắng khi tỉ lệ phép giao thất bại cực cao (như \texttt{retail} 0,1\% có $>99\%$ thất bại để \texttt{v3} dừng sớm). Do đó H2 đúng cho bộ nhớ và chỉ đúng một phần cho thời gian.
 
 % ---------------------------------------------------------------------------
-\subsection{E10: Live Tidset Memory over the Search}
+\subsection{E10: Diễn biến bộ nhớ tidset sống trong quá trình tìm kiếm}
 \label{subsec:exp_e10}
 
-Tracing live tidset bytes after every emitted itemset (\texttt{results/e10\_memory\_trace.csv}, full table and Figure~\ref{fig:f10_memory_trace} in Appendix~\ref{subsec:appendix_e10}) shows that \textbf{H7 is not confirmed} for our depth-first workspace traversal: unlike the paper's level-buffered traversal, our engine keeps only one active class per depth, yielding a nearly flat memory profile (peak/mean $1.38$--$1.42$ on \texttt{chess}, $1.00$--$1.01$ on \texttt{T10I4D100K}). Bitsets reduce peak live tidset memory $28\times$ on dense \texttt{chess} (0.731 to 0.026~MiB) but increase it $48\%$ on sparse \texttt{T10I4D100K} (3.05 to 4.51~MiB).
+Theo dõi bộ nhớ tidset sống sau mỗi tập phổ biến được xuất (\texttt{results/e10\_memory\_trace.csv}, bảng và Hình~\ref{fig:f10_memory_trace} ở Phụ lục~\ref{subsec:appendix_e10}) cho thấy \textbf{H7 không xảy ra} với chiến lược đệ quy tức thì của nhóm: khác với bản giữ cả tầng của bài báo gốc, mỗi độ sâu chỉ tồn tại một lớp sống nên đường bộ nhớ gần như phẳng (tỉ số đỉnh/trung bình chỉ $1{,}38$--$1{,}42$ trên \texttt{chess}, $1{,}00$--$1{,}01$ trên \texttt{T10I4D100K}). Bitset giảm bộ nhớ đỉnh $28\times$ trên \texttt{chess} (0,731 xuống 0,026~MiB) nhưng tăng $48\%$ trên \texttt{T10I4D100K} (3,05 lên 4,51~MiB).
 
 % ---------------------------------------------------------------------------
-\subsection{Strengths, Weaknesses vs.\ SPMF, and Future Optimization Proposals}
+\subsection{Điểm mạnh, Điểm yếu so với SPMF và Đề xuất tối ưu tiếp theo}
 \label{subsec:strengths_proposals}
 
-Table~\ref{tab:b07_strengths} synthesizes the empirical trade-offs between \texttt{EclatFIM (v6)} and SPMF based on experiments E1--E9.
+Bảng~\ref{tab:b07_strengths} tổng hợp đánh giá định lượng giữa \texttt{EclatFIM (v6)} và SPMF qua các thí nghiệm E1--E10.
 
-\begin{table}[!htbp]
+\begin{table*}[!t]
 \centering
-\caption{Comparative assessment of \texttt{EclatFIM (v6)} versus SPMF (Table~B07).}
+\caption{Đánh giá so sánh điểm mạnh và điểm yếu của \texttt{EclatFIM (v6)} so với SPMF (Bảng~B07).}
 \label{tab:b07_strengths}
-\small
-\begin{tabular}{p{2.6cm}p{3.6cm}p{3.6cm}p{4.6cm}}
+\scriptsize
+\begin{tabular}{@{}p{2.3cm}p{3.8cm}p{4.0cm}p{6.2cm}@{}}
 \toprule
-Dimension & \texttt{EclatFIM (v6)} & SPMF & Evidence \& Explanation \\
+Tiêu chí & \texttt{EclatFIM (v6)} & SPMF & Bằng chứng \& Giải thích \\
 \midrule
-Dense speed & Fastest (0.079--0.105~s) & \texttt{Eclat\_bitset} close; \texttt{Eclat} $15\times$--$48\times$ slower & E2: SIMD 64-bit \texttt{BitVector} + zero-alloc workspace avoids Java boxed \texttt{HashSet}. \\
-Sparse speed & Fastest (0.182--0.196~s) & $3.6\times$--$4.4\times$ slower on \texttt{retail} & E2, E6: triangular level-2 pruning + adaptive galloping + hybrid switch. \\
-Memory usage & Low across both regimes & \texttt{Eclat\_bitset} spikes to 841~MiB on \texttt{retail} & E4: hybrid representation prevents bitset blowup when $\rho < 1/32$. \\
-Cold startup & Higher wall time ($\approx 3.1$~s) & Fast JVM startup ($\approx 0.35$~s) & E2: Julia JIT compilation dominates very short single-shot runs. \\
-I/O throughput & 0.325~s read (\texttt{accidents}), 0.045~s write (255k) & Comparable buffered Java I/O & Byte-level \texttt{parse\_spmf} + 1~MiB buffered \texttt{SPMFWriter}. \\
+Tốc độ dữ liệu dày & Nhanh nhất (0,079--0,105~s) & \texttt{Eclat\_bitset} bám sát; \texttt{Eclat} chậm hơn $15$--$48\times$ & E2: \texttt{BitVector} 64-bit SIMD + bộ đệm không cấp phát tránh \texttt{HashSet} đóng hộp của Java. \\
+Tốc độ dữ liệu thưa & Nhanh nhất (0,182--0,196~s) & Chậm hơn $3{,}6$--$4{,}4\times$ trên \texttt{retail} & E2, E6: mảng tam giác mức~2 + tìm kiếm nhảy bước + biểu diễn lai. \\
+Bộ nhớ sử dụng & Thấp ổn định trên cả hai chế độ & \texttt{Eclat\_bitset} vọt lên 841~MiB trên \texttt{retail} & E4: luật chuyển đổi lai ngăn phình bitset khi $\rho < 1/32$. \\
+Khởi động nguội & Tổng wall time cao hơn ($\approx 3{,}1$~s) & JVM khởi động nhanh ($\approx 0{,}35$~s) & E2: biên dịch JIT của Julia chi phối các lượt chạy đơn rất ngắn. \\
+Thông lượng I/O & Đọc 0,325~s (\texttt{accidents}), ghi 0,045~s (255k) & Tương đương Java có đệm & Bộ đọc cấp byte \texttt{parse\_spmf} + bộ ghi đệm 1~MiB \texttt{SPMFWriter}. \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-\textbf{Concrete Future Optimization Proposals:}
+\textbf{Bốn hướng tối ưu hóa cụ thể đề xuất tiếp theo:}
 \begin{enumerate}
-    \item \textbf{Diffset Representation (dEclat~\cite{zaki2003fast}):} On ultra-dense datasets (e.g., \texttt{chess} at $\texttt{minsup} < 50\%$ or \texttt{accidents}), storing transaction differences $d(PX) = t(P) \setminus t(PX)$ shrinks set cardinalities dramatically as recursion deepens, reducing both intersection cost and memory footprint beyond \texttt{BitVector}.
-    \item \textbf{Parallel Top-Level Equivalence Classes (\texttt{Threads.@spawn}):} Because prefix-based equivalence classes at depth~1 are completely independent (Zaki~\cite{zaki2000scalable}, §4.2), assigning each root class to a thread-local \texttt{Workspace} can deliver near-linear multi-core speedups on our 12-thread CPU with zero lock contention.
-    \item \textbf{Eliminating Cold JIT Latency via \texttt{PrecompileTools.jl} / Sysimage:} E2 showed that Julia's $\approx 3$~s cold startup exceeds algorithm runtime on short workloads. Precompiling concrete workloads into a custom sysimage would bring wall time down to parity with JVM startup.
-    \item \textbf{Time-Based Representation Switching:} E7 showed that the \emph{time} break-even between bitsets and tid lists lies near $\rho \approx 0.004$, an order of magnitude below the \emph{memory} break-even $1/32$ used by \texttt{v6}, and that it depends on the fraction of failing intersections. Switching on a cost model $c_{\text{bit}} \cdot N/64$ versus $c_{\text{list}} \cdot (\sigma_a + \sigma_b)$, with constants calibrated once per machine, and keeping the memory rule only as an upper bound, would let \texttt{v6} match the faster of \texttt{v4} and \texttt{v5} on \texttt{T10I4D100K} without losing its memory savings on \texttt{retail}.
+    \item \textbf{Biểu diễn Diffset (dEclat~\cite{zaki2003fast}):} Trên dữ liệu siêu dày (như \texttt{chess} ở $\texttt{minsup} < 50\%$ hoặc \texttt{accidents}), lưu hiệu $d(PX) = t(P) \setminus t(PX)$ làm kích thước tập co cực nhanh theo độ sâu, vượt xa \texttt{BitVector} về cả tốc độ lẫn bộ nhớ.
+    \item \textbf{Song song hóa các lớp tương đương gốc (\texttt{Threads.@spawn}):} Vì các lớp tiền tố ở độ sâu~1 độc lập hoàn toàn (Zaki~\cite{zaki2000scalable}, §4.2), cấp phát cho mỗi luồng một \texttt{Workspace} riêng giúp đạt tăng tốc gần tuyến tính trên CPU 12 luồng mà không cần khóa đồng bộ.
+    \item \textbf{Triệt tiêu độ trễ JIT bằng \texttt{PrecompileTools.jl} / Sysimage:} Đóng gói trước các chữ ký hàm lõi vào ảnh hệ thống (\emph{sysimage}) để đưa thời gian khởi động nguội về ngang bằng JVM.
+    \item \textbf{Quy tắc chuyển đổi biểu diễn theo mô hình thời gian:} Từ kết quả E7 (hòa vốn thời gian ở $\rho \approx 0{,}004$), chuyển đổi dựa trên mô hình chi phí $c_{\text{bit}} \cdot N/64$ so với $c_{\text{list}} \cdot (\sigma_a + \sigma_b)$ (hiệu chỉnh một lần theo máy) và chỉ dùng ngưỡng $1/32$ làm giới hạn bộ nhớ sẽ giúp \texttt{v6} đạt tốc độ tối ưu của \texttt{v5} trên \texttt{T10I4D100K} mà vẫn giữ tiết kiệm RAM trên \texttt{retail}.
 \end{enumerate}

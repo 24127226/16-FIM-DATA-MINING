@@ -97,7 +97,7 @@ function plot_f11_groceries(; csv_path = joinpath(RESULTS_DIR, "groceries_rules.
         margin = 5Plots.mm,
     )
 
-    # Highlight top-3 rules by lift
+    # Đánh dấu top-3 luật có lift cao nhất
     top_idx = partialsortperm(lifts, 1:min(3, length(lifts)); rev = true)
     scatter!(plt, sup_pct[top_idx], conf_pct[top_idx];
              color = :red, markershape = :star5, markersize = 8,

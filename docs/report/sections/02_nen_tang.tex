@@ -1,49 +1,49 @@
-% Section 2: Background and Related Work (Author: Pham Tran Anh Quan)
-\section{Background and Related Work}
+% Mục 2: Cơ sở lý thuyết và Các nghiên cứu liên quan
+\section{Cơ sở lý thuyết và Nghiên cứu liên quan}
 \label{sec:02_background}
 
 % ---------------------------------------------------------------------------
-\subsection{The Frequent Itemset Mining Problem}
+\subsection{Bài toán khai thác tập phổ biến}
 \label{subsec:fim_problem}
 
-Let $\mathcal{I}$ be a set of items with $m = |\mathcal{I}|$, and let $\mathcal{D} = \{T_1, \dots, T_N\}$ be a transaction database in which every transaction $T_j \subseteq \mathcal{I}$ is identified by its transaction identifier (tid) $j$. For an itemset $X \subseteq \mathcal{I}$, the \emph{tidset} of $X$ is
+Cho tập các mục hàng (\emph{items}) $\mathcal{I}$ với $m = |\mathcal{I}|$, và cơ sở dữ liệu giao dịch (\emph{transaction database}) $\mathcal{D} = \{T_1, \dots, T_N\}$, trong đó mỗi giao dịch $T_j \subseteq \mathcal{I}$ được định danh bởi mã giao dịch (\emph{transaction identifier} -- tid) $j$. Với một tập mục (\emph{itemset}) $X \subseteq \mathcal{I}$, tập mã giao dịch (\emph{tidset}) của $X$ được định nghĩa là:
 \begin{equation}
 t(X) = \{\, j : X \subseteq T_j \,\},
 \label{eq:tidset}
 \end{equation}
-its (absolute) support is $\sigma(X) = |t(X)|$, and its relative support is $s(X) = \sigma(X)/N$. Given a minimum support $\texttt{minsup} \in (0, 1]$, the corresponding count threshold is $\sigma_{\min} = \lceil \texttt{minsup} \cdot N \rceil$. \emph{Frequent itemset mining} (FIM) enumerates every non-empty itemset $X$ with $\sigma(X) \ge \sigma_{\min}$ together with its support. We denote the output by $\mathcal{F}$ and the average transaction length by $\bar{L}$.
+độ hỗ trợ tuyệt đối (\emph{absolute support}) là $\sigma(X) = |t(X)|$, và độ hỗ trợ tương đối (\emph{relative support}) là $s(X) = \sigma(X)/N$. Cho ngưỡng hỗ trợ tối thiểu $\texttt{minsup} \in (0, 1]$, ngưỡng đếm tương ứng là $\sigma_{\min} = \lceil \texttt{minsup} \cdot N \rceil$. Bài toán \emph{khai thác tập phổ biến} (FIM) yêu cầu liệt kê mọi tập mục khác rỗng $X$ thỏa mãn $\sigma(X) \ge \sigma_{\min}$ kèm độ hỗ trợ của nó. Ta ký hiệu tập đầu ra là $\mathcal{F}$ và độ dài giao dịch trung bình là $\bar{L}$.
 
-The search space contains $2^m - 1$ candidate itemsets, so every FIM algorithm relies on the \emph{anti-monotone} (Apriori) property: if $X \subseteq Y$ then $t(Y) \subseteq t(X)$, hence $\sigma(Y) \le \sigma(X)$. Consequently, every subset of a frequent itemset is frequent, and every superset of an infrequent itemset is infrequent.
+Không gian tìm kiếm chứa $2^m - 1$ tập ứng viên, do đó mọi thuật toán FIM đều khai thác tính chất \emph{phản đơn điệu} (\emph{anti-monotone}, hay tính chất Apriori): nếu $X \subseteq Y$ thì $t(Y) \subseteq t(X)$, suy ra $\sigma(Y) \le \sigma(X)$. Hệ quả là mọi tập con của một tập phổ biến đều phổ biến, và mọi tập cha của một tập không phổ biến đều không phổ biến.
 
-Frequent itemsets are the input of \emph{association rule} generation~\cite{agrawal1993mining}. For a rule $X \Rightarrow Y$ with $X \cap Y = \emptyset$,
+Các tập phổ biến là đầu vào cho bài toán sinh \emph{luật kết hợp} (\emph{association rules})~\cite{agrawal1993mining}. Với một luật $X \Rightarrow Y$ thỏa $X \cap Y = \emptyset$:
 \begin{equation}
 \mathrm{conf}(X \Rightarrow Y) = \frac{\sigma(X \cup Y)}{\sigma(X)}, \qquad
 \mathrm{lift}(X \Rightarrow Y) = \frac{\mathrm{conf}(X \Rightarrow Y)}{s(Y)}.
 \label{eq:rule}
 \end{equation}
-Confidence estimates $P(Y \mid X)$; lift compares it with the baseline probability $P(Y)$, so $\mathrm{lift} > 1$ means that $X$ and $Y$ co-occur more often than under independence~\cite{brin1997dynamic}.
+Độ tin cậy (\emph{confidence}, $\mathrm{conf}$) ước lượng xác suất có điều kiện $P(Y \mid X)$; hệ số nâng (\emph{lift}) so sánh xác suất này với xác suất nền $P(Y)$, do đó $\mathrm{lift} > 1$ cho biết $X$ và $Y$ cùng xuất hiện nhiều hơn mức kỳ vọng khi độc lập~\cite{brin1997dynamic}.
 
 % ---------------------------------------------------------------------------
-\subsection{Algorithmic Approaches}
+\subsection{Các hướng tiếp cận thuật toán}
 \label{subsec:fim_approaches}
 
-\textbf{Horizontal layout, level-wise search.} Apriori~\cite{agrawal1994fast} generates the candidates of size $k$ from the frequent itemsets of size $k-1$, prunes every candidate that has an infrequent subset, and rescans the database to count the survivors. The number of database scans equals the length of the longest frequent itemset, and the number of candidates can explode at level~2.
+\textbf{Biểu diễn ngang, tìm kiếm theo tầng.} Apriori~\cite{agrawal1994fast} sinh tập ứng viên kích thước $k$ từ tập phổ biến kích thước $k-1$, tỉa các ứng viên có tập con không phổ biến, rồi quét lại toàn bộ cơ sở dữ liệu để đếm. Số lần quét bằng độ dài tập phổ biến lớn nhất, và số ứng viên dễ bùng nổ ở mức~2.
 
-\textbf{Prefix trees.} FP-Growth~\cite{han2000mining} compresses the database into a prefix tree (FP-tree) after two scans and mines it recursively through conditional trees, without generating candidates. The tree compresses dense data well but offers little compression on sparse data.
+\textbf{Cây tiền tố.} FP-Growth~\cite{han2000mining} nén cơ sở dữ liệu vào cây tiền tố (\emph{FP-tree}) sau hai lần quét rồi khai thác đệ quy qua các cây điều kiện mà không sinh ứng viên. Cấu trúc này nén rất tốt trên dữ liệu dày đặc (\emph{dense}) nhưng kém hiệu quả trên dữ liệu thưa (\emph{sparse}).
 
-\textbf{Vertical layout.} Eclat~\cite{zaki2000scalable}, the algorithm implemented in this project, stores each item together with its tidset and obtains the support of a new itemset by intersecting tidsets, so the database is never rescanned. The original paper partitions the subset lattice into prefix-based equivalence classes that are solved independently in main memory, proposes counting 2-itemsets with an upper-triangular array, and reports that Eclat outperforms Apriori by more than an order of magnitude on synthetic data (§7 of~\cite{zaki2000scalable}). Two alternative tidset representations belong to this family: \emph{bitsets}, as in DLG~\cite{yen1996efficient}, which keeps one bit vector per item and computes support with bitwise AND; and \emph{diffsets} in dEclat~\cite{zaki2003fast}, which store only the difference between the tidsets of a prefix and its extension and are very compact on dense data.
+\textbf{Biểu diễn dọc.} Eclat~\cite{zaki2000scalable} -- thuật toán được cài đặt trong đồ án này -- lưu mỗi mục hàng cùng tidset của nó và tính độ hỗ trợ của tập mới bằng phép giao tidset, nhờ đó không bao giờ phải quét lại cơ sở dữ liệu. Bài báo gốc phân hoạch dàn tập con thành các lớp tương đương theo tiền tố giải độc lập trong bộ nhớ chính, đề xuất đếm 2-itemset bằng mảng tam giác trên (\emph{upper-triangular array}), và báo cáo Eclat nhanh hơn Apriori hơn một bậc độ lớn trên dữ liệu tổng hợp (§7 của~\cite{zaki2000scalable}). Hai cách biểu diễn tidset khác thuộc cùng họ này gồm: \emph{bitset} như trong DLG~\cite{yen1996efficient} dùng vector bit và phép AND theo từ máy; và \emph{diffset} trong dEclat~\cite{zaki2003fast} chỉ lưu hiệu giữa tidset của tiền tố và phần mở rộng, rất gọn trên dữ liệu dày đặc.
 
-\textbf{Implementation studies.} The FIMI'03 workshop~\cite{goethals2004advances} standardized the benchmark datasets (Chess, Mushroom, Retail, Accidents, T10I4D100K) and showed that implementation quality (data structures, memory layout, cache behavior) affects performance as much as the choice of algorithm. The SPMF library~\cite{fournier2014spmf} provides Java reference implementations of more than 200 pattern mining algorithms; this project uses SPMF strictly as a black box to verify results and compare performance.
+\textbf{Nghiên cứu về cài đặt thực tế.} Hội thảo FIMI'03~\cite{goethals2004advances} chuẩn hóa các tập benchmark (\texttt{Chess}, \texttt{Mushroom}, \texttt{Retail}, \texttt{Accidents}, \texttt{T10I4D100K}) và chứng minh chất lượng cài đặt (cấu trúc dữ liệu, bố trí bộ nhớ, tận dụng cache) ảnh hưởng hiệu năng không kém việc chọn thuật toán. Thư viện SPMF~\cite{fournier2014spmf} cung cấp cài đặt tham chiếu bằng Java cho hơn 200 thuật toán khai phá mẫu; đồ án này chỉ dùng SPMF như một hộp đen (\emph{black-box oracle}) để kiểm chứng kết quả và so sánh hiệu năng.
 
 % ---------------------------------------------------------------------------
-\subsection{Applications Considered in This Project}
+\subsection{Các ứng dụng triển khai trong đồ án}
 \label{subsec:applications_background}
 
-Market basket analysis is the classical application of association rules, with the Groceries dataset distributed by the \texttt{arules} package~\cite{hahsler2005arules} as a standard benchmark (Section~\ref{sec:05_chapter3_applications}, Application~1).
+Phân tích giỏ hàng là ứng dụng kinh điển của luật kết hợp, với tập dữ liệu \texttt{Groceries} từ gói \texttt{arules}~\cite{hahsler2005arules} là bộ chuẩn phổ biến (Mục~\ref{subsec:app1_groceries}).
 
-For images, the \emph{bag of visual words} (BoVW) model~\cite{sivic2003video,csurka2004visual} quantizes local descriptors, such as SIFT~\cite{lowe2004distinctive} or histograms of oriented gradients~\cite{dalal2005histograms}, into \emph{visual words} using $k$-means clustering~\cite{arthur2007kmeans}. Each image then becomes a transaction whose items are visual words, and frequent itemsets become recurring visual patterns. \emph{Emerging patterns}~\cite{dong1999efficient} are itemsets that are frequent in one class but rare in the others; they are ranked by the growth rate
+Với dữ liệu ảnh, mô hình \emph{túi từ thị giác} (\emph{Bag of Visual Words} -- BoVW)~\cite{sivic2003video,csurka2004visual} lượng tử hóa các bộ mô tả cục bộ như SIFT~\cite{lowe2004distinctive} hoặc biểu đồ hướng gradient (\emph{Histogram of Oriented Gradients} -- HOG)~\cite{dalal2005histograms} thành các \emph{từ thị giác} (\emph{visual words}) bằng phân cụm $k$-means++~\cite{arthur2007kmeans}. Mỗi ảnh trở thành một giao dịch chứa các từ thị giác, và tập phổ biến chính là các tổ hợp đặc trưng ảnh lặp lại. \emph{Mẫu nổi trội} (\emph{Emerging Patterns})~\cite{dong1999efficient} là các tập phổ biến trong một lớp nhưng hiếm ở các lớp khác, được xếp hạng theo \emph{tỉ lệ tăng trưởng} (\emph{growth rate}):
 \begin{equation}
 GR_c(X) = \frac{s_c(X)}{s_{\neg c}(X)},
 \label{eq:growth_rate}
 \end{equation}
-where $s_c$ and $s_{\neg c}$ are the relative supports inside class $c$ and inside all other classes. A pattern with $s_{\neg c}(X) = 0$ has $GR_c(X) = \infty$ and is called a \emph{jumping emerging pattern}. Application~2 (Section~\ref{subsec:app2_bovw}) uses this measure on the Caltech-101 dataset~\cite{feifei2004learning}.
+trong đó $s_c$ và $s_{\neg c}$ lần lượt là độ hỗ trợ tương đối trong lớp $c$ và trong toàn bộ các lớp còn lại. Mẫu có $s_{\neg c}(X) = 0$ đạt $GR_c(X) = \infty$ gọi là \emph{jumping emerging pattern}. Ứng dụng~2 (Mục~\ref{subsec:app2_bovw}) áp dụng thước đo này trên bộ ảnh \texttt{Caltech-101}~\cite{feifei2004learning}.
