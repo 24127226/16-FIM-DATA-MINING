@@ -17,8 +17,10 @@ Không gian tìm kiếm chứa $2^m - 1$ tập ứng viên, do đó mọi thuậ
 
 Các tập phổ biến là đầu vào cho bài toán sinh \emph{luật kết hợp} (\emph{association rules})~\cite{agrawal1993mining}. Với một luật $X \Rightarrow Y$ thỏa $X \cap Y = \emptyset$:
 \begin{equation}
-\mathrm{conf}(X \Rightarrow Y) = \frac{\sigma(X \cup Y)}{\sigma(X)}, \qquad
-\mathrm{lift}(X \Rightarrow Y) = \frac{\mathrm{conf}(X \Rightarrow Y)}{s(Y)}.
+\begin{aligned}
+\mathrm{conf}(X \Rightarrow Y) &= \frac{\sigma(X \cup Y)}{\sigma(X)}, \\
+\mathrm{lift}(X \Rightarrow Y) &= \frac{\mathrm{conf}(X \Rightarrow Y)}{s(Y)}.
+\end{aligned}
 \label{eq:rule}
 \end{equation}
 Độ tin cậy (\emph{confidence}, $\mathrm{conf}$) ước lượng xác suất có điều kiện $P(Y \mid X)$; hệ số nâng (\emph{lift}) so sánh xác suất này với xác suất nền $P(Y)$, do đó $\mathrm{lift} > 1$ cho biết $X$ và $Y$ cùng xuất hiện nhiều hơn mức kỳ vọng khi độc lập~\cite{brin1997dynamic}.
