@@ -1,0 +1,17 @@
+dataset,minsup,impl,variant,peak_rss_mb,baseline_rss_mb,delta_rss_mb,tidset_peak_bytes,n_itemsets
+chess,80%,julia,v0,285.738,158.938,126.801,923068,8227
+chess,80%,julia,v6,265.77,158.938,106.832,27600,8227
+chess,80%,spmf,Eclat,242.093,,,,8227
+chess,80%,spmf,Eclat_bitset,28.909,,,,8227
+mushroom,35%,julia,v0,271.965,158.938,113.027,1196968,1189
+mushroom,35%,julia,v6,266.059,158.938,107.121,51816,1189
+mushroom,35%,spmf,Eclat,113.602,,,,1189
+mushroom,35%,spmf,Eclat_bitset,31.949,,,,1189
+retail,1%,julia,v0,289.207,158.938,130.27,1289164,159
+retail,1%,julia,v6,279.703,158.938,120.766,845788,159
+retail,1%,spmf,Eclat,668.084,,,,159
+retail,1%,spmf,Eclat_bitset,840.796,,,,159
+T10I4D100K,1%,julia,v0,304.418,158.938,145.48,3197144,385
+T10I4D100K,1%,julia,v6,294.711,158.938,135.773,3196804,385
+T10I4D100K,1%,spmf,Eclat,94.488,,,,385
+T10I4D100K,1%,spmf,Eclat_bitset,51.56,,,,385
