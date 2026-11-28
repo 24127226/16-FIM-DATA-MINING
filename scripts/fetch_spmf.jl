@@ -9,9 +9,14 @@ using Downloads, SHA
 include(joinpath(@__DIR__, "common.jl"))
 
 const SPMF_URL = "https://www.philippe-fournier-viger.com/spmf/spmf.jar"
-# SHA-256 của bản nhóm dùng (SPMF, Eclat v2.65, tải ngày 17/11/2026).
-const SPMF_SHA = "2cc2d89e39909230ea0455da4a1c79b389dc98ca04b0670befb63e679b5e2ea0"
-const JAVA_MIN = 25   # bản spmf.jar trên được biên dịch cho Java 25 (class file version 69)
+# SHA-256 của hai bản spmf.jar nhóm đã dùng (SPMF, Eclat v2.65). Trang SPMF thay file jar theo thời gian, nên hai lần
+# tải ở hai ngày khác nhau cho hai mã khác nhau. Cả hai bản đều cho kết quả khớp 100% với EclatFIM.
+const SPMF_SHA_KNOWN = Dict(
+    "bb371b99b3bfd58fbce6b92e0ea3ccda5f9d1fd173bfe8e40f177672117159ba" =>
+        "bản tải ngày 27–28/11/2026 (máy B trong results/ENV.md, Colab)",   # bản hiện có trên trang SPMF
+    "2cc2d89e39909230ea0455da4a1c79b389dc98ca04b0670befb63e679b5e2ea0" =>
+        "bản tải ngày 17/11/2026 (máy A trong results/ENV_A.md)")           # bản dùng cho E7, E8, E10 và Ứng dụng 2
+const JAVA_MIN = 25   # spmf.jar được biên dịch cho Java 25 (class file version 69)
 
 function main()
     dest = spmf_jar()
@@ -21,10 +26,10 @@ function main()
         Downloads.download(SPMF_URL, dest)
     end
     got = open(io -> bytes2hex(sha256(io)), dest)
-    if got == SPMF_SHA
-        println("✓ spmf.jar đúng bản nhóm dùng (SHA-256 khớp): ", dest)
+    if haskey(SPMF_SHA_KNOWN, got)   # trùng một trong hai bản nhóm đã dùng
+        println("✓ spmf.jar trùng một bản nhóm đã dùng: ", SPMF_SHA_KNOWN[got], " — ", dest)
     else
-        println("! spmf.jar khác bản nhóm dùng (SHA-256 = ", got, ").")
+        println("! spmf.jar khác các bản nhóm đã dùng (SHA-256 = ", got, ").")
         println("  Trang SPMF có thể đã cập nhật phiên bản mới. Kết quả vẫn phải khớp,")
         println("  nhưng hãy ghi SHA-256 mới vào results/ENV.md khi đo hiệu năng.")
     end

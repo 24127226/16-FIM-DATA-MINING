@@ -19,7 +19,7 @@ Kết quả & Câu lệnh \\
 \midrule
 Bộ kiểm thử tự động (Bảng~\ref{tab:b02_tests}) & \texttt{julia --project=. test/runtests.jl} \\
 Thí nghiệm E1--E6, E9 & \texttt{julia --project=. scripts/run\_chapter2.jl --only e2} (và \texttt{e5}, \texttt{e6}, \texttt{e9}) \\
-Thí nghiệm E8 (Bảng~\ref{tab:b03_ablation_time}, \ref{tab:b04_ablation_counters}) & \texttt{julia --project=. scripts/bench\_ablation.jl} \\
+Thí nghiệm E8 (Bảng~\ref{tab:b03_ablation_time}, \ref{tab:b04_ablation_counters}) & \texttt{julia --project=. scripts/bench\_ablation.jl --level median} (và \texttt{--level low}) \\
 Thí nghiệm E7 (Hình~\ref{fig:f08_density}) & \texttt{julia --project=. scripts/bench\_density.jl} \\
 Thí nghiệm E10 (Hình~\ref{fig:f10_memory_trace}) & \texttt{julia --project=. scripts/bench\_memory\_trace.jl} \\
 Vẽ hình F08, F10 & \texttt{julia --project=apps scripts/plots\_a.jl} \\
@@ -56,6 +56,37 @@ Thư viện & Môi trường & Mục đích \\
 \end{table}
 
 % ---------------------------------------------------------------------------
+\subsection{Thời gian biên dịch JIT trong lượt đo}
+\label{subsec:appendix_jit}
+
+Julia biên dịch (JIT) một phương thức ở lần gọi đầu tiên với mỗi bộ kiểu đối số. Mỗi hàm ẩn danh (\emph{lambda}) trong mã nguồn là một kiểu riêng. Khi kiểm tra lại ngày 28/11, nhóm phát hiện hai lỗi làm thời gian biên dịch lọt vào lượt đo được bấm giờ:
+\begin{itemize}
+    \item \texttt{scripts/bench.jl} (E2--E6, E9): lượt làm nóng và lượt đo gọi \texttt{eclat!} với hai lambda khác kiểu, nên \texttt{eclat!} bị biên dịch lại trong lượt đo.
+    \item \texttt{scripts/run\_one.jl} (E8): lượt làm nóng trên \texttt{bookstore.txt} ($N = 6$, nên $N/32 < 1$) không đi qua nhánh dữ liệu thưa của \texttt{v6} (lớp gốc danh sách tid, chuyển bitset $\to$ danh sách tid). Nhánh này vì vậy được biên dịch trong lượt đo trên \texttt{retail} và \texttt{T10I4D100K}.
+\end{itemize}
+\textbf{Bản sửa:} cả hai script làm nóng bằng \emph{cùng} hàm sẽ đo, trên dữ liệu toy và hai CSDL nhỏ sinh bởi \texttt{scripts/warmup.jl}; hai CSDL này đi qua mọi nhánh code. \texttt{run\_one.jl} ghi thêm cột \texttt{t\_compile\_s}, là thời gian biên dịch nằm trong lượt đo (đọc từ \texttt{Base.cumulative\_compile\_time\_ns}). Cột này bằng 0 ở cả 250 lượt đo E8 sau khi đo lại (Bảng~\ref{tab:b03_ablation_time}). Bảng~\ref{tab:jit_overhead} so sánh hai giao thức trên máy thứ hai. Số liệu E2--E6 và E9 trong báo cáo vẫn là số đo bằng phiên bản \texttt{bench.jl} cũ, nên thời gian của Julia ở đó dài hơn thực tế.
+
+\begin{table}[!t]
+\centering
+\caption{Thời gian biên dịch JIT nằm trong lượt đo theo giao thức cũ, và thời gian khai thác + ghi trước/sau khi sửa (ms, máy \texttt{results/ENV\_A.md}; chi tiết trong \texttt{results/jit\_overhead.md}).}
+\label{tab:jit_overhead}
+\scriptsize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Phép đo & JIT trong lượt đo (cũ) & Trước sửa & Sau sửa \\
+\midrule
+\texttt{chess} 95\%, \texttt{v0} (\texttt{bench.jl}) & 47,8 & 50,2 & 1,6 \\
+\texttt{chess} 95\%, \texttt{v6} (\texttt{bench.jl}) & 283,0 & 290,1 & 2,0 \\
+\texttt{mushroom} 70\%, \texttt{v6} (\texttt{bench.jl}) & 264,3 & 278,6 & 1,6 \\
+\texttt{retail} 0,2\%, \texttt{v6} (\texttt{bench.jl}) & 313,2 & 430,1 & 112,6 \\
+\texttt{retail} 0,1\%, \texttt{v6} (E8) & -- & 382,3 & 136,3 \\
+\texttt{T10I4D100K} 0,2\%, \texttt{v6} (E8) & 201,6 & 310,0 & 170,7 \\
+\texttt{T10I4D100K} 1\%, \texttt{v6} (E8) & -- & 197,0 & 33,5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
 \subsection{Bổ trợ E9: Eclat so với Apriori và FP-Growth}
 \label{subsec:appendix_e9}
 
@@ -69,6 +100,8 @@ Thư viện & Môi trường & Mục đích \\
 % ---------------------------------------------------------------------------
 \subsection{Bổ trợ E10: Diễn biến bộ nhớ tidset sống}
 \label{subsec:appendix_e10}
+
+Bảng~\ref{tab:e10_memory} tóm tắt bộ nhớ tidset sống của danh sách tid (\texttt{v3}) và bitset (\texttt{v4}) trên \texttt{chess} (80\%) và \texttt{T10I4D100K} (1\%): đỉnh, trung bình, tỉ số đỉnh/trung bình, vị trí và độ dài tập tại đỉnh. Hình~\ref{fig:f10_memory_trace} vẽ diễn biến theo thứ tự xuất tập. Hai đường gần như phẳng, nên giả thuyết H7 (bộ nhớ phình ở tầng sâu) không xảy ra (Mục~\ref{subsec:exp_e10}).
 
 \begin{table*}[!t]
 \centering
