@@ -11,3 +11,5 @@
 | 2026-11-28 10:30 | `ba256aa` | `julia --project=. scripts/bench_ablation.jl` | 13.7 min, machine DESKTOP-LFG7EP1 (results/ENV_A.md) |
 | 2026-11-28 10:32 | `ba256aa` | `julia --project=. scripts/bench_density.jl` | 2.0 min, machine DESKTOP-LFG7EP1 (results/ENV_A.md) |
 | 2026-11-28 10:49 | `ba256aa` | `julia --project=. scripts/bench_ablation.jl --level low` | 16.6 min, machine DESKTOP-LFG7EP1 (results/ENV_A.md) |
+| 2026-11-28 20:30 | `650c634` | `julia --project=. scripts/bench_ablation.jl --level median` | 16.0 min, machine DESKTOP-LFG7EP1 (results/ENV_A.md); đo lại bằng giao thức đã sửa khởi động (scripts/warmup.jl, commit ngay sau 650c634), t_compile_s = 0 |
+| 2026-11-28 20:47 | `650c634` | `julia --project=. scripts/bench_ablation.jl --level low` | 16.1 min, machine DESKTOP-LFG7EP1 (results/ENV_A.md); đo lại bằng giao thức đã sửa khởi động (scripts/warmup.jl, commit ngay sau 650c634), t_compile_s = 0 |
