@@ -12,55 +12,54 @@
 # Cú pháp thực thi:
 #   julia --project=. apps/groceries/run_groceries.jl
 
-using Random
-using Dates
-using EclatFIM
+using Random                                                 # Dùng MersenneTwister, randperm cho phép chia 80/20 tái lập
+using Dates                                                  # Ghi ngày chạy vào file tổng hợp Markdown
+using EclatFIM                                               # Gói Eclat tự cài đặt của nhóm
 
-const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-include(joinpath(REPO_ROOT, "scripts", "config.jl"))
-include(joinpath(@__DIR__, "prepare_groceries.jl"))
+const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))   # Đường dẫn thư mục gốc kho mã nguồn
+include(joinpath(REPO_ROOT, "scripts", "config.jl"))         # Nạp hằng số chung (SEED = 42, RESULTS_DIR)
+include(joinpath(@__DIR__, "prepare_groceries.jl"))          # Nạp mô-đun tiền xử lý dữ liệu Groceries
 
 const GROCERIES_CSV = joinpath(REPO_ROOT, "data", "apps", "groceries", "groceries.csv")
 const GROCERIES_DIR = joinpath(REPO_ROOT, "data", "apps", "groceries")
 
-# Lưới ngưỡng khảo sát theo mục 9.2
+# Lưới ngưỡng khảo sát độ nhạy (3 mức minsup × 3 mức minconf = 9 tổ hợp)
 const GRID_MINSUPS  = ["0.5%", "1%", "2%"]
 const GRID_MINCONFS = [0.2, 0.3, 0.5]
 
-# Cặp ngưỡng chính được chọn (cho ra ~50-300 luật trên Groceries, đủ sâu và tin cậy)
+# Cặp ngưỡng chính được chọn (sinh 125 luật, cân bằng giữa độ bao phủ và khả năng diễn giải)
 const CHOSEN_MINSUP  = "1%"
 const CHOSEN_MINCONF = 0.3
 
-"""Chuyển vector mã nội bộ sang chuỗi tên mặt hàng dễ đọc."""
+"""Mục đích hàm: Đổi vector mã item nội bộ sang chuỗi tên sản phẩm dễ đọc (vd: `"beef + root vegetables"`)."""
 function format_items(items::Vector{Int32}, db::TransactionDB, id_to_name::Dict{Int64,String})
-    names = [id_to_name[db.item_ids[x]] for x in sort(items)]
-    return join(names, " + ")
+    names = [id_to_name[db.item_ids[x]] for x in sort(items)] # Ánh xạ ngược: mã nội bộ -> mã gốc -> tên sản phẩm
+    return join(names, " + ")                                 # Ghép các tên bằng dấu " + "
 end
 
-"""Escape chuỗi cho CSV."""
+"""Mục đích hàm: Bọc chuỗi trong dấu ngoặc kép chuẩn CSV để tránh lỗi nếu tên chứa dấu phẩy."""
 csv_esc(s::AbstractString) = '"' * replace(s, '"' => "\"\"") * '"'
 
 """
     profile_representation(label, spmf_path, minsup_str, cfg)
 
-Mục đích: Đo thống kê cơ bản (N, m, L̄, mật độ ρ), thời gian khai thác Eclat (có warm-up trước)
+Mục đích hàm: Đo đầy đủ thống kê dữ liệu (N, m, L̄, mật độ ρ), thời gian khai thác Eclat (có warm-up)
 và số lượng tập phổ biến/luật kết hợp sinh ra cho một phương án biến đổi dữ liệu (phục vụ Bảng B08).
 """
 function profile_representation(label::String, spmf_path::String, minsup_str::String, cfg::EclatConfig)
-    db = read_spmf(spmf_path)
-    n = n_transactions(db)
-    m = n_items(db)
-    avg_len = sum(length(t) for t in db.transactions) / n   # Độ dài giỏ hàng trung bình (dùng generator expression)
-    density = avg_len / m                                   # Mật độ ρ = L̄ / m (so sánh với ngưỡng lý thuyết 1/32)
-    sigma_min = minsup_count(minsup_str, n)
+    db = read_spmf(spmf_path)                                # Đọc CSDL SPMF của phương án hiện tại
+    n = n_transactions(db)                                   # Tổng số hóa đơn N = 9.835
+    m = n_items(db)                                          # Số mặt hàng phân biệt m (169 hoặc 12)
+    avg_len = sum(length(t) for t in db.transactions) / n    # Độ dài giỏ trung bình L̄ (dùng generator expression)
+    density = avg_len / m                                    # Mật độ ρ = L̄ / m (đối chiếu với điểm hòa vốn 1/32)
+    sigma_min = minsup_count(minsup_str, n)                  # Quy đổi minsup sang ngưỡng đếm nguyên σ_min
 
-    # Chạy nháp 1 lần (warm-up) để loại trừ thời gian biên dịch JIT khỏi phép đo
-    _ = eclat(db, sigma_min, cfg)
-    t0 = time_ns()
-    isets = eclat(db, sigma_min, cfg)
-    t_s = (time_ns() - t0) / 1e9
+    _ = eclat(db, sigma_min, cfg)                            # Chạy nháp (warm-up) để loại bỏ thời gian biên dịch JIT
+    t0 = time_ns()                                           # Bắt đầu bấm giờ chính thức
+    isets = eclat(db, sigma_min, cfg)                        # Khai thác toàn bộ tập phổ biến bằng EclatFIM
+    t_s = (time_ns() - t0) / 1e9                             # Thời gian khai thác tính theo giây
 
-    rs = rules(isets, n; minconf = CHOSEN_MINCONF)
+    rs = rules(isets, n; minconf = CHOSEN_MINCONF)           # Sinh toàn bộ luật kết hợp đạt minconf = 0.3
     return (label = label, n = n, m = m, avg_len = avg_len, density = density,
             sigma_min = sigma_min, n_itemsets = length(isets), n_rules = length(rs),
             t_s = t_s, db = db, isets = isets)
@@ -69,46 +68,46 @@ end
 """
     evaluate_stability(db, id_to_name, minsup_str, minconf, cfg; train_ratio=0.8, seed=42, k=10)
 
-Mục đích: Kiểm tra độ ổn định ngoài mẫu của top-k luật theo lift (Bảng B10):
-- Xáo trộn ngẫu nhiên với `seed` cố định và chia 80% tập huấn luyện / 20% tập kiểm tra.
+Mục đích hàm: Đánh giá khả năng tổng quát hóa ngoài mẫu của top-k luật theo lift (Bảng B10):
+- Chia ngẫu nhiên 80% huấn luyện / 20% kiểm tra với `seed` cố định.
 - Khai thác tập phổ biến và chọn top-k luật CHỈ trên tập huấn luyện 80%.
-- Đếm lại độ hỗ trợ, confidence và lift của đúng k luật đó trên 20% tập kiểm tra độc lập.
+- Đếm lại support, confidence và lift của đúng k luật đó trên tập kiểm tra độc lập 20%.
 """
 function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
                             minsup_str::String, minconf::Float64, cfg::EclatConfig;
                             train_ratio::Float64 = 0.8, seed::Int = SEED, k::Int = 10)
     n = n_transactions(db)
-    rng = MersenneTwister(seed)                  # Cố định hạt giống để kết quả chia 80/20 tái lập 100%
-    perm = randperm(rng, n)
-    n_train = round(Int, train_ratio * n)
+    rng = MersenneTwister(seed)                              # Bộ sinh số ngẫu nhiên cố định seed = 42
+    perm = randperm(rng, n)                                  # Hoán vị ngẫu nhiên chỉ số 1..N
+    n_train = round(Int, train_ratio * n)                    # Số hóa đơn huấn luyện (80% = 7.868)
 
-    train_txs = db.transactions[perm[1:n_train]]
-    test_txs  = db.transactions[perm[(n_train + 1):end]]
+    train_txs = db.transactions[perm[1:n_train]]             # Tách 80% hóa đơn vào tập huấn luyện
+    test_txs  = db.transactions[perm[(n_train + 1):end]]     # Tách 20% hóa đơn còn lại vào tập kiểm tra (1.967)
     n_test = length(test_txs)
 
-    # Khai thác và sinh top-k luật chỉ trên tập huấn luyện (80%)
+    # Khai thác và chọn top-k luật hoàn toàn độc lập trên tập huấn luyện
     train_db = TransactionDB(train_txs, db.item_ids)
     sigma_train = minsup_count(minsup_str, n_train)
     train_isets = eclat(train_db, sigma_train, cfg)
     train_rules = rules(train_isets, n_train; minconf = minconf)
-    train_top = top_k(train_rules, k; by = :lift)
+    train_top = top_k(train_rules, k; by = :lift)            # Lấy top-10 luật có lift cao nhất trên tập train
 
-    # Đếm trực tiếp support của X, Y, X ∪ Y trên tập kiểm tra độc lập (20%)
+    # Đổi mỗi hóa đơn tập kiểm tra sang Set để kiểm tra tập con `issubset` nhanh
     test_sets = [Set{Int32}(t) for t in test_txs]
     rows = NamedTuple[]
-    for (rank, r) in enumerate(train_top)
-        ant_set = Set{Int32}(r.antecedent)
-        cons_set = Set{Int32}(r.consequent)
-        both_set = union(ant_set, cons_set)
+    for (rank, r) in enumerate(train_top)                    # Đánh giá lại từng luật trong top-10 trên tập test
+        ant_set = Set{Int32}(r.antecedent)                   # Tập vế trái X
+        cons_set = Set{Int32}(r.consequent)                  # Tập vế phải Y
+        both_set = union(ant_set, cons_set)                  # Hợp X ∪ Y
 
-        sup_x = count(t -> issubset(ant_set, t), test_sets)
-        sup_y = count(t -> issubset(cons_set, t), test_sets)
-        sup_xy = count(t -> issubset(both_set, t), test_sets)
+        sup_x = count(t -> issubset(ant_set, t), test_sets)  # Số giỏ test chứa X
+        sup_y = count(t -> issubset(cons_set, t), test_sets) # Số giỏ test chứa Y
+        sup_xy = count(t -> issubset(both_set, t), test_sets)# Số giỏ test chứa cả X và Y
 
-        test_sup = sup_xy / n_test
-        test_conf = sup_x > 0 ? sup_xy / sup_x : 0.0
-        test_lift = (sup_x > 0 && sup_y > 0) ? (sup_xy * n_test) / (sup_x * sup_y) : 0.0
-        lift_diff_pct = r.lift > 0 ? 100.0 * (test_lift - r.lift) / r.lift : NaN  # % thay đổi lift từ train -> test
+        test_sup = sup_xy / n_test                           # Độ hỗ trợ ngoài mẫu
+        test_conf = sup_x > 0 ? sup_xy / sup_x : 0.0         # Độ tin cậy ngoài mẫu
+        test_lift = (sup_x > 0 && sup_y > 0) ? (sup_xy * n_test) / (sup_x * sup_y) : 0.0 # Lift ngoài mẫu
+        lift_diff_pct = r.lift > 0 ? 100.0 * (test_lift - r.lift) / r.lift : NaN         # % biến thiên lift
 
         push!(rows, (
             rank = rank,
@@ -122,22 +121,21 @@ function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
     return (n_train = n_train, n_test = n_test, rows = rows)
 end
 
-"""Hàm điều phối toàn bộ 5 bước thực nghiệm Ứng dụng 1 và xuất các tệp CSV/Markdown vào `results/`."""
+"""Mục đích hàm: Điều phối toàn bộ 5 bước thực nghiệm Ứng dụng 1 và ghi các tệp CSV/Markdown vào `results/`."""
 function main()
-    # Sử dụng phiên bản mặc định tốt nhất (DEFAULT_CONFIG = v6)
-    cfg = DEFAULT_CONFIG
+    cfg = DEFAULT_CONFIG                                     # Dùng biến thể mặc định v6 (biểu diễn lai + mảng tam giác)
 
     println("1. Chuẩn bị dữ liệu Groceries (2 phương án biến đổi)...")
-    prep = prepare_all_groceries(GROCERIES_CSV, GROCERIES_DIR)
+    prep = prepare_all_groceries(GROCERIES_CSV, GROCERIES_DIR) # Tạo groceries_items.txt và groceries_categories.txt
     mkpath(RESULTS_DIR)
 
-    # --- Bảng B08: So sánh 2 phương án biến đổi ---
+    # --- Bước 2 (Bảng B08): So sánh 2 phương án biến đổi dữ liệu ---
     println("2. So sánh 2 phương án biến đổi dữ liệu (B08)...")
     p_fine   = profile_representation("169 mặt hàng gốc (chọn)", prep.fine.path, CHOSEN_MINSUP, cfg)
     p_coarse = profile_representation("Gộp 12 nhóm hàng cấp cao", prep.coarse.path, CHOSEN_MINSUP, cfg)
 
     b08_path = joinpath(RESULTS_DIR, "groceries_b08_transforms.csv")
-    open(b08_path, "w") do io
+    open(b08_path, "w") do io                                # Ghi bảng B08 ra CSV
         println(io, "representation,n_tx,n_items,avg_len,density,minsup,sigma_min,n_itemsets,n_rules_conf03,time_s")
         for p in (p_fine, p_coarse)
             println(io, join([csv_esc(p.label), p.n, p.m, round(p.avg_len; digits = 3),
@@ -146,18 +144,18 @@ function main()
         end
     end
 
-    # --- Khảo sát lưới minsup × minconf ---
+    # --- Bước 3: Khảo sát độ nhạy trên lưới minsup × minconf ---
     println("3. Khảo sát độ nhạy lưới minsup × minconf...")
-    db = p_fine.db
+    db = p_fine.db                                           # Sử dụng phương án 169 mặt hàng gốc đã chọn
     n = n_transactions(db)
     grid_path = joinpath(RESULTS_DIR, "groceries_grid.csv")
     grid_rows = NamedTuple[]
-    open(grid_path, "w") do io
+    open(grid_path, "w") do io                               # Ghi 9 tổ hợp lưới ngưỡng ra CSV
         println(io, "minsup,sigma_min,n_itemsets,minconf,n_rules,max_lift")
-        for ms in GRID_MINSUPS
+        for ms in GRID_MINSUPS                               # Duyệt từng mức minsup
             sig = minsup_count(ms, n)
-            isets = eclat(db, sig, cfg)
-            for mc in GRID_MINCONFS
+            isets = eclat(db, sig, cfg)                      # Khai thác tập phổ biến 1 lần cho mỗi minsup
+            for mc in GRID_MINCONFS                          # Duyệt từng mức minconf trên cùng tập phổ biến
                 rs = rules(isets, n; minconf = mc)
                 max_l = isempty(rs) ? 0.0 : maximum(r.lift for r in rs)
                 push!(grid_rows, (minsup = ms, sigma_min = sig, n_itemsets = length(isets),
@@ -167,14 +165,14 @@ function main()
         end
     end
 
-    # --- Bảng B09 & toàn bộ luật ở ngưỡng đã chọn (cho F11) ---
+    # --- Bước 4 (Bảng B09 & Hình F11): Trích xuất toàn bộ 125 luật và top-10 theo lift ---
     println("4. Trích xuất toàn bộ luật và top-10 theo lift (B09, F11)...")
-    chosen_rules = rules(p_fine.isets, n; minconf = CHOSEN_MINCONF)
-    top10_lift = top_k(chosen_rules, 10; by = :lift)
-    top5_conf  = top_k(chosen_rules, 5; by = :confidence)
+    chosen_rules = rules(p_fine.isets, n; minconf = CHOSEN_MINCONF) # Toàn bộ 125 luật ở (1%, 0.3)
+    top10_lift = top_k(chosen_rules, 10; by = :lift)                # Top-10 theo lift (Bảng B09)
+    top5_conf  = top_k(chosen_rules, 5; by = :confidence)           # Top-5 theo confidence (để minh họa thiên lệch whole milk)
 
     rules_path = joinpath(RESULTS_DIR, "groceries_rules.csv")
-    open(rules_path, "w") do io
+    open(rules_path, "w") do io                              # Ghi toàn bộ 125 luật (dữ liệu đầu vào vẽ Hình F11)
         println(io, "antecedent,consequent,support_count,support,confidence,lift")
         for r in chosen_rules
             println(io, join([csv_esc(format_items(r.antecedent, db, prep.fine.id_to_name)),
@@ -185,7 +183,7 @@ function main()
     end
 
     b09_path = joinpath(RESULTS_DIR, "groceries_top10.csv")
-    open(b09_path, "w") do io
+    open(b09_path, "w") do io                                # Ghi Top-10 luật theo lift (Bảng B09)
         println(io, "rank,antecedent,consequent,support_count,support,confidence,lift")
         for (rank, r) in enumerate(top10_lift)
             println(io, join([rank,
@@ -196,12 +194,12 @@ function main()
         end
     end
 
-    # --- Bảng B10: Kiểm tra độ ổn định chia 80/20 ---
+    # --- Bước 5 (Bảng B10): Kiểm tra độ ổn định trên phép chia 80/20 ---
     println("5. Kiểm tra độ ổn định luật trên chia tập 80/20 (seed=$SEED, B10)...")
     stab = evaluate_stability(db, prep.fine.id_to_name, CHOSEN_MINSUP, CHOSEN_MINCONF, cfg;
                               train_ratio = 0.8, seed = SEED, k = 10)
     b10_path = joinpath(RESULTS_DIR, "groceries_stability.csv")
-    open(b10_path, "w") do io
+    open(b10_path, "w") do io                                # Ghi bảng độ ổn định B10 ra CSV
         println(io, "rank,antecedent,consequent,train_sup,train_conf,train_lift,test_sup,test_conf,test_lift,lift_diff_pct")
         for row in stab.rows
             println(io, join([row.rank, csv_esc(row.antecedent), csv_esc(row.consequent),
@@ -211,8 +209,8 @@ function main()
         end
     end
 
-    # --- Xuất tóm tắt Markdown ---
-    whole_milk_cnt = prep.fine.counts["whole milk"]
+    # --- Xuất báo cáo tóm tắt Markdown để hiển thị trực tiếp trong notebook Colab ---
+    whole_milk_cnt = prep.fine.counts["whole milk"]          # Tần suất mặt hàng phổ biến nhất ("whole milk")
     whole_milk_pct = round(100.0 * whole_milk_cnt / n; digits = 2)
 
     summary_path = joinpath(RESULTS_DIR, "groceries_summary.md")
@@ -263,6 +261,7 @@ function main()
     println("Hoàn tất thực nghiệm Ứng dụng 1. Kết quả tổng hợp lưu tại: ", summary_path)
 end
 
+# Chỉ chạy thực nghiệm khi gọi trực tiếp kịch bản này từ dòng lệnh
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
 end
