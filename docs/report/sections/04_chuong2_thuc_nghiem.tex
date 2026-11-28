@@ -150,6 +150,84 @@ Dataset & \texttt{minsup} Grid (7 levels) & Itemsets (High $\to$ Low) & Runs & M
 \end{figure}
 
 % ---------------------------------------------------------------------------
+\subsection{E8: Ablation Study of the Optimizations (\texttt{v0} $\to$ \texttt{v6})}
+\label{subsec:exp_e8}
+% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
+
+\textbf{Hypotheses (H2, H3, H8):} Ordering items by ascending support reduces the number of intersections (H3); bitsets beat tid lists on dense data (H2); the triangular array removes most level-2 intersections on sparse data with many frequent items (H8). Section~\ref{subsec:optimizations} describes each variant.
+
+\textbf{Setup:} \texttt{scripts/bench\_ablation.jl} measures the seven variants at the median and at the lowest \texttt{minsup} of each benchmark, using the same protocol as E2 (one fresh Julia process per run started by \texttt{scripts/run\_one.jl}, warm-up on a toy dataset, \texttt{time\_ns()}, median of 3 runs or 5 runs below one second, output written to a file). A separate untimed run of each configuration collects the \texttt{EclatStats} counters (decision D20). Because these runs were made on a second machine (Appendix~\ref{subsec:appendix_reproduce}), only ratios between variants are compared, never absolute times against E2. Results are in Tables~\ref{tab:b03_ablation_time} and~\ref{tab:b04_ablation_counters} (\texttt{results/e8\_*.csv}).
+
+\textbf{Results, step by step} (lowest \texttt{minsup} unless stated otherwise):
+\begin{itemize}
+    \item \textbf{\texttt{v1}, item order (H3): confirmed.} The number of intersections drops by 19\% on \texttt{chess}, 10\% on \texttt{mushroom}, and 43\% on \texttt{retail}; failing intersections drop $10.6\times$ on \texttt{chess} (29,532 to 2,797) and $5.6\times$ on \texttt{mushroom}; peak tidset memory decreases accordingly (\texttt{retail}: 4.19 to 2.66~MiB). Time improves by $1.6\times$ on \texttt{retail} and $1.2\times$ on \texttt{mushroom}, but hardly on \texttt{chess} and \texttt{T10I4D100K}, where the baseline is dominated by memory allocation and by level-2 intersections, respectively.
+    \item \textbf{\texttt{v2}, buffer reuse: large gain on dense data.} \texttt{v2} is $3.5\times$ faster than \texttt{v1} on \texttt{chess} and $3.4\times$ on \texttt{mushroom}, where each run performs 59,000--114,000 intersections and \texttt{v1} allocates a new array for each of them. On sparse data the gain is only $5$--$9\%$, because the time is spent intersecting long level-2 tidsets, not allocating.
+    \item \textbf{\texttt{v3}, adaptive intersection: helps on sparse data, hurts on dense data.} \texttt{retail} becomes $2.6\times$ faster and \texttt{T10I4D100K} $1.4\times$ faster, because 99.8\% and 95.7\% of their intersections fail and early termination stops them after a few elements. On \texttt{chess} only 2.5\% of the intersections fail and the two tid lists usually have similar lengths, so the extra checks never pay off: \texttt{v3} is $1.7\times$ slower than \texttt{v2} on \texttt{chess} and $1.4\times$ slower on \texttt{mushroom}.
+    \item \textbf{\texttt{v4}, bitsets (H2): confirmed on dense data.} \texttt{v4} is $17.7\times$ faster than \texttt{v3} on \texttt{chess} and $11.6\times$ on \texttt{mushroom}, with $9$--$27\times$ smaller peak tidset memory. On \texttt{retail}, \texttt{v4} is $1.7\times$ slower than \texttt{v3} and needs $8.4\times$ more memory (22.45 versus 2.66~MiB), as predicted for sparse data. \texttt{T10I4D100K} is sparse ($\rho \approx 0.013$) yet \texttt{v4} is $8.1\times$ faster than \texttt{v3} there, while using $2.4\times$ more memory: in time, bitsets pay off at much lower densities than the memory break-even $1/32$ (E7, Section~\ref{subsec:exp_e7}).
+    \item \textbf{\texttt{v5}, triangular array (H8): confirmed on sparse data.} On \texttt{retail} the array skips 2,236,526 infrequent pairs, the number of intersections falls from 2.24 million to 8,038, and the time falls $24.5\times$; on \texttt{T10I4D100K} intersections fall from 292,768 to 22,430 and time $4.2\times$. On the dense datasets, where few items are frequent (98 and 558 pairs skipped), counting pairs costs slightly more than it saves ($11$--$15\%$ slower than \texttt{v4}). At the median \texttt{minsup} of \texttt{retail} (1\%), \texttt{v5} is also slower than \texttt{v4} (34.0 versus 20.5~ms): with only 2,458 intersections in total, one scan of 88,162 transactions to count pairs costs more than the bitset intersections it avoids. The triangular array pays off when $\binom{m_f}{2}$ is large compared with $N\bar{L}^2$, not in every case.
+    \item \textbf{\texttt{v6}, hybrid representation: trades time for memory on sparse data.} On the dense datasets \texttt{v6} keeps bitsets everywhere (no switch) and matches \texttt{v4}/\texttt{v5}. On \texttt{retail} at 0.1\% and on \texttt{T10I4D100K}, the root density is below $1/32$, so \texttt{v6} uses tid lists: peak tidset memory returns to the \texttt{v3} level (22.45 to 2.66~MiB on \texttt{retail}; 9.34 to 3.85~MiB on \texttt{T10I4D100K}), but \texttt{v6} is $2.4\times$ and $3.6\times$ slower than \texttt{v5}, consistent with E7: at these densities, tid-list intersections are slower than bitset intersections.
+\end{itemize}
+
+\textbf{Conclusion:} Every optimization has a measurable effect, and every effect matches the complexity analysis once the condition under which it applies is taken into account: allocation-free buffers and bitsets help when there are many intersections on dense tidsets, early termination and the triangular array help when most candidates fail. Because the conditions differ between datasets, no single variant is fastest everywhere; the fastest variant is $36$--$65\times$ faster than the baseline at the lowest \texttt{minsup}.
+
+% ---------------------------------------------------------------------------
+\subsection{E7: Bitsets versus Tid Lists as a Function of Density}
+\label{subsec:exp_e7}
+% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
+
+\textbf{Hypothesis (H2):} By Table~\ref{tab:complexity}, a tid list costs $4\sigma$ bytes and $O(\sigma)$ time per intersection, while a bitset costs $N/8$ bytes and $N/64$ AND operations regardless of $\sigma$. In memory the two representations break even at density $\rho = \sigma/N = 1/32$. In time the break-even point may differ from $1/32$: one 64-bit AND is much cheaper than one branching merge step, but the adaptive intersection of \texttt{v3} can stop early.
+
+\textbf{Setup:} \texttt{scripts/bench\_density.jl} compares \texttt{v3} (tid lists) with \texttt{v4} (bitsets) on three sources: (i)~synthetic data with controlled density ($N = 50{,}000$, 30 items, each present independently with probability $p$ from $0.003$ to $0.4$, threshold $\sigma_{\min} = \lceil 0.8\,p^2 N \rceil$ so that 2-itemsets are frequent); (ii)~the four benchmarks at the highest, median, and lowest \texttt{minsup} of the grid; (iii)~the 12 image encodings of Application~2. The density of a database is the mean support of its frequent items divided by $N$. Because many points are compared relative to each other, each point is measured in one warmed-up process, taking the minimum of 3 runs (\texttt{results/e7\_density.csv}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{F08_density_bitset_vs_vector.pdf}
+\caption{Time ratio of tid lists (\texttt{v3}) to bitsets (\texttt{v4}) versus tidset density $\rho$ (both axes logarithmic). A ratio above 1 means bitsets are faster. Line: synthetic data; markers: benchmarks (highest, median, lowest \texttt{minsup}) and the 12 image encodings of Application~2; dashed vertical line: memory break-even $\rho = 1/32$ (Figure F08).}
+\label{fig:f08_density}
+\end{figure}
+
+\textbf{Results:} (Figure~\ref{fig:f08_density}) \emph{Memory:} on synthetic data, the memory ratio (tid lists over bitsets) crosses 1 at $\rho \approx 0.058$, the same order as the theoretical $1/32 \approx 0.031$. \emph{Time:} bitsets are faster at almost every synthetic density; the estimated time break-even is $\rho \approx 0.0036$, nearly ten times below $1/32$, and the advantage grows to $48\times$ at $\rho = 0.4$. On real data, bitsets are $2$--$44\times$ faster on the dense benchmarks, up to $18\times$ faster on the image encodings, and even $7.6$--$8.3\times$ faster on \texttt{T10I4D100K} at 1\% and 0.2\% although its density ($0.013$--$0.021$) is below $1/32$. Tid lists win only where almost no intersection succeeds: \texttt{retail} at 0.1\% ($\rho = 0.0036$, bitsets $1.27\times$ slower) and the position-encoded image schemes (d), whose items are frequent but whose pairs almost never are (both representations take under one millisecond there).
+
+\textbf{Explanation:} The memory break-even lies slightly above $1/32$ because the formula $4\sigma$ versus $N/8$ holds only for root-class tidsets; deeper tidsets are much sparser (a pair of items has density about $\rho^2$), which favors tid lists. For time, density alone does not decide. On the synthetic data the threshold makes most pairs frequent, so a tid-list intersection cannot stop early and every branching merge step costs more than a 64-bit AND covering 64 transactions. On \texttt{retail} at 0.1\%, more than 99\% of the intersections fall below the threshold (Table~\ref{tab:b04_ablation_counters}); the adaptive intersection of \texttt{v3} stops after a few elements, whereas a bitset always processes all $N/64$ words.
+
+\textbf{Conclusion:} H2 holds for memory and only partially for time: the time break-even depends on the fraction of failing intersections, not on density alone. The hybrid \texttt{v6}, which switches representation at the \emph{memory} break-even $1/32$, therefore saves memory on sparse data but can be slower than the faster of the two pure representations, which motivates a time-based switching rule (Section~\ref{subsec:strengths_proposals}).
+
+% ---------------------------------------------------------------------------
+\subsection{E10: Live Tidset Memory over the Search}
+\label{subsec:exp_e10}
+% Primary author: Member A (Pham Tran Anh Quan). Machine: results/ENV_A.md.
+
+\textbf{Hypothesis (H7):} The paper observes that memory peaks while the 2-itemsets at the start of each class are built, and then decreases because tidsets shrink with depth (Lemma~6; Fig.~22 of~\cite{zaki2000scalable}).
+
+\textbf{Setup:} \texttt{scripts/bench\_memory\_trace.jl} records the number of live tidset bytes (\texttt{EclatStats.bytes\_current}) after every emitted itemset, sampled at up to 4,000 points per run, for the tid-list variant (\texttt{v3}) and the bitset variant (\texttt{v4}). It uses one dense dataset (\texttt{chess}) and one sparse dataset from the same IBM synthetic family as the paper (\texttt{T10I4D100K}), each at its median \texttt{minsup} (\texttt{results/e10\_memory\_trace.csv}).
+
+% Data source: results/e10_memory_trace.md
+\begin{table}[H]
+\centering
+\caption{Live tidset memory over the search (E10).}
+\label{tab:e10_memory}
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+Dataset & Variant & Itemsets & Peak & Mean & Peak/mean & Peak at itemset \# & Length at peak \\
+\midrule
+\texttt{chess} (80\%) & \texttt{v3} & 8,227 & 0.731~MiB & 0.529~MiB & 1.38 & 5,492 & 10 \\
+ & \texttt{v4} & 8,227 & 0.026~MiB & 0.019~MiB & 1.42 & 3,014 & 8 \\
+\texttt{T10I4D100K} (1\%) & \texttt{v3} & 385 & 3.049~MiB & 3.036~MiB & 1.00 & 200 & 3 \\
+ & \texttt{v4} & 385 & 4.508~MiB & 4.472~MiB & 1.01 & 200 & 3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{F10_memory_trace.pdf}
+\caption{Live tidset memory after each emitted frequent itemset (E10) for tid lists (\texttt{v3}) and bitsets (\texttt{v4}).}
+\label{fig:f10_memory_trace}
+\end{figure}
+
+\textbf{Results and explanation:} With this implementation, H7 is \emph{not} confirmed: the memory curve is nearly flat, with a peak only 1.38--1.42 times the mean on \texttt{chess} and 1.00--1.01 times on \texttt{T10I4D100K} (Table~\ref{tab:e10_memory}, Figure~\ref{fig:f10_memory_trace}). On \texttt{T10I4D100K}, almost all of the 3.0--4.5~MiB are the tidsets of the root class, which stay alive during the whole search; the child classes are tiny because only 10 of the 385 frequent itemsets have more than one item. On \texttt{chess}, the peak of \texttt{v3} occurs at an itemset of length 10, i.e.\ at the end of the deepest path: dense tidsets shrink slowly (every support is at least 80\% of the transactions), so the sum over the open classes is largest along the longest path. The difference from the paper comes from the traversal: the paper builds all child classes of a class before recursing, whereas this implementation recurses immediately and keeps only one class per depth (Section~\ref{subsec:eclat_algo}), so it never holds the tidsets of all 2-itemsets of a large class at the same time. Bitsets reduce the peak 28-fold on dense \texttt{chess} (0.731 to 0.026~MiB), but increase it by 48\% on sparse \texttt{T10I4D100K} (3.05 to 4.51~MiB), consistent with the $\rho = 1/32$ break-even of Table~\ref{tab:complexity}.
+
+% ---------------------------------------------------------------------------
 \subsection{Strengths, Weaknesses vs.\ SPMF, and Future Optimization Proposals}
 \label{subsec:strengths_proposals}
 
@@ -177,4 +255,5 @@ I/O throughput & 0.325~s read (\texttt{accidents}), 0.045~s write (255k) & Compa
     \item \textbf{Diffset Representation (dEclat~\cite{zaki2003fast}):} On ultra-dense datasets (e.g., \texttt{chess} at $\texttt{minsup} < 50\%$ or \texttt{accidents}), storing transaction differences $d(PX) = t(P) \setminus t(PX)$ shrinks set cardinalities dramatically as recursion deepens, reducing both intersection cost and memory footprint beyond \texttt{BitVector}.
     \item \textbf{Parallel Top-Level Equivalence Classes (\texttt{Threads.@spawn}):} Because prefix-based equivalence classes at depth~1 are completely independent (Zaki~\cite{zaki2000scalable}, §4.2), assigning each root class to a thread-local \texttt{Workspace} can deliver near-linear multi-core speedups on our 12-thread CPU with zero lock contention.
     \item \textbf{Eliminating Cold JIT Latency via \texttt{PrecompileTools.jl} / Sysimage:} E2 showed that Julia's $\approx 3$~s cold startup exceeds algorithm runtime on short workloads. Precompiling concrete workloads into a custom sysimage would bring wall time down to parity with JVM startup.
+    \item \textbf{Time-Based Representation Switching:} E7 showed that the \emph{time} break-even between bitsets and tid lists lies near $\rho \approx 0.004$, an order of magnitude below the \emph{memory} break-even $1/32$ used by \texttt{v6}, and that it depends on the fraction of failing intersections. Switching on a cost model $c_{\text{bit}} \cdot N/64$ versus $c_{\text{list}} \cdot (\sigma_a + \sigma_b)$, with constants calibrated once per machine, and keeping the memory rule only as an upper bound, would let \texttt{v6} match the faster of \texttt{v4} and \texttt{v5} on \texttt{T10I4D100K} without losing its memory savings on \texttt{retail}.
 \end{enumerate}

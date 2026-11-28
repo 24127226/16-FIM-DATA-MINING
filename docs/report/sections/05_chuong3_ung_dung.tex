@@ -108,4 +108,113 @@ Three methodological limitations warrant caution when operationalizing associati
 % ---------------------------------------------------------------------------
 \subsection{Application 2: Visual Pattern Discovery via Bag of Visual Words}
 \label{subsec:app2_bovw}
-% To be completed by Member A (Caltech-101, Tables B11-B13, Figures F12-F13).
+
+\subsubsection{Problem Formulation and Feature Extraction}
+
+\textbf{Objective.} Find combinations of local image details that recur together within one object category, and use them in two ways: to \emph{understand} the image data (every pattern can be located on the images) and as \emph{features} for a classifier. The full pipeline is in \texttt{apps/bovw/} and is reproduced by Section~7 of the notebook.
+
+\textbf{Data.} We use Caltech-101~\cite{feifei2004learning} (CC BY 4.0) and select four categories with clearly different shapes: \emph{airplanes}, \emph{Motorbikes}, \emph{Faces\_easy}, and \emph{watch}. From each category, 100 images are drawn at random (seed $42$) and split 70\%/30\% per class into 280 training and 120 test images.
+
+\textbf{Visual words.} Feature extraction is implemented by the team; the only external libraries are \texttt{JpegTurbo.jl} (JPEG decoding), \texttt{ColorTypes.jl} (grayscale conversion), and \texttt{Plots.jl} (figures), as documented in the notebook. Each image is converted to grayscale and resized so that its long side is 256 pixels. On a grid with stride 8, every $16 \times 16$ patch is described by a histogram of gradient orientations over $4 \times 4$ cells $\times$ 8 orientations (128 dimensions), normalized as in SIFT~\cite{lowe2004distinctive,dalal2005histograms}; each image keeps its 150 patches with the strongest gradients. A codebook of $k$ visual words is learned with $k$-means++~\cite{arthur2007kmeans} on training descriptors only, so that no information from the test images leaks into the representation, and every patch is assigned to its nearest visual word~\cite{sivic2003video,csurka2004visual}.
+
+\subsubsection{Data Transformation Analysis}
+
+Every image becomes one transaction. Four item encodings are compared, each with $k \in \{100, 200, 500\}$ (Table~\ref{tab:b11_bovw_transform}): (a)~the set of visual words present in the image; (b)~as (a), but removing words present in more than 50\% of the training images, analogous to stop-word removal in text; (c)~as (b), plus a separate item ``word $w$ occurs at least twice'', written $w{\times}2$, to retain part of the count information; (d)~as (b), but pairing every word with the image quadrant that contains it, to retain position information. The final scheme is selected by data: the validation accuracy of a classifier that uses itemset features only, measured on 72 images held out from the training set. The test images are used only in the last step.
+
+% Data source: results/bovw_b11_transforms.csv (apps/bovw/analyze.jl)
+\begin{table}[H]
+\centering
+\caption{Image-to-transaction encodings (Table B11): 280 training images, \texttt{minsup} $= 30\%$, itemsets of at most 4 words; mining time is the minimum of 3 warmed-up runs; validation accuracy with itemset features only.}
+\label{tab:b11_bovw_transform}
+\begin{tabular}{@{}rlrrrrrrr@{}}
+\toprule
+$k$ & Encoding & $m$ & $\bar{L}$ & $\rho$ & Itemsets & \texttt{v3} (ms) & \texttt{v4} (ms) & Val.\ acc. \\
+\midrule
+100 & (a) & 100 & 56.0 & 56.0\% & 48,879 & 104.13 & 5.79 & 0.625 \\
+100 & (b) & 25 & 9.4 & 37.6\% & 34 & 0.10 & 0.02 & 0.667 \\
+100 & (c) & 50 & 15.0 & 30.0\% & 44 & 0.17 & 0.04 & 0.667 \\
+100 & (d) & 100 & 13.7 & 13.7\% & 1 & 0.01 & 0.01 & 0.556 \\
+200 & (a) & 200 & 76.2 & 38.1\% & 242 & 7.47 & 0.32 & 0.653 \\
+200 & (b) & 190 & 71.0 & 37.4\% & 171 & 5.41 & 0.30 & 0.667 \\
+\textbf{200} & \textbf{(c)} & \textbf{380} & \textbf{103.1} & \textbf{27.1\%} & \textbf{171} & \textbf{5.34} & \textbf{0.31} & \textbf{0.708} \\
+200 & (d) & 760 & 94.6 & 12.4\% & 1 & 0.10 & 0.08 & 0.708 \\
+500 & (a) & 500 & 98.7 & 19.7\% & 8 & 0.10 & 0.08 & 0.708 \\
+500 & (b) & 500 & 98.7 & 19.7\% & 8 & 0.07 & 0.06 & 0.708 \\
+500 & (c) & 1,000 & 126.7 & 12.7\% & 8 & 0.09 & 0.08 & 0.694 \\
+500 & (d) & 1,995 & 115.4 & 5.8\% & 0 & 0.04 & 0.04 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:b11_bovw_transform} shows that $k$ directly controls the two quantities identified in Section~\ref{subsec:complexity} as decisive for Eclat. With $k = 100$, an image contains on average 56 of the 100 words ($\rho = 56\%$): transactions are long and dense, so the output explodes (48,879 itemsets even with at most 4 words), as predicted by hypothesis H5. At this density, bitset tidsets are 18 times faster than tid lists (\texttt{v4} versus \texttt{v3}), as predicted by H2. Conversely, $k = 500$ or encoding (d) fragments the supports so much that almost no itemset reaches $\texttt{minsup} = 30\%$. Removing stop words at $k = 100$ discards 75 of the 100 words, showing that a small codebook mostly produces generic words. The selected scheme is $k = 200$ with encoding (c): it has the highest validation accuracy (0.708, tied with three other schemes, so the predefined tie-break chooses the smaller $k$ and then the earlier encoding), a moderate output size (171 itemsets), and it keeps repetition information.
+
+\subsubsection{Discriminative Visual Patterns}
+
+With the selected scheme, the training images of each class $c$ are mined separately (\texttt{minsup} $= 30\%$ of the class, itemsets of 2--3 words), and the itemsets are ranked by the growth rate $GR_c(X) = s_c(X)/s_{\neg c}(X)$ of Eq.~\eqref{eq:growth_rate}, i.e.\ as emerging patterns~\cite{dong1999efficient}. $GR = \infty$ means that the itemset occurs in no training image of the other classes. Table~\ref{tab:b12_bovw_patterns} lists the top two patterns of each class. Figure~\ref{fig:f12_bovw} draws the patches of the top pattern on test images, and Figure~\ref{fig:f13_bovw} shows what each visual word looks like through the 6 training patches closest to its cluster center.
+
+% Data source: results/bovw_b12_patterns.md
+\begin{table}[H]
+\centering
+\caption{Top two discriminative patterns per class (Table B12). $s_c$, $s_{\neg c}$: fraction of training images containing the pattern in the class and in the other classes; $w{\times}2$: word $w$ occurs at least twice.}
+\label{tab:b12_bovw_patterns}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Class & Visual-word itemset & $s_c$ & $s_{\neg c}$ & $GR$ \\
+\midrule
+\emph{airplanes} & \{31, 41, 146\} & 0.36 & 0.000 & $\infty$ \\
+ & \{31, 146, 171\} & 0.36 & 0.000 & $\infty$ \\
+\emph{Motorbikes} & \{63, 139, 192\} & 0.31 & 0.005 & 66.0 \\
+ & \{12, 57, 192${\times}2$\} & 0.30 & 0.005 & 63.0 \\
+\emph{Faces\_easy} & \{56, 73, 113\} & 0.36 & 0.000 & $\infty$ \\
+ & \{87, 126, 167\} & 0.36 & 0.000 & $\infty$ \\
+\emph{watch} & \{44, 72, 191${\times}2$\} & 0.30 & 0.010 & 31.5 \\
+ & \{15, 74, 129${\times}2$\} & 0.31 & 0.014 & 22.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{F12_bovw_patterns_on_images.pdf}
+\caption{The top discriminative pattern of each class (Table~\ref{tab:b12_bovw_patterns}) on test images. Each box is a $16 \times 16$ patch assigned to one word of the pattern; red, blue, and green mark the first, second, and third word. For \emph{airplanes}, word 41 (blue) runs along the fuselage.}
+\label{fig:f12_bovw}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{F13_bovw_visual_words.pdf}
+\caption{``Portraits'' of the visual words in the top pattern of each class: the 6 training patches closest to the cluster center.}
+\label{fig:f13_bovw}
+\end{figure}
+
+\textbf{Interpretation.} Reading Table~\ref{tab:b12_bovw_patterns} together with the two figures shows that each pattern is a \emph{geometric configuration} typical of the class rather than a single detail.
+For \emph{airplanes}, word 31 is a horizontal edge (bright above, dark below), word 41 a dark horizontal band, and word 146 a flat region: the combination describes a long horizontal fuselage against a flat sky or runway, and no training image of the other three classes contains all three words.
+For \emph{Motorbikes}, the words are diagonal edges (63), curved bands such as mudguards, exhaust pipes, and rims (192), and the dense texture of the engine (139).
+For \emph{watch}, the words are repeated diagonal stripes of the metal bracelet; the fact that word 191 occurs at least twice in the top pattern captures exactly the repetition of the bracelet links, which encoding (c) preserves and is the reason it was selected.
+For \emph{Faces\_easy}, word 56 lies near the hairline, but words 73 and 113 are vertical edges located at the image border and in the background: many Caltech-101 face images share similar backgrounds (bookshelves, walls, posters), so the ``face'' pattern partly encodes the background. This is a dataset bias that frequent patterns expose in a readable way, whereas a black-box classifier would not reveal it.
+
+\subsubsection{Patterns as Classifier Features}
+
+Each image is represented by the binary vector ``does the image contain pattern $X$'' over the top 20 patterns of each class (80 dimensions), and a multinomial logistic regression with L2 regularization (implemented by the team) is trained on it. Table~\ref{tab:b13_bovw_classification} compares this representation with the standard bag-of-visual-words histogram.
+
+% Data source: results/bovw_b13_classification.md
+\begin{table}[H]
+\centering
+\caption{Four-class classification of the 120 test images with logistic regression (Table B13).}
+\label{tab:b13_bovw_classification}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Features & Dimensions & Test accuracy \\
+\midrule
+Bag-of-visual-words histogram ($k = 200$) & 200 & 0.858 \\
+Contains discriminative pattern (20 per class) & 80 & 0.758 \\
+Both combined & 280 & \textbf{0.867} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 80 pattern features alone classify 75.8\% of the test images correctly, against a chance level of 25\%, so the patterns carry genuine class information. They remain below the 200-dimensional histogram, because a single pattern covers only about 30\% of the images of its class and ignores the words that belong to no pattern. Combining both representations adds 0.9 percentage points, i.e.\ one more correct image out of 120, which is not enough to claim a real improvement. The main value of the patterns is that every feature can be read and checked visually, as shown above. The confusion matrix of the pattern features shows that \emph{watch} is the hardest class (16 of 30 test images correct; 7 are confused with \emph{Motorbikes}, plausibly because both contain many curved edges and metallic surfaces), while \emph{airplanes} is the easiest (29 of 30).
+
+\subsubsection{Limitations and Practical Extensions}
+
+The bag-of-words representation discards almost all position and count information; encoding (d), which keeps position, fragments the supports until no pattern remains. The codebook depends on the training images and on the $k$-means seed. With 70 training images per class, $\texttt{minsup} = 30\%$ corresponds to 21 images, so $GR = \infty$ only means that the pattern is absent from the 210 training images of the other classes, which may not hold on a larger collection. Natural extensions are using patterns as filters to detect mislabeled or out-of-category images, and using the words of a pattern as attention regions for an object detector.

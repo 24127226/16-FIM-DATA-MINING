@@ -2,4 +2,55 @@
 \section{Supplementary Tables and Reproducibility Notes}
 \label{sec:07_appendix}
 
-% Full experimental tables, supplementary plots, and reproducibility artifacts.
+% ---------------------------------------------------------------------------
+\subsection{Reproducing Every Result}
+\label{subsec:appendix_reproduce}
+
+Every number in this report is produced by a script in the repository and stored as a CSV or Markdown file in \texttt{results/}; every run appends the command, commit, and duration to \texttt{results/LOG.md}. All random choices use the fixed seed $42$ (synthetic data, subsampling, image selection, $k$-means). Table~\ref{tab:appendix_commands} maps each result to the command that regenerates it; the notebook \texttt{notebooks/demo.ipynb} runs the same commands on Google Colab.
+
+\begin{table}[H]
+\centering
+\caption{Commands that regenerate the results of the report (run from the repository root).}
+\label{tab:appendix_commands}
+\begin{tabular}{@{}p{3.6cm}p{12.0cm}@{}}
+\toprule
+Result & Command \\
+\midrule
+Test suite (Table~\ref{tab:b02_tests}) & \texttt{julia --project=. test/runtests.jl} \\
+E1--E6, E9 & \texttt{julia --project=. scripts/run\_chapter2.jl --only e2} (and \texttt{e5}, \texttt{e6}, \texttt{e9}) \\
+E8 (Tables~\ref{tab:b03_ablation_time}, \ref{tab:b04_ablation_counters}) & \texttt{julia --project=. scripts/bench\_ablation.jl} \\
+E7 (Figure~\ref{fig:f08_density}) & \texttt{julia --project=. scripts/bench\_density.jl} \\
+E10 (Figure~\ref{fig:f10_memory_trace}) & \texttt{julia --project=. scripts/bench\_memory\_trace.jl} \\
+Figures F08, F10 & \texttt{julia --project=apps scripts/plots\_a.jl} \\
+Application 1 & \texttt{julia --project=. apps/groceries/run\_groceries.jl} \\
+Application 2 & \texttt{julia --project=apps apps/bovw/prepare.jl}, then \texttt{analyze.jl}, \texttt{figures.jl} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Measurement machines.} Experiments E1--E6 and E9 were run on the reference machine described in Section~\ref{subsec:exp_setup} (\texttt{results/ENV.md}). Experiments E7, E8, E10 and Application~2 were run on a second machine (\texttt{results/ENV\_A.md}): Intel Core i5-6200U (2.30~GHz, 4 hardware threads, 10.1~GiB RAM, Windows~x64), Julia~1.11.4 single-threaded. Absolute times are therefore not comparable between E2 and E8; every comparison in this report is made between measurements taken on the same machine, under the same protocol (fresh process, warm-up on a toy dataset, \texttt{time\_ns()}, median of 3 runs or 5 runs below one second, counters collected in a separate untimed run).
+
+% ---------------------------------------------------------------------------
+\subsection{Libraries Used Outside the Mining Algorithm}
+\label{subsec:appendix_libraries}
+
+The mining algorithm (\texttt{src/}) depends only on the Julia standard library and \texttt{DataStructures.jl} (\texttt{BinaryMinHeap} for top-$k$ rules). The experiment and application environments use additional libraries for purposes unrelated to frequent itemset mining:
+
+\begin{table}[H]
+\centering
+\caption{Libraries outside the mining algorithm and their purpose.}
+\label{tab:appendix_libraries}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Library & Environment & Purpose \\
+\midrule
+\texttt{CSV.jl}, \texttt{DataFrames.jl}, \texttt{Plots.jl} & \texttt{scripts/} & reading result tables and drawing the Chapter~2 figures \\
+\texttt{JpegTurbo.jl} & \texttt{apps/} & decoding Caltech-101 JPEG images \\
+\texttt{ColorTypes.jl} & \texttt{apps/} & converting RGB pixels to grayscale \\
+\texttt{Plots.jl} & \texttt{apps/} & Figures F08, F10, F12, F13 \\
+\texttt{LinearAlgebra}, \texttt{Statistics}, \texttt{Random} & standard library & distances in $k$-means, standardization, seeded sampling \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No external frequent itemset mining, clustering, or classification library is used: $k$-means++, the gradient-orientation descriptors, and the logistic regression classifier of Application~2 are implemented in \texttt{apps/bovw/}.
