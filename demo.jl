@@ -26,6 +26,7 @@ Ví dụ:
   julia --project=. demo.jl --minsup 40% -o - data/toy/pasquier99.txt
 """
 
+"""Cấu trúc lưu toàn bộ tham số dòng lệnh sau khi phân tích hợp lệ."""
 struct CLIOptions
     input_path::String
     minsup_str::String
@@ -36,10 +37,18 @@ struct CLIOptions
     show_stats::Bool
 end
 
+"""Ngoại lệ riêng cho lỗi cú pháp tham số dòng lệnh (trả về mã thoát 1)."""
 struct CLIError <: Exception
     msg::String
 end
 
+"""
+    parse_cli(args::Vector{String}) -> Union{Symbol, CLIOptions}
+
+Mục đích: Phân tích và kiểm tra hợp lệ các tham số dòng lệnh (`--minsup`, `-o/--output`,
+`--variant`, `--stats`, `-h/--help` và `<file_input>`). Trả về `:help` nếu người dùng yêu cầu
+xem hướng dẫn, hoặc `CLIOptions` nếu hợp lệ; ném `CLIError` nếu thiếu/sai tham số.
+"""
 function parse_cli(args::Vector{String})
     minsup_str = nothing
     output_path = "output.txt"
@@ -108,8 +117,17 @@ function parse_cli(args::Vector{String})
     return CLIOptions(positionals[1], minsup_str, minsup, output_path, variant, cfg, show_stats)
 end
 
+"""Định dạng số giây với 4 chữ số thập phân để in báo cáo gọn gàng."""
 fmt_s(sec::Float64) = string(round(sec; digits = 4), " s")
 
+"""
+    run_cli(opts::CLIOptions) -> Int
+
+Mục đích: Thực thi trọn vẹn quy trình CLI gồm 2 pha tách biệt:
+1. Pha 1: Đọc tệp giao dịch chuẩn SPMF và quy đổi ngưỡng `σ_min`.
+2. Pha 2: Chạy `eclat!` xuất luồng trực tiếp qua `SPMFWriter` (ra tệp hoặc `stdout`),
+   rồi in bảng tóm tắt thời gian và bộ đếm `EclatStats` (nếu bật `--stats`).
+"""
 function run_cli(opts::CLIOptions)
     # Pha 1: Đọc dữ liệu
     t_read_0 = time_ns()
@@ -180,6 +198,7 @@ function run_cli(opts::CLIOptions)
     return 0
 end
 
+"""Điểm vào chính của chương trình dòng lệnh: bắt lỗi tham số và điều phối `run_cli`."""
 function main(args::Vector{String})
     parsed = try
         parse_cli(args)

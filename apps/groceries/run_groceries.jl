@@ -40,16 +40,21 @@ end
 """Escape chuỗi cho CSV."""
 csv_esc(s::AbstractString) = '"' * replace(s, '"' => "\"\"") * '"'
 
-"""Đo thống kê cơ bản và thời gian khai thác Eclat cho một bộ dữ liệu (cho B08)."""
+"""
+    profile_representation(label, spmf_path, minsup_str, cfg)
+
+Mục đích: Đo thống kê cơ bản (N, m, L̄, mật độ ρ), thời gian khai thác Eclat (có warm-up trước)
+và số lượng tập phổ biến/luật kết hợp sinh ra cho một phương án biến đổi dữ liệu (phục vụ Bảng B08).
+"""
 function profile_representation(label::String, spmf_path::String, minsup_str::String, cfg::EclatConfig)
     db = read_spmf(spmf_path)
     n = n_transactions(db)
     m = n_items(db)
-    avg_len = sum(length(t) for t in db.transactions) / n   # generator expression (R03)
-    density = avg_len / m
+    avg_len = sum(length(t) for t in db.transactions) / n   # Độ dài giỏ hàng trung bình (dùng generator expression)
+    density = avg_len / m                                   # Mật độ ρ = L̄ / m (so sánh với ngưỡng lý thuyết 1/32)
     sigma_min = minsup_count(minsup_str, n)
 
-    # Warm-up nhỏ trước khi đo thời gian khai thác
+    # Chạy nháp 1 lần (warm-up) để loại trừ thời gian biên dịch JIT khỏi phép đo
     _ = eclat(db, sigma_min, cfg)
     t0 = time_ns()
     isets = eclat(db, sigma_min, cfg)
@@ -61,12 +66,19 @@ function profile_representation(label::String, spmf_path::String, minsup_str::St
             t_s = t_s, db = db, isets = isets)
 end
 
-"""Đánh giá độ ổn định của các luật trên tập kiểm tra (20% còn lại) theo seed cố định."""
+"""
+    evaluate_stability(db, id_to_name, minsup_str, minconf, cfg; train_ratio=0.8, seed=42, k=10)
+
+Mục đích: Kiểm tra độ ổn định ngoài mẫu của top-k luật theo lift (Bảng B10):
+- Xáo trộn ngẫu nhiên với `seed` cố định và chia 80% tập huấn luyện / 20% tập kiểm tra.
+- Khai thác tập phổ biến và chọn top-k luật CHỈ trên tập huấn luyện 80%.
+- Đếm lại độ hỗ trợ, confidence và lift của đúng k luật đó trên 20% tập kiểm tra độc lập.
+"""
 function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
                             minsup_str::String, minconf::Float64, cfg::EclatConfig;
                             train_ratio::Float64 = 0.8, seed::Int = SEED, k::Int = 10)
     n = n_transactions(db)
-    rng = MersenneTwister(seed)
+    rng = MersenneTwister(seed)                  # Cố định hạt giống để kết quả chia 80/20 tái lập 100%
     perm = randperm(rng, n)
     n_train = round(Int, train_ratio * n)
 
@@ -74,13 +86,14 @@ function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
     test_txs  = db.transactions[perm[(n_train + 1):end]]
     n_test = length(test_txs)
 
+    # Khai thác và sinh top-k luật chỉ trên tập huấn luyện (80%)
     train_db = TransactionDB(train_txs, db.item_ids)
     sigma_train = minsup_count(minsup_str, n_train)
     train_isets = eclat(train_db, sigma_train, cfg)
     train_rules = rules(train_isets, n_train; minconf = minconf)
     train_top = top_k(train_rules, k; by = :lift)
 
-    # Đếm trực tiếp support của X, Y, X ∪ Y trên tập test (20%)
+    # Đếm trực tiếp support của X, Y, X ∪ Y trên tập kiểm tra độc lập (20%)
     test_sets = [Set{Int32}(t) for t in test_txs]
     rows = NamedTuple[]
     for (rank, r) in enumerate(train_top)
@@ -95,7 +108,7 @@ function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
         test_sup = sup_xy / n_test
         test_conf = sup_x > 0 ? sup_xy / sup_x : 0.0
         test_lift = (sup_x > 0 && sup_y > 0) ? (sup_xy * n_test) / (sup_x * sup_y) : 0.0
-        lift_diff_pct = r.lift > 0 ? 100.0 * (test_lift - r.lift) / r.lift : NaN
+        lift_diff_pct = r.lift > 0 ? 100.0 * (test_lift - r.lift) / r.lift : NaN  # % thay đổi lift từ train -> test
 
         push!(rows, (
             rank = rank,
@@ -109,6 +122,7 @@ function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
     return (n_train = n_train, n_test = n_test, rows = rows)
 end
 
+"""Hàm điều phối toàn bộ 5 bước thực nghiệm Ứng dụng 1 và xuất các tệp CSV/Markdown vào `results/`."""
 function main()
     # Sử dụng phiên bản mặc định tốt nhất (DEFAULT_CONFIG = v6)
     cfg = DEFAULT_CONFIG
