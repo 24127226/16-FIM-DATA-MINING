@@ -1,5 +1,7 @@
-% Section 1: Introduction
-\section{Introduction}
+% Mục 1: Mở đầu
+\section{Mở đầu}
 \label{sec:01_introduction}
 
-Frequent Itemset Mining (FIM) constitutes a foundational task in data mining, underpinning association rule discovery, retail market basket analysis, event-log diagnostics, and visual pattern extraction. This project implements the Eclat algorithm~\cite{zaki2000scalable} from scratch in Julia~1.11.4, verifies exact equivalence against the SPMF reference implementation~\cite{fournier2014spmf}, evaluates empirical performance across standard benchmarks, and demonstrates two end-to-end real-world applications.
+Khai thác tập phổ biến (\emph{Frequent Itemset Mining} -- FIM) là một bài toán nền tảng trong lĩnh vực khai phá dữ liệu, đóng vai trò cốt lõi cho nhiều ứng dụng như phát hiện luật kết hợp (\emph{association rules}), phân tích giỏ hàng bán lẻ (\emph{market basket analysis}), chẩn đoán nhật ký sự kiện và khám phá mẫu trực quan trong dữ liệu hình ảnh. Đồ án này thực hiện tự cài đặt hoàn toàn từ đầu thuật toán \emph{Eclat}~\cite{zaki2000scalable} bằng ngôn ngữ Julia~1.11.4, kiểm chứng độ khớp tuyệt đối với thư viện tham chiếu SPMF~\cite{fournier2014spmf}, đánh giá hiệu năng thực nghiệm có hệ thống trên các tập dữ liệu chuẩn và triển khai hai ứng dụng thực tế hoàn chỉnh.
+
+Báo cáo được tổ chức thành ba chương chính bám sát quy trình nghiên cứu: Chương~1 trình bày cơ sở thuật toán Eclat, phân tích độ phức tạp, kiến trúc phần mềm, 6 kỹ thuật tối ưu hóa (\texttt{v0}--\texttt{v6}) và hệ thống kiểm thử tự động; Chương~2 trình bày thiết kế thực nghiệm, 10 thí nghiệm đánh giá hiệu năng (E1--E10), phân tích điểm mạnh/yếu so với SPMF cùng 4 đề xuất cải tiến; Chương~3 triển khai hai ứng dụng thực tế trên dữ liệu giỏ hàng \texttt{Groceries} và dữ liệu ảnh \texttt{Caltech-101} hoàn toàn bằng gói \texttt{EclatFIM} của nhóm.

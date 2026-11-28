@@ -1,41 +1,62 @@
 % =====================================================================
-% Course Project Report: Frequent Itemset Mining Using Eclat (Julia)
-% Template: HCMUS FIT Report Style (12pt, A4, 1.5 spacing), compiled with XeLaTeX.
-% Final PDF submission path: docs/Report.pdf
+% Báo cáo đồ án môn học: Khai thác tập phổ biến bằng thuật toán Eclat (Julia)
+% Định dạng: IEEE Conference Format (IEEEtran, 2 cột), biên dịch bằng XeLaTeX.
+% Đường dẫn file nộp: docs/Report.pdf
 % =====================================================================
-\documentclass[10pt, a4paper]{article}
-\usepackage{hcmus}
-\usepackage{makecell}
-\usepackage{longtable}
+\documentclass[conference,a4paper]{IEEEtran}
+
+\usepackage{fontspec}
+\IfFontExistsTF{TeX Gyre Termes}{
+  \setmainfont{TeX Gyre Termes}
+}{
+  \setmainfont{Times New Roman}
+}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage{tabularx}
-\usepackage{titlesec}
-\usepackage{enumitem}
+\usepackage{makecell}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
+\usepackage{enumitem}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figures/}}
-\singlespacing
 \setlist{nosep, leftmargin=*}
-\titlespacing*{\section}{0pt}{9pt plus 2pt minus 2pt}{4pt plus 1pt}
-\titlespacing*{\subsection}{0pt}{7pt plus 2pt minus 2pt}{3pt plus 1pt}
-\titlespacing*{\subsubsection}{0pt}{5pt plus 1pt minus 1pt}{2pt plus 1pt}
-\setlength{\textfloatsep}{7pt plus 2pt minus 2pt}
-\setlength{\intextsep}{7pt plus 2pt minus 2pt}
-\setlength{\floatsep}{6pt plus 2pt minus 2pt}
-\setlength{\abovecaptionskip}{4pt}
-\setlength{\belowcaptionskip}{2pt}
-\renewcommand{\arraystretch}{1.02}
+
+% Việt hóa nhãn tiêu chuẩn cho IEEEtran
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\refname}{Tài liệu tham khảo}
+\renewcommand{\abstractname}{Tóm tắt}
+\renewcommand{\IEEEkeywordsname}{Từ khóa}
+\floatname{algorithm}{Thuật toán}
+\algrenewcommand\algorithmicrequire{\textbf{Đầu vào:}}
+\algrenewcommand\algorithmicensure{\textbf{Đầu ra:}}
 
 \begin{document}
 
-\input{cover}
+\title{Khai thác tập phổ biến bằng thuật toán Eclat trên Julia:\\Cài đặt, Tối ưu hóa, Thực nghiệm và Ứng dụng thực tế}
 
-\tableofcontents
-\newpage
+\author{
+\IEEEauthorblockN{Phạm Trần Anh Quân (24127226), Nguyễn Tiến Cường (24127337)}
+\IEEEauthorblockA{Khoa Công nghệ Thông tin, Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM\\
+Môn học: CSC14004 -- Khai thác dữ liệu và Ứng dụng (Lớp 24KHMT1, HK1 2026--2027)\\
+GVLT: GS.TS. Lê Hoài Bắc \quad|\quad GVTH: ThS. Huỳnh Lâm Hải Đăng \quad|\quad Trợ giảng: ThS. Nguyễn Ngọc Đức}
+}
+
+\maketitle
 
 \begin{abstract}
-This report presents the from-scratch implementation, verification, experimental evaluation, and real-world applications of the Eclat algorithm for frequent itemset mining in Julia~1.11.4. The implementation adheres to the vertical tidset representation and prefix-based equivalence class decomposition introduced by Zaki~(2000), verified through a three-tier testing framework against a brute-force oracle and the SPMF reference library, and applied to retail market basket analysis and visual pattern discovery.
+Báo cáo này trình bày quá trình tự cài đặt từ đầu, kiểm chứng tính đúng đắn, tối ưu hóa hiệu năng, đánh giá thực nghiệm và triển khai ứng dụng thực tế cho thuật toán \emph{Eclat} trong bài toán khai thác tập phổ biến (\emph{Frequent Itemset Mining} -- FIM) bằng ngôn ngữ Julia~1.11.4. Cài đặt (\texttt{EclatFIM}) tuân thủ cấu trúc biểu diễn dọc (\emph{vertical tidset}) và phân hoạch lớp tương đương theo tiền tố (\emph{prefix-based equivalence classes}) từ bài báo gốc của Zaki~(2000), tích hợp 6 kỹ thuật tối ưu tăng dần (\texttt{v0}--\texttt{v6}), đạt tỉ lệ khớp chính xác $100\%$ so với thư viện tham chiếu SPMF qua hệ thống kiểm thử ba tầng ($10.474$ khẳng định) và $56/56$ lượt đối chiếu trên bốn tập dữ liệu chuẩn. Phiên bản mặc định \texttt{v6} nhanh hơn $36$--$65\times$ so với bản cơ bản \texttt{v0}, vượt SPMF \texttt{Eclat} từ $3{,}8$--$48\times$, và được ứng dụng trực tiếp cho hai bài toán thực tế: phân tích giỏ hàng siêu thị (\emph{Groceries}) và khám phá mẫu trực quan trên ảnh (\emph{Caltech-101}) qua mô hình túi từ thị giác (\emph{Bag of Visual Words}).
 \end{abstract}
+
+\begin{IEEEkeywords}
+Khai thác tập phổ biến (FIM), Eclat, Tidset, Bitset, Luật kết hợp, Phân tích giỏ hàng, Túi từ thị giác (BoVW), Julia.
+\end{IEEEkeywords}
 
 \input{sections/01_gioi_thieu}
 \input{sections/02_nen_tang}
@@ -44,12 +65,11 @@ This report presents the from-scratch implementation, verification, experimental
 \input{sections/05_chuong3_ung_dung}
 \input{sections/06_ket_luan}
 
-\newpage
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
-\newpage
-\appendix
+\clearpage
+\appendices
 \input{sections/07_phu_luc}
 
 \end{document}

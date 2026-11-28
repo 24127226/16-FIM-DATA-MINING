@@ -1,72 +1,72 @@
-% Section 3: Chapter 1 - Implementation
-% Division: 3.1, 3.2, 3.4 (Member A - Pham Tran Anh Quan); 3.3, 3.5 (Member B - Nguyen Tien Cuong).
-\section{Chapter 1: Implementation}
+% Mục 3: Chương 1 - Cài đặt
+\section{Chương 1: Cài đặt thuật toán}
 \label{sec:03_chapter1_implementation}
 
 % ---------------------------------------------------------------------------
-\subsection{The Eclat Algorithm from the Original Paper}
+\subsection{Thuật toán Eclat theo bài báo gốc}
 \label{subsec:eclat_algo}
 
-Eclat combines three ideas from the original paper~\cite{zaki2000scalable}.
+Eclat kết hợp ba ý tưởng cốt lõi từ bài báo gốc~\cite{zaki2000scalable}:
 
-\emph{Support counting by tidset intersection} (§4.1, Lemmas~4--5). A transaction contains $X \cup Y$ if and only if it contains both $X$ and $Y$, hence
+\emph{Đếm độ hỗ trợ bằng giao tidset} (§4.1, Bổ đề~4--5). Một giao dịch chứa $X \cup Y$ khi và chỉ khi nó chứa cả $X$ lẫn $Y$, do đó:
 \begin{equation}
 t(X \cup Y) = t(X) \cap t(Y), \qquad \sigma(X \cup Y) = |t(X) \cap t(Y)|.
 \label{eq:intersection}
 \end{equation}
-The tidsets of the single items therefore suffice to compute the support of every itemset without rescanning the database. Lemma~6 adds that $X \subseteq Y$ implies $t(Y) \subseteq t(X)$: tidsets shrink as itemsets grow, so intersections deeper in the search become cheaper.
+Vì vậy chỉ cần tidset của các mục đơn là đủ tính độ hỗ trợ của mọi tập mục mà không cần quét lại cơ sở dữ liệu. Bổ đề~6 bổ sung rằng $X \subseteq Y \Rightarrow t(Y) \subseteq t(X)$: tidset co ngắn dần khi tập mục dài ra, giúp phép giao ở các tầng sâu ngày càng nhanh.
 
-\emph{Prefix-based equivalence classes} (§4.2, Lemma~7). Fix a total order $\prec$ on the items and write every itemset in that order. Two $k$-itemsets belong to the same class $[P]$ if they share the prefix $P$ formed by their first $k-1$ items. Every itemset of $[P]$ is generated from the \emph{atoms} of the class, i.e.\ the itemsets $P \cup \{x\}$, and no information from other classes is needed, so each class is an independent sub-problem that fits in main memory.
+\emph{Lớp tương đương theo tiền tố} (§4.2, Bổ đề~7). Cố định một thứ tự toàn phần $\prec$ trên các mục và viết mọi tập mục theo thứ tự này. Hai $k$-itemset thuộc cùng lớp $[P]$ nếu chúng chung tiền tố $P$ gồm $k-1$ mục đầu tiên. Mọi tập mục thuộc $[P]$ đều sinh ra từ các \emph{nguyên tử} (\emph{atoms}) $P \cup \{x\}$ của lớp mà không cần thông tin từ lớp khác, giúp từng lớp giải độc lập hoàn toàn trong bộ nhớ chính.
 
-\emph{Bottom-up search} (§4.3 and Fig.~12 of~\cite{zaki2000scalable}). Inside a class, the tidsets of every pair of atoms $A_i, A_j$ with $i < j$ are intersected; each pair that reaches $\sigma_{\min}$ becomes an atom of the child class $[A_i]$, which is then solved recursively. Restricting the pairs to $i < j$ guarantees that every itemset is generated exactly once. Algorithm~\ref{alg:eclat} is the project's realization of these three ideas, and Figure~\ref{fig:f01} runs it on the bookstore example of the paper.
+\emph{Tìm kiếm từ dưới lên theo chiều sâu} (§4.3 và Hình~12 của~\cite{zaki2000scalable}). Trong một lớp, mọi cặp nguyên tử $A_i, A_j$ ($i < j$) được giao tidset; mỗi cặp đạt $\sigma_{\min}$ trở thành nguyên tử của lớp con $[A_i]$ và được giải đệ quy. Ràng buộc $i < j$ đảm bảo mỗi tập mục chỉ sinh đúng một lần. Thuật toán~\ref{alg:eclat} mô tả cài đặt của nhóm và Hình~\ref{fig:f01} minh họa quá trình chạy trên ví dụ nhà sách trong bài báo gốc.
 
-\begin{algorithm}[!htbp]
-\caption{Eclat: depth-first search over prefix classes}
+\begin{algorithm}[!t]
+\caption{Eclat: tìm kiếm theo chiều sâu trên các lớp tiền tố}
 \label{alg:eclat}
 \begin{algorithmic}[1]
-\Require horizontal database $\mathcal{D}$, count threshold $\sigma_{\min}$
-\Ensure every pair $(X, \sigma(X))$ with $\sigma(X) \ge \sigma_{\min}$
-\State $\mathcal{F}_1 \gets \{x : \sigma(x) \ge \sigma_{\min}\}$, sorted by $\prec$ \Comment{first scan of $\mathcal{D}$}
-\State build $t(x)$ for every $x \in \mathcal{F}_1$ \Comment{second scan of $\mathcal{D}$}
-\State output every $(x, |t(x)|)$; \Call{BottomUp}{$(x, t(x))_{x \in \mathcal{F}_1}$}
-\Procedure{BottomUp}{$A_1, \dots, A_k$} \Comment{the atoms of one class}
+\Require cơ sở dữ liệu ngang $\mathcal{D}$, ngưỡng đếm $\sigma_{\min}$
+\Ensure mọi cặp $(X, \sigma(X))$ với $\sigma(X) \ge \sigma_{\min}$
+\State $\mathcal{F}_1 \gets \{x : \sigma(x) \ge \sigma_{\min}\}$, sắp theo $\prec$ \Comment{quét lần 1}
+\State xây dựng $t(x)$ cho mọi $x \in \mathcal{F}_1$ \Comment{quét lần 2}
+\State xuất mọi $(x, |t(x)|)$; \Call{BottomUp}{$(x, t(x))_{x \in \mathcal{F}_1}$}
+\Procedure{BottomUp}{$A_1, \dots, A_k$} \Comment{các nguyên tử của lớp}
   \For{$i = 1, \dots, k-1$}
-    \State $C \gets$ empty list
+    \State $C \gets$ danh sách rỗng
     \For{$j = i+1, \dots, k$}
-      \State $t \gets t(A_i) \cap t(A_j)$ \Comment{Eq.~\eqref{eq:intersection}}
+      \State $t \gets t(A_i) \cap t(A_j)$ \Comment{Phương trình~\eqref{eq:intersection}}
       \If{$|t| \ge \sigma_{\min}$}
-        \State append $(A_i \cup A_j, t)$ to $C$; output $(A_i \cup A_j, |t|)$
+        \State thêm $(A_i \cup A_j, t)$ vào $C$; xuất $(A_i \cup A_j, |t|)$
       \EndIf
     \EndFor
-    \If{$C$ is not empty}
-      \State \Call{BottomUp}{$C$} \Comment{solve the child class $[A_i]$ immediately}
+    \If{$C$ khác rỗng}
+      \State \Call{BottomUp}{$C$} \Comment{giải ngay lớp con $[A_i]$}
     \EndIf
   \EndFor
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
 
-\begin{figure}[!htbp]
+\begin{figure}[!t]
 \centering
-\begin{tikzpicture}[font=\footnotesize, x=1.20cm, y=0.95cm,
-  nodeset/.style={draw, rounded corners=1pt, align=center, inner sep=2pt, minimum width=1.15cm},
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize, x=1.18cm, y=1.0cm,
+  nodeset/.style={draw, rounded corners=1pt, align=center, inner sep=2pt, minimum width=1.08cm},
   nodepruned/.style={nodeset, densely dashed, draw=gray, text=gray},
   >={Stealth[length=4pt]}]
-\node[anchor=west] at (-0.3, 0.75) {(a) Root class $[\emptyset]$: items and their tidsets};
+\node[anchor=west] at (-0.3, 0.72) {(a) Lớp gốc $[\emptyset]$: các mục và tidset};
 \node[nodeset] (A) at (0.4, 0) {A\\1345};
-\node[nodeset] (C) at (2.0, 0) {C\\123456};
-\node[nodeset] (D) at (3.6, 0) {D\\2456};
-\node[nodeset] (T) at (5.2, 0) {T\\1356};
-\node[nodeset] (W) at (6.8, 0) {W\\12345};
-\node[anchor=west] at (-0.3, -0.85) {(b) Class $[A]$ and its descendants};
-\node[nodeset] (AC) at (0.4, -1.6) {AC\\1345};
-\node[nodepruned] (AD) at (2.0, -1.6) {AD\\45};
-\node[nodeset] (AT) at (3.6, -1.6) {AT\\135};
-\node[nodeset] (AW) at (5.2, -1.6) {AW\\1345};
-\node[nodeset] (ACT) at (0.4, -2.85) {ACT\\135};
-\node[nodeset] (ACW) at (2.0, -2.85) {ACW\\1345};
-\node[nodeset] (ATW) at (3.6, -2.85) {ATW\\135};
-\node[nodeset] (ACTW) at (0.4, -4.1) {ACTW\\135};
+\node[nodeset] (C) at (1.9, 0) {C\\123456};
+\node[nodeset] (D) at (3.4, 0) {D\\2456};
+\node[nodeset] (T) at (4.9, 0) {T\\1356};
+\node[nodeset] (W) at (6.4, 0) {W\\12345};
+\node[anchor=west] at (-0.3, -0.82) {(b) Lớp $[A]$ và các lớp con};
+\node[nodeset] (AC) at (0.4, -1.55) {AC\\1345};
+\node[nodepruned] (AD) at (1.9, -1.55) {AD\\45};
+\node[nodeset] (AT) at (3.4, -1.55) {AT\\135};
+\node[nodeset] (AW) at (4.9, -1.55) {AW\\1345};
+\node[nodeset] (ACT) at (0.4, -2.75) {ACT\\135};
+\node[nodeset] (ACW) at (1.9, -2.75) {ACW\\1345};
+\node[nodeset] (ATW) at (3.4, -2.75) {ATW\\135};
+\node[nodeset] (ACTW) at (0.4, -3.95) {ACTW\\135};
 \draw[->] (A) -- (AC);
 \draw[->, gray] (A) -- (AD);
 \draw[->] (A) -- (AT);
@@ -75,137 +75,132 @@ The tidsets of the single items therefore suffice to compute the support of ever
 \draw[->] (AC) -- (ACW);
 \draw[->] (AT) -- (ATW);
 \draw[->] (ACT) -- (ACTW);
-\node[anchor=west, align=left, font=\scriptsize] at (2.6, -4.1)
+\node[anchor=west, align=left, font=\scriptsize] at (2.2, -3.95)
   {$t(AC) = t(A) \cap t(C) = 1345$, $\sigma(AC) = 4$\\
    $t(ACT) = t(AC) \cap t(AT) = 135$, $\sigma(ACT) = 3$};
-\end{tikzpicture}
-\caption{Algorithm~\ref{alg:eclat} on the bookstore example of the paper (Figs.~1 and~4 of~\cite{zaki2000scalable}; $N = 6$, $\sigma_{\min} = 3$, tidsets written as concatenated tids). Each itemset is intersected with its later siblings to build its child class. $AD$ occurs in only 2 transactions, so it is pruned (dashed box) and spawns no child class. The full run produces exactly the 19 frequent itemsets reported in the paper, using 17 intersections of which 3 fall below $\sigma_{\min}$ (Figure F01).}
+\end{tikzpicture}}
+\caption{Minh họa Thuật toán~\ref{alg:eclat} trên ví dụ nhà sách (Hình~1 và~4 của~\cite{zaki2000scalable}; $N = 6$, $\sigma_{\min} = 3$). $AD$ chỉ xuất hiện 2 lần nên bị tỉa (khung nét đứt). Chạy đầy đủ sinh chính xác 19 tập phổ biến như bài báo gốc sau 17 phép giao (3 phép không đạt ngưỡng) (Hình~F01).}
 \label{fig:f01}
 \end{figure}
 
-The implementation keeps all three ideas; the differences from the paper listed below never change the output.
-(i)~The paper assumes the database is already stored vertically on disk. The assignment provides horizontal SPMF files, so the implementation converts them to the vertical layout with two scans (lines~1--2).
-(ii)~The paper counts 2-itemsets with an upper-triangular array over the horizontal data (§5.1) before partitioning into classes. The baseline (\texttt{v0}) follows Algorithm~\ref{alg:eclat} literally and intersects every pair in the root class; the triangular array is an optimization measured separately (variant \texttt{v5}, Section~\ref{subsec:optimizations}).
-(iii)~The pseudocode in Fig.~12 of the paper builds all child classes of a class before recursing, so tidsets of two consecutive levels are kept alive. The implementation recurses immediately after building each child class (line~14), so only one class per depth is alive at any time; variant \texttt{v2} exploits this to reuse one buffer per depth.
-(iv)~Item order $\prec$: \texttt{v0} uses the item code order, as in the paper's example; the optimized variants order items by ascending support.
-As in the paper, candidates are not checked against their subsets before intersection: §5.2 of~\cite{zaki2000scalable} notes that such pruning brings almost no benefit, because by Lemma~6 deep intersections are already cheap.
+Cài đặt giữ nguyên ba ý tưởng trên; bốn điểm điều chỉnh sau không bao giờ làm thay đổi tập đầu ra:
+(i)~Đề bài cung cấp file ngang chuẩn SPMF nên cài đặt chuyển sang bố trí dọc qua hai lần quét (dòng~1--2);
+(ii)~Bản cơ bản (\texttt{v0}) thực hiện đúng Thuật toán~\ref{alg:eclat} (giao mọi cặp ở lớp gốc), còn mảng tam giác trên đếm 2-itemset (§5.1 của~\cite{zaki2000scalable}) được tách riêng thành tối ưu \texttt{v5};
+(iii)~Thay vì giữ đồng thời tất cả lớp con của một tầng rồi mới đệ quy, cài đặt đệ quy ngay khi tạo xong lớp con $[A_i]$ (dòng~14), nhờ đó mỗi độ sâu chỉ có đúng một lớp còn sống (làm tiền đề cho tái sử dụng bộ đệm ở \texttt{v2});
+(iv)~\texttt{v0} sắp mục theo mã gốc, còn các phiên bản tối ưu sắp theo độ hỗ trợ tăng dần. Giống bài báo gốc (§5.2), thuật toán không kiểm tra mọi tập con trước khi giao vì theo Bổ đề~6 các phép giao ở tầng sâu đã rất rẻ.
 
 % ---------------------------------------------------------------------------
-\subsection{Complexity Analysis}
+\subsection{Phân tích độ phức tạp}
 \label{subsec:complexity}
 
-Let $m_f = |\mathcal{F}_1|$ be the number of frequent items, $\ell$ the length of the longest frequent itemset, $w = 64$ the machine word size, and $\rho(X) = \sigma(X)/N$ the \emph{density} of a tidset. Table~\ref{tab:complexity} summarizes the cost of the main operations; Chapter~2 uses it to predict and explain the measurements.
+Đặt $m_f = |\mathcal{F}_1|$ là số mục đơn phổ biến, $\ell$ là độ dài tập phổ biến dài nhất, $w = 64$ là kích thước từ máy, và $\rho(X) = \sigma(X)/N$ là \emph{mật độ} (\emph{density}) của tidset. Bảng~\ref{tab:complexity} tổng hợp chi phí các thao tác chính để giải thích các kết quả đo ở Chương~2.
 
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Cost of the main operations of Eclat.}
+\caption{Chi phí tính toán và bộ nhớ của các thao tác chính trong Eclat.}
 \label{tab:complexity}
-\small
-\renewcommand{\arraystretch}{1.10}
-\begin{tabular}{@{}p{4.6cm}p{11.0cm}@{}}
+\scriptsize
+\begin{tabular}{@{}p{2.7cm}p{5.5cm}@{}}
 \toprule
-Operation & Cost \\
+Thao tác & Chi phí \\
 \midrule
-Intersecting two sorted tid lists & $O(\sigma(X) + \sigma(Y))$ with a two-pointer merge; $O\!\left(\sigma(X) \log \frac{\sigma(Y)}{\sigma(X)}\right)$ with galloping (exponential) search~\cite{bentley1976almost} when $\sigma(Y) \gg \sigma(X)$ \\
-Intersecting two bitset tidsets & $N/w$ word-level AND operations, independent of $\sigma$ \\
-Memory of one tidset & \texttt{Int32} tid list: $4\sigma$ bytes; bitset: $N/8$ bytes; equal when $\rho = 1/32$ \\
-Number of intersections & $I = \sum_{[P]} \binom{|[P]|}{2} \le |\mathcal{F}| \cdot m_f$ \\
-2-itemsets by pairwise intersection & $\binom{m_f}{2}$ intersections \\
-2-itemsets by triangular array & $\sum_{j=1}^{N} \binom{|T_j \cap \mathcal{F}_1|}{2} \le N \bar{L}^2/2$ increments and $\binom{m_f}{2}$ counters \\
-Live tidset memory during the search & $\sum_{d=1}^{\ell} \sum_{X \in [P_d]} \mathrm{size}(t(X))$, where $[P_d]$ is the open class at depth $d$ \\
+Giao 2 danh sách tid đã sắp & $O(\sigma(X) + \sigma(Y))$ (trộn 2 con trỏ); $O\!\left(\sigma(X)\log\frac{\sigma(Y)}{\sigma(X)}\right)$ với tìm kiếm nhảy bước (\emph{galloping})~\cite{bentley1976almost} khi $\sigma(Y) \gg \sigma(X)$ \\
+Giao 2 bitset tidset & $N/w$ phép AND theo từ 64-bit, độc lập với $\sigma$ \\
+Bộ nhớ 1 tidset & Danh sách \texttt{Int32}: $4\sigma$ byte; bitset: $N/8$ byte; hòa vốn tại $\rho = 1/32$ \\
+Số phép giao & $I = \sum_{[P]} \binom{|[P]|}{2} \le |\mathcal{F}| \cdot m_f$ \\
+2-itemset bằng giao cặp & $\binom{m_f}{2}$ phép giao \\
+2-itemset bằng mảng tam giác & $\sum_{j=1}^{N} \binom{|T_j \cap \mathcal{F}_1|}{2} \le N\bar{L}^2/2$ phép tăng và $\binom{m_f}{2}$ ô đếm \\
+Bộ nhớ tidset sống & $\sum_{d=1}^{\ell} \sum_{X \in [P_d]} \mathrm{size}(t(X))$ với $[P_d]$ là lớp mở ở độ sâu $d$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{Time versus output size.} Every intersection produces exactly one candidate, namely a frequent itemset of the parent class extended by one sibling atom, so $I \le |\mathcal{F}| \cdot m_f$. Mining time is therefore proportional to the number of frequent itemsets times the cost of one intersection. When \texttt{minsup} decreases, $|\mathcal{F}|$ can grow exponentially and the running time grows with it. Appendix~A of~\cite{zaki2000scalable} shows that this explosion is inherent to the problem: deciding whether a frequent itemset of a given size exists is NP-complete, and counting the maximal frequent itemsets is \#P-complete. An implementation can only reduce the cost per itemset; it cannot avoid the growth of the output.
+\emph{Thời gian theo kích thước đầu ra.} Mỗi phép giao sinh một ứng viên nên $I \le |\mathcal{F}| \cdot m_f$. Khi giảm \texttt{minsup}, $|\mathcal{F}|$ có thể tăng theo hàm mũ và kéo thời gian tăng theo; Phụ lục~A của~\cite{zaki2000scalable} chứng minh bài toán quyết định sự tồn tại tập phổ biến kích thước $k$ là NP-complete và đếm tập tối đại là \#P-complete.
 
-\emph{Scaling with the number of transactions $N$.} At a fixed relative \texttt{minsup}, every support scales with $N$, so the cost of one intersection grows linearly with $N$ for both tidset representations. If the subsets are sampled uniformly, $\mathcal{F}$ stays nearly unchanged, hence the running time is linear in $N$ (hypothesis H4, tested by E5). The paper also reports linear scale-up in the number of transactions (Fig.~21a).
+\emph{Mở rộng theo số giao dịch $N$.} Khi giữ cố định \texttt{minsup} tương đối và lấy mẫu đều, $\mathcal{F}$ gần như bất biến trong khi độ dài mỗi tidset tỉ lệ thuận với $N$, do đó thời gian chạy tuyến tính theo $N$ (giả thuyết H4, kiểm chứng ở E5).
 
-\emph{Scaling with the transaction length $\bar{L}$.} A transaction of length $L$ contains $2^L - 1$ non-empty subsets. Appendix~A of the paper gives the bound $O(2^{L_{\max}} \cdot N)$ for enumeration when the longest transaction has $L_{\max}$ items: linear in $N$ but exponential in the transaction length. When $\bar{L}$ grows at fixed $N$ and \texttt{minsup}, long itemsets become frequent, so $|\mathcal{F}|$, $I$, and the depth $\ell$ can grow faster than linearly (H5, tested by E6).
+\emph{Ảnh hưởng độ dài giao dịch $\bar{L}$.} Một giao dịch dài $L$ có $2^L - 1$ tập con khác rỗng; cận trên liệt kê là $O(2^{L_{\max}} \cdot N)$. Khi $\bar{L}$ tăng với $N$ và \texttt{minsup} cố định, số tập dài phổ biến tăng mạnh khiến $|\mathcal{F}|$, $I$ và $\ell$ tăng siêu tuyến tính (H5, kiểm chứng ở E6).
 
-\emph{Memory.} The depth-first search keeps only the tidsets of the classes on the current path. By Lemma~6, tidsets at larger depths are smaller, so peak memory usually occurs while the 2-itemsets of a large root class are being built, as the paper observes in Fig.~22 (H7, tested by E10). The two tidset representations break even in memory at $\rho = 1/32$: dense data ($\rho$ large) favors bitsets, sparse data favors tid lists (H2, tested by E7).
+\emph{Bộ nhớ.} Tìm kiếm theo chiều sâu chỉ giữ các lớp trên đường đi hiện tại. Theo Bổ đề~6, tidset sâu hơn thì nhỏ hơn, nên đỉnh bộ nhớ thường rơi vào lúc xây 2-itemset của lớp gốc lớn (H7, kiểm chứng ở E10). Hai biểu diễn tidset hòa vốn bộ nhớ tại $\rho = 1/32$: dữ liệu dày đặc lợi thế cho bitset, dữ liệu thưa lợi thế cho danh sách tid (H2, kiểm chứng ở E7).
 
 % ---------------------------------------------------------------------------
-\subsection{Software Architecture, SPMF I/O, and Command-Line Interface}
+\subsection{Kiến trúc phần mềm, I/O chuẩn SPMF và Giao diện dòng lệnh}
 \label{subsec:arch_io}
 
-The system is structured as a standalone Julia package, \texttt{EclatFIM} (Julia~1.11.4), partitioned into three isolated dependency environments: a minimal root package (depending solely on \texttt{DataStructures.jl} and the standard library) for the command-line interface and automated test suite; an experimental environment (\texttt{scripts/}) for benchmarking and figure generation; and an application environment for Chapter~3. Figure~\ref{fig:f02_arch} illustrates the modular architecture and end-to-end data flow of the package.
+Hệ thống được tổ chức thành gói Julia độc lập \texttt{EclatFIM} (Julia~1.11.4), tách bạch ba môi trường phụ thuộc: gói lõi ở thư mục gốc (chỉ phụ thuộc \texttt{DataStructures.jl} và thư viện chuẩn), môi trường thực nghiệm (\texttt{scripts/}), và môi trường ứng dụng (\texttt{apps/}). Hình~\ref{fig:f02_arch} minh họa kiến trúc mô-đun và luồng dữ liệu tổng thể.
 
-\begin{figure}[!htbp]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.70\textwidth]{F02_architecture.pdf}
-\caption{Modular architecture and data flow of \texttt{EclatFIM}, separating SPMF-compliant I/O, the interface contract (\texttt{EclatConfig}), the core Eclat mining engine, and downstream verification, benchmarking, and application layers.}
+\includegraphics[width=0.78\textwidth]{F02_architecture.pdf}
+\caption{Kiến trúc mô-đun và luồng dữ liệu của gói \texttt{EclatFIM}, tách biệt tầng I/O chuẩn SPMF, hợp đồng giao diện (\texttt{EclatConfig}), nhân khai thác Eclat và các tầng kiểm thử, benchmark và ứng dụng.}
 \label{fig:f02_arch}
-\end{figure}
+\end{figure*}
 
-The software design centers on three architectural principles:
+Thiết kế phần mềm xoay quanh ba nguyên tắc:
 \begin{enumerate}
-    \item \textbf{Decoupled Interface Contract:} The \texttt{TransactionDB} structure maps ascending original item identifiers (\texttt{Int64}) into contiguous internal codes $1 \ldots m$ (\texttt{Int32}), enabling compact array indexing rather than hash-table lookups. The \texttt{EclatConfig} structure decouples independent optimization axes (\texttt{tidset}, \texttt{order}, \texttt{reuse}, \texttt{isect}, \texttt{level2}), allowing a single test suite and benchmarking harness to evaluate every algorithmic variant uniformly without altering call sites.
-    \item \textbf{Streaming Output via Callback (\texttt{sink}):} At low minimum support (\texttt{minsup}) thresholds, frequent itemset collections may reach millions of patterns. The core routine \texttt{eclat!(sink, db, minsup, cfg)} emits each frequent itemset through a reusable prefix buffer to \texttt{sink}, allowing direct file streaming without accumulating the entire output set in main memory.
-    \item \textbf{Idiomatic Julia Features:} Multiple dispatch specializes tidset intersection operators and eliminates instrumentation overhead at compile time when \texttt{stats === nothing}; generator expressions compute transaction statistics and enumerate proper subsets during rule generation; and \texttt{BinaryMinHeap} and \texttt{counter} from \texttt{DataStructures.jl} extract top-$k$ association rules by lift in $O(n \log k)$ time and tally item frequencies during preprocessing.
+    \item \textbf{Hợp đồng giao diện tách rời:} \texttt{TransactionDB} ánh xạ mã mục gốc tăng dần (\texttt{Int64}) sang mã nội bộ liên tiếp $1 \ldots m$ (\texttt{Int32}), giúp truy cập mảng trực tiếp thay vì bảng băm. \texttt{EclatConfig} tách độc lập các trục tối ưu (\texttt{tidset}, \texttt{order}, \texttt{reuse}, \texttt{isect}, \texttt{level2}), cho phép một bộ test và khung benchmark duy nhất đánh giá đồng nhất mọi biến thể.
+    \item \textbf{Xuất luồng trực tiếp qua hàm gọi lại (\texttt{sink}):} Ở \texttt{minsup} thấp, số tập phổ biến có thể lên tới hàng triệu. Hàm lõi \texttt{eclat!(sink, db, minsup, cfg)} truyền từng tập phổ biến qua bộ đệm tiền tố dùng lại tới \texttt{sink}, ghi thẳng ra đĩa mà không tích lũy toàn bộ kết quả trong RAM.
+    \item \textbf{Tận dụng đặc trưng ngôn ngữ Julia:} Đa phân phối (\emph{multiple dispatch}) chuyên biệt hóa các phép giao tidset và triệt tiêu hoàn toàn chi phí bộ đếm tại thời điểm biên dịch khi \texttt{stats === nothing}; biểu thức sinh (\emph{generator expressions}) tính thống kê giao dịch và duyệt tập con khi sinh luật; \texttt{BinaryMinHeap} và \texttt{counter} của \texttt{DataStructures.jl} rút trích top-$k$ luật theo lift trong $O(n \log k)$ và đếm tần suất mục hàng.
 \end{enumerate}
 
-To guarantee exact equivalence with the SPMF reference implementation~\cite{fournier2014spmf} (\texttt{spmf.jar}, Eclat v2.65), black-box behavioral experiments were conducted (documented in \texttt{results/spmf\_behavior.md}), establishing two critical I/O conventions:
+Để đảm bảo khớp 100\% với SPMF~\cite{fournier2014spmf} (\texttt{spmf.jar}, Eclat v2.65), nhóm đã tiến hành kiểm tra hộp đen (lưu tại \texttt{results/spmf\_behavior.md}) và chuẩn hóa hai quy ước I/O quan trọng:
 \begin{itemize}
-    \item \emph{Support Threshold Conversion:} SPMF computes the integer support count threshold as $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ using IEEE~754 \texttt{Float64} arithmetic, converting percentage strings \texttt{"p\%"} to $p/100$. Because floating-point rounding can alter boundary outcomes (for example, $0.28 \times 25 = 7.000000000000001$, yielding $\sigma_{\min} = 8$ rather than $7$), \texttt{minsup\_count} reproduces this exact \texttt{Float64} computation to eliminate boundary discrepancies.
-    \item \emph{SPMF Parsing and Formatting:} The parser \texttt{read\_spmf} skips empty lines and metadata/comment lines prefixed by \texttt{\#}, \texttt{\%}, or \texttt{@}, and canonicalizes each transaction by sorting and deduplicating items. The writer \texttt{write\_itemset} maps internal codes back to ascending original identifiers, omits the empty itemset, and outputs lines in exact \texttt{i1 i2 ... \#SUP: s} format.
+    \item \emph{Chuyển đổi ngưỡng hỗ trợ:} SPMF tính $\sigma_{\min} = \lceil \texttt{minsup} \times N \rceil$ theo chuẩn dấu phẩy động IEEE~754 \texttt{Float64} (với chuỗi \texttt{"p\%"} đổi thành $p/100$). Do sai số làm tròn có thể đổi giá trị biên (ví dụ $0{,}28 \times 25 = 7{,}000000000000001 \Rightarrow \sigma_{\min} = 8$ thay vì $7$), hàm \texttt{minsup\_count} tái lập chính xác phép tính \texttt{Float64} này.
+    \item \emph{Đọc và ghi chuẩn SPMF:} Bộ đọc cấp byte \texttt{read\_spmf} bỏ qua dòng trống và các dòng chú thích/metadata bắt đầu bằng \texttt{\#}, \texttt{\%}, \texttt{@}, đồng thời chuẩn hóa mỗi giao dịch bằng cách sắp tăng dần và khử trùng lặp. Bộ ghi đệm 1~MiB \texttt{SPMFWriter} ánh xạ mã nội bộ về mã gốc tăng dần, bỏ qua tập rỗng và ghi đúng định dạng \texttt{i1 i2 ... \#SUP: s}.
 \end{itemize}
 
-The command-line interface \texttt{demo.jl} is implemented without external dependencies and supports \texttt{--minsup} (both ratio and percentage forms), \texttt{-o/--output} (defaulting to \texttt{output.txt}, with \texttt{"-"} streaming patterns to \texttt{stdout} and summary diagnostics to \texttt{stderr}), \texttt{--variant}, and \texttt{--stats}, returning standard exit codes $0$ (success), $1$ (invalid arguments), and $2$ (data or I/O error).
+Giao diện dòng lệnh \texttt{demo.jl} không dùng thư viện ngoài, hỗ trợ \texttt{--minsup} (tỉ lệ hoặc phần trăm), \texttt{-o/--output} (mặc định \texttt{output.txt}, dùng \texttt{"-"} để xuất ra \texttt{stdout} và thống kê ra \texttt{stderr}), \texttt{--variant}, \texttt{--stats}, trả về mã thoát chuẩn $0$ (thành công), $1$ (tham số sai), $2$ (lỗi dữ liệu/I/O).
 
 % ---------------------------------------------------------------------------
-\subsection{Optimization Techniques}
+\subsection{Các kỹ thuật tối ưu hóa}
 \label{subsec:optimizations}
 
-Seven variants \texttt{v0}--\texttt{v6} share a single code base. Each variant adds \emph{exactly one} change to the previous one (Table~\ref{tab:b01_variants}), so the difference between two consecutive variants measures the contribution of that single change (an \emph{ablation study}). A variant is a value of \texttt{EclatConfig}; the mining code selects the intersection routine from the \emph{type} of the configuration option (\texttt{Val\{:merge\}} or \texttt{Val\{:adaptive\}}) through multiple dispatch, so the choice is resolved at compile time and the hot loop contains no branch on the configuration. The \texttt{EclatStats} counters use the same mechanism: when counting is disabled, the counter argument has type \texttt{Nothing} and every counting call is compiled away, so timing runs are not slowed down by instrumentation.
+Bảy biến thể \texttt{v0}--\texttt{v6} dùng chung một cơ sở mã nguồn; mỗi biến thể chỉ thêm \emph{đúng một} thay đổi so với biến thể liền trước (Bảng~\ref{tab:b01_variants}) để thực hiện nghiên cứu phân rã đóng góp (\emph{ablation study}). Nhờ đa phân phối theo kiểu (\texttt{Val\{:merge\}}, \texttt{Val\{:adaptive\}}) và triệt tiêu \texttt{EclatStats} khi bằng \texttt{Nothing}, vòng lặp nóng không có nhánh rẽ cấu hình và không chịu chi phí đo đếm khi chạy benchmark thời gian.
 
-% Data source: src/structures.jl (VARIANTS)
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{The seven variants (Table B01). Each row adds exactly one change to the row above; the right column lists the \texttt{EclatConfig} field that differs.}
+\caption{Bảy biến thể \texttt{v0}--\texttt{v6} (Bảng~B01): mỗi dòng thêm đúng một tối ưu so với dòng trên.}
 \label{tab:b01_variants}
-\small
-\begin{tabular}{@{}lp{10.6cm}l@{}}
+\scriptsize
+\begin{tabular}{@{}lp{5.7cm}l@{}}
 \toprule
-Variant & Change & Field \\
+Bản & Thay đổi so với bản trước & Trường \\
 \midrule
-\texttt{v0} & Baseline, literally Algorithm~\ref{alg:eclat}: sorted \texttt{Int32} tid lists, a new array allocated for every intersection, items in code order, 2-itemsets by pairwise intersection & --- \\
-\texttt{v1} & + items ordered by ascending support & \texttt{order} \\
-\texttt{v2} & + one reusable buffer per recursion depth: no allocation in the hot loop & \texttt{reuse} \\
-\texttt{v3} & + adaptive intersection: early termination and galloping search & \texttt{isect} \\
-\texttt{v4} & + bitset tidsets (\texttt{BitVector}) & \texttt{tidset} \\
-\texttt{v5} & + 2-itemsets counted with an upper-triangular array (§5.1 of~\cite{zaki2000scalable}) & \texttt{level2} \\
-\texttt{v6} & + hybrid representation: switch from bitsets to tid lists once tidsets are sparse enough; the default variant & \texttt{tidset} \\
+\texttt{v0} & Cơ bản theo đúng Thuật toán~\ref{alg:eclat}: danh sách \texttt{Int32}, cấp phát mới mỗi phép giao, thứ tự mã gốc, giao cặp mức~2 & --- \\
+\texttt{v1} & + sắp mục theo độ hỗ trợ tăng dần & \texttt{order} \\
+\texttt{v2} & + 1 bộ đệm dùng lại theo từng độ sâu (0 cấp phát vòng nóng) & \texttt{reuse} \\
+\texttt{v3} & + giao thích nghi: dừng sớm và tìm kiếm nhảy bước & \texttt{isect} \\
+\texttt{v4} & + tidset dạng bitset (\texttt{BitVector}, \texttt{@inbounds @simd}) & \texttt{tidset} \\
+\texttt{v5} & + đếm 2-itemset bằng mảng tam giác trên (§5.1~\cite{zaki2000scalable}) & \texttt{level2} \\
+\texttt{v6} & + biểu diễn lai (\emph{hybrid}): tự chuyển bitset $\to$ tid list khi thưa (mặc định) & \texttt{tidset} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{v1, item order.} An atom placed later in a class has fewer candidate extensions, because it is only intersected with the atoms after it. Placing rare items first means that the classes with many siblings have short tidsets and usually produce few frequent itemsets, while the most frequent item, which has the longest tidset, comes last and gets the smallest class. The total number of intersections and the total tidset length therefore decrease (hypothesis H3).
+\emph{\texttt{v1} -- Thứ tự mục hàng:} Đặt mục hiếm đứng trước giúp các lớp có nhiều anh em sở hữu tidset rất ngắn, còn mục phổ biến nhất (tidset dài nhất) nằm cuối nên có ít cặp giao nhất, làm giảm tổng số phép giao và độ dài tidset (H3).
 
-\emph{v2, buffer reuse.} At each depth, the tidsets of all atoms of the open class are written consecutively into one \texttt{Vector\{Int32\}} buffer of that depth, together with their start offsets and lengths. The next child class overwrites the previous one, which is valid because the search is depth-first and only one class per depth is alive (difference (iii) in Section~\ref{subsec:eclat_algo}). After the first few classes the buffers are large enough and the mining loop no longer allocates. The test suite asserts \texttt{@allocated} $= 0$ for the intersection routines, and the total allocation on a test database drops from 9.91~MiB (\texttt{v0}) to 0.27~MiB (\texttt{v2}).
+\emph{\texttt{v2} -- Tái sử dụng bộ đệm:} Tại mỗi độ sâu, tidset của toàn bộ lớp mở được ghi liên tiếp vào một \texttt{Vector\{Int32\}} duy nhất cùng bảng chỉ số bắt đầu/độ dài. Khi chuyển sang lớp con kế tiếp, bộ đệm được ghi đè an toàn nhờ duyệt chiều sâu chỉ giữ một lớp sống mỗi độ sâu. Bộ kiểm thử khẳng định \texttt{@allocated == 0} cho các hàm giao và tổng cấp phát trên tập thử nghiệm giảm từ $9{,}91$~MiB (\texttt{v0}) xuống $0{,}27$~MiB (\texttt{v2}).
 
-\emph{v3, adaptive intersection.} Three refinements for intersecting sorted arrays $a$ and $b$ with $|a| \le |b|$: (i)~if $|a| < \sigma_{\min}$ the result cannot be frequent and the routine returns immediately; (ii)~during the merge, the routine stops as soon as the number of common elements found so far plus the number of elements remaining in the shorter array is below $\sigma_{\min}$; (iii)~when $|b| \ge 16|a|$, it scans $a$ and locates each element in $b$ with galloping search (steps of 1, 2, 4, \dots{} followed by binary search~\cite{bentley1976almost}), at cost $O(|a| \log(|b|/|a|))$ instead of $O(|a| + |b|)$. Large length ratios are common on sparse data, when a rare item is intersected with a frequent one.
+\emph{\texttt{v3} -- Giao thích nghi:} Gồm ba cải tiến cho hai mảng đã sắp $a, b$ ($|a| \le |b|$): (i)~trả rỗng ngay nếu $|a| < \sigma_{\min}$; (ii)~dừng sớm ngay khi số phần tử chung tìm được cộng số phần tử còn lại của $a$ nhỏ hơn $\sigma_{\min}$; (iii)~khi $|b| \ge 16|a|$, duyệt $a$ và tìm trong $b$ bằng tìm kiếm nhảy bước (\emph{galloping search})~\cite{bentley1976almost} với chi phí $O(|a|\log(|b|/|a|))$.
 
-\emph{v4, bitsets.} A tidset is a \texttt{BitVector} of $N$ bits. Intersection is a word-wise AND over the 64-bit \texttt{chunks} field, written as an \texttt{@inbounds @simd} loop so that the compiler emits vector instructions; the support is the sum of \texttt{count\_ones} over the words. The cost of $N/64$ word operations is independent of the support, and the $N/8$ bytes of memory are smaller than a tid list when $\rho > 1/32$ (Table~\ref{tab:complexity}).
+\emph{\texttt{v4} -- Bitset:} Biểu diễn tidset bằng \texttt{BitVector} gồm $N$ bit; phép giao thực hiện AND theo từng từ 64-bit (\texttt{chunks}) trong vòng lặp \texttt{@inbounds @simd} và cộng \texttt{count\_ones}. Chi phí $N/64$ thao tác từ máy độc lập với $\sigma$, tiết kiệm bộ nhớ hơn danh sách tid khi $\rho > 1/32$.
 
-\emph{v5, triangular array.} Instead of $\binom{m_f}{2}$ intersections in the root class, one scan of the horizontal data accumulates the count of every pair of frequent items in an upper-triangular array of $\binom{m_f}{2}$ \texttt{UInt32} counters; the pair $(r, s)$ with $r < s$ is stored at index $(r-1)(2m_f - r)/2 + (s - r)$. Tidsets are then intersected only for the pairs already known to be frequent, and an atom with a single frequent pair needs no intersection at all. If the array would exceed $2^{28}$ cells (1~GiB), the implementation falls back to pairwise intersection.
+\emph{\texttt{v5} -- Mảng tam giác trên:} Thay vì $\binom{m_f}{2}$ phép giao ở lớp gốc, một lượt quét ngang tích lũy tần suất mọi cặp mục phổ biến vào mảng tam giác trên gồm $\binom{m_f}{2}$ bộ đếm \texttt{UInt32}. Chỉ các cặp thực sự phổ biến mới cần giao tidset. Nếu mảng vượt quá $2^{28}$ ô (1~GiB), cài đặt tự động lùi về giao cặp.
 
-\emph{v6, hybrid representation.} The root class uses bitsets if the average density of the frequent items is at least $1/32$. When the child class of atom $A_i$ is built, the support of every itemset in that class is bounded by $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; if this bound is below $N/32$, the child class is built directly as tid lists (by extracting the positions of the set bits of the AND), and every deeper class keeps using tid lists. Dense data thus uses bitsets near the root, while tidsets that have shrunk deeper in the search switch to the more compact form. On sparse data (root density below $1/32$, as in \texttt{retail} and \texttt{T10I4D100K}), \texttt{v6} uses tid lists from the start, i.e.\ it equals \texttt{v3} plus the triangular array.
+\emph{\texttt{v6} -- Biểu diễn lai:} Lớp gốc dùng bitset nếu mật độ trung bình các mục phổ biến $\ge 1/32$. Khi xây lớp con của $A_i$, chặn trên độ hỗ trợ của lớp con là $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; nếu nhỏ hơn $N/32$, lớp con (và mọi lớp sâu hơn) chuyển thẳng sang danh sách tid. Trên dữ liệu thưa (\texttt{retail}, \texttt{T10I4D100K}), \texttt{v6} dùng danh sách tid ngay từ đầu kết hợp mảng tam giác.
 
-\textbf{Measured improvement (E8).} Every variant is measured at the median and at the lowest \texttt{minsup} of the Chapter~2 grid for each benchmark (\texttt{scripts/bench\_ablation.jl}; protocol in Section~\ref{subsec:exp_e8}). Table~\ref{tab:b03_ablation_time} reports the mining-plus-writing time (file reading is identical for all variants and excluded), while Table~\ref{tab:b04_ablation_counters} in Appendix~\ref{subsec:appendix_e8_counters} provides the internal counters that explain each step. All variants return exactly the same frequent itemsets.
+\textbf{Mức cải thiện đo được (E8).} Bảng~\ref{tab:b03_ablation_time} báo cáo thời gian khai thác và ghi đĩa của cả 7 biến thể tại \texttt{minsup} trung bình và thấp nhất trên bốn tập chuẩn (bảng bộ đếm nội bộ B04 đặt tại Phụ lục~\ref{subsec:appendix_e8_counters}). Ở \texttt{minsup} thấp nhất, biến thể nhanh nhất tăng tốc \textbf{$36$--$65\times$} so với \texttt{v0}. Không có một biến thể duy nhất thắng tuyệt đối mọi nơi (\texttt{v4} nhanh nhất trên dữ liệu dày, \texttt{v5} nhanh nhất trên dữ liệu thưa), nhưng \texttt{v6} bám sát bản nhanh nhất trên dữ liệu dày (chênh $<15\%$) và không bao giờ tốn bộ nhớ hơn biểu diễn gọn hơn, nên được chọn làm mặc định.
 
-% Data source: results/e8_ablation.csv, results/e8_ablation_low.csv (machine: results/ENV_A.md)
-\begin{table}[!htbp]
+\begin{table*}[!t]
 \centering
-\caption{Ablation \texttt{v0} $\to$ \texttt{v6} (Table B03): mining and writing time in milliseconds (median of 3 runs, or 5 runs below one second). Bold: fastest variant per column. Last row: speedup of the fastest variant over \texttt{v0}.}
+\caption{Phân rã hiệu năng \texttt{v0} $\to$ \texttt{v6} (Bảng~B03): thời gian khai thác và ghi đĩa (ms, trung vị 3 lần chạy, hoặc 5 lần nếu $<1$~s; in đậm là nhanh nhất mỗi cột).}
 \label{tab:b03_ablation_time}
-\small
+\scriptsize
 \begin{tabular}{@{}lrrrrrrrr@{}}
 \toprule
- & \multicolumn{4}{c}{Median \texttt{minsup}} & \multicolumn{4}{c}{Lowest \texttt{minsup}} \\
+ & \multicolumn{4}{c}{\texttt{minsup} trung bình} & \multicolumn{4}{c}{\texttt{minsup} thấp nhất} \\
 \cmidrule(lr){2-5}\cmidrule(l){6-9}
-Variant & \texttt{chess} & \texttt{mushroom} & \texttt{retail} & \texttt{T10I4D100K} & \texttt{chess} & \texttt{mushroom} & \texttt{retail} & \texttt{T10I4D100K} \\
- & 80\% & 35\% & 1\% & 1\% & 65\% & 18\% & 0.1\% & 0.2\% \\
+Biến thể & \texttt{chess} (80\%) & \texttt{mushroom} (35\%) & \texttt{retail} (1\%) & \texttt{T10I4D100K} (1\%) & \texttt{chess} (65\%) & \texttt{mushroom} (18\%) & \texttt{retail} (0.1\%) & \texttt{T10I4D100K} (0.2\%) \\
 \midrule
 \texttt{v0} & 143.0 & 64.6 & 91.8 & 1940.0 & 1615.8 & 880.9 & 10251.6 & 4388.7 \\
 \texttt{v1} & 117.4 & 35.1 & 75.0 & 1892.0 & 1573.9 & 705.5 & 6292.3 & 4373.7 \\
@@ -215,47 +210,45 @@ Variant & \texttt{chess} & \texttt{mushroom} & \texttt{retail} & \texttt{T10I4D1
 \texttt{v5} & 5.8 & 3.9 & 34.0 & \textbf{40.8} & 47.2 & 28.1 & \textbf{157.4} & \textbf{85.8} \\
 \texttt{v6} & 4.9 & 4.0 & 27.2 & 197.0 & 44.7 & 28.1 & 382.3 & 310.0 \\
 \midrule
-Speedup & $36.7\times$ & $32.3\times$ & $4.5\times$ & $47.5\times$ & $38.0\times$ & $36.0\times$ & $65.1\times$ & $51.2\times$ \\
+Tăng tốc & $36.7\times$ & $32.3\times$ & $4.5\times$ & $47.5\times$ & $38.0\times$ & $36.0\times$ & $65.1\times$ & $51.2\times$ \\
 \bottomrule
 \end{tabular}
-\end{table}
-
-At the lowest \texttt{minsup}, the fastest variant is $36$--$65\times$ faster than \texttt{v0} on every benchmark, and $4.5$--$48\times$ at the median \texttt{minsup}. No single variant is fastest everywhere: \texttt{v4} wins on the dense datasets and \texttt{v5} on the sparse ones. On the dense datasets \texttt{v6} stays within 15\% of the fastest variant at the lowest \texttt{minsup} (and within 2~ms at the median \texttt{minsup}, where every run takes only a few milliseconds), and it never needs more tidset memory than the more compact representation, which is why it is the default of the command-line interface. Section~\ref{subsec:exp_e8} compares each step with its hypothesis. In addition, the test suite asserts that the intersection routines allocate no memory and are type-stable (\texttt{@allocated} $= 0$, \texttt{@inferred}; Table~\ref{tab:b02_tests}).
+\end{table*}
 
 % ---------------------------------------------------------------------------
-\subsection{Automated Verification and Match Rate}
+\subsection{Kiểm thử tự động và Tỉ lệ khớp với SPMF}
 \label{subsec:testing}
 
-Correctness is verified independently of the core algorithm author through a three-tier automated testing pipeline located in \texttt{test/}:
+Tính đúng đắn được kiểm chứng độc lập bằng hệ thống kiểm thử tự động ba tầng trong thư mục \texttt{test/}:
 \begin{enumerate}
-    \item \textbf{Tier 1 — Brute-Force Oracle:} A standalone reference oracle enumerates all $2^m - 1$ non-empty subsets via bitmasks across $200$ randomly generated databases (fixed seeds $1 \ldots 200$, $m \le 12$, $N \le 30$, random $\sigma_{\min}$), verifying $100\%$ exact agreement for every implemented Eclat variant.
-    \item \textbf{Tier 2 — Canonical Datasets, Edge Cases, and I/O:} Automated tests validate \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, yielding $15$ itemsets) and \texttt{bookstore.txt} from Zaki~\cite{zaki2000scalable} (\texttt{minsup} $= 50\%$, yielding $19$ itemsets, including maximal patterns \texttt{ACTW} and \texttt{CDW}); boundary conditions (empty database, single transaction, identical transactions, \texttt{minsup} $= 100\%$, zero frequent items, large sparse item identifiers); all $10$ floating-point boundary cases of \texttt{minsup\_count}; and hand-verified association rule calculations in \texttt{test\_rules.jl}.
-    \item \textbf{Tier 3 — Large-Scale Benchmark Verification:} The comparator \texttt{scripts/compare\_spmf.jl} defines the exact match rate between the implementation's output $\mathcal{F}_{\text{ours}}$ and the SPMF reference output $\mathcal{F}_{\text{SPMF}}$ as:
+    \item \textbf{Tầng 1 -- Oracle vét cạn:} Duyệt toàn bộ $2^m - 1$ tập con bằng mặt nạ bit trên $200$ cơ sở dữ liệu ngẫu nhiên (hạt giống cố định $1 \ldots 200$, $m \le 12$, $N \le 30$), khẳng định khớp $100\%$ cho cả 7 biến thể.
+    \item \textbf{Tầng 2 -- Tập chuẩn, trường hợp biên và I/O:} Kiểm tra \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, 15 tập), \texttt{bookstore.txt}~\cite{zaki2000scalable} ($50\%$, 19 tập), các trường hợp biên (rỗng, 1 giao dịch, giao dịch trùng nhau, \texttt{minsup} $= 100\%$, mã mục lớn), 10 ca biên dấu phẩy động của \texttt{minsup\_count}, và bộ kiểm thử luật kết hợp (\texttt{test\_rules.jl}).
+    \item \textbf{Tầng 3 -- Đối chiếu quy mô lớn với SPMF:} Công cụ \texttt{scripts/compare\_spmf.jl} định nghĩa tỉ lệ khớp chính xác giữa $\mathcal{F}_{\text{nhóm}}$ và $\mathcal{F}_{\text{SPMF}}$:
     \begin{equation}
-        \text{Match Rate} = \frac{\left|\{X \in \mathcal{F}_{\text{ours}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{ours}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{ours}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
+        \text{Tỉ lệ khớp} = \frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
     \end{equation}
-    For outputs exceeding $5 \times 10^6$ itemsets, comparison automatically switches to an order-invariant fingerprint mode: each canonicalized line is hashed with SHA-256, and the leading $64$ bits are accumulated modulo $2^{64}$.
+    Với đầu ra vượt $5 \times 10^6$ tập, công cụ tự chuyển sang chế độ dấu vân tay bất biến thứ tự (cộng dồn 64 bit đầu mã băm SHA-256 theo modulo $2^{64}$).
 \end{enumerate}
 
-Continuous Integration (GitHub Actions) executes the entire test suite on a clean Julia~1.11.4 environment under both default settings and \texttt{--check-bounds=yes} to verify array-bounds safety for \texttt{@inbounds}-annotated loops. Table~\ref{tab:b02_tests} summarizes the automated verification results across unit tests and four benchmark datasets (\texttt{chess}, \texttt{mushroom}, \texttt{retail}, \texttt{T10I4D100K}).
+Hệ thống tích hợp liên tục (GitHub Actions CI) tự động chạy toàn bộ bộ kiểm thử trên Julia~1.11.4 ở cả chế độ mặc định và \texttt{--check-bounds=yes} để kiểm chứng an toàn chỉ số mảng cho các vòng lặp \texttt{@inbounds} (Bảng~\ref{tab:b02_tests}).
 
-% Data source: `julia --project=. test/runtests.jl` (commit ba256aa, all variants v0-v6; per-file counts from the same run)
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Summary of automated test suite execution (\texttt{test/runtests.jl}) for all seven variants \texttt{v0}--\texttt{v6} under default and \texttt{--check-bounds=yes} modes.}
+\caption{Tổng hợp kết quả kiểm thử tự động (\texttt{test/runtests.jl}) cho 7 biến thể \texttt{v0}--\texttt{v6} (Bảng~B02).}
 \label{tab:b02_tests}
-\small
-\begin{tabular}{llrr}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}llrr@{}}
 \toprule
-Test Group & Source File & Assertions & Pass Rate \\
+Nhóm kiểm thử & Tệp nguồn & Số khẳng định & Đạt \\
 \midrule
-SPMF I/O and \texttt{minsup\_count} & \texttt{test\_io.jl} & 62 & 100\% \\
-200-DB brute-force oracle, toy, edge cases & \texttt{test\_correctness.jl} & 129 & 100\% \\
-Association rules and \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
-Statistics, cross-variant and SPMF checks (4 benchmarks) & \texttt{test\_benchmark.jl} & 52 & 100\% \\
-Intersection kernels: random inputs, zero allocation, type stability & \texttt{test\_performance.jl} & 10,006 & 100\% \\
+I/O SPMF \& \texttt{minsup\_count} & \texttt{test\_io.jl} & 62 & 100\% \\
+Oracle 200 CSDL, tập mẫu, biên & \texttt{test\_correctness.jl} & 129 & 100\% \\
+Luật kết hợp \& \texttt{top\_k} & \texttt{test\_rules.jl} & 225 & 100\% \\
+Thống kê, chéo biến thể \& SPMF & \texttt{test\_benchmark.jl} & 52 & 100\% \\
+Nhân giao: ngẫu nhiên, 0-alloc, ổn kiểu & \texttt{test\_performance.jl} & 10,006 & 100\% \\
 \midrule
-\textbf{Total} & \texttt{runtests.jl} & \textbf{10,474} & \textbf{100\%} \\
+\textbf{Tổng cộng} & \texttt{runtests.jl} & \textbf{10,474} & \textbf{100\%} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}

@@ -1,61 +1,59 @@
-% Section 5: Chapter 3 - Real-World Applications
-% Division: 5.1 (Member B - Nguyen Tien Cuong); 5.2 (Member A - Pham Tran Anh Quan).
-\section{Chapter 3: Real-World Applications}
+% Mục 5: Chương 3 - Ứng dụng thực tế
+\section{Chương 3: Ứng dụng thực tế}
 \label{sec:05_chapter3_applications}
 
-All frequent itemsets and association rules analyzed in this chapter are mined exclusively using our \texttt{EclatFIM} implementation, without invoking any external frequent itemset mining library.
+Toàn bộ tập phổ biến và luật kết hợp trong chương này đều được khai thác hoàn toàn bằng gói \texttt{EclatFIM} tự cài đặt của nhóm, không sử dụng bất kỳ thư viện FIM có sẵn nào.
 
 % ---------------------------------------------------------------------------
-\subsection{Application 1: Market Basket Analysis on the Groceries Dataset}
+\subsection{Ứng dụng 1: Phân tích giỏ hàng trên tập dữ liệu Groceries}
 \label{subsec:app1_groceries}
 
-\subsubsection{Problem Formulation and Data Transformation Analysis}
-Market basket analysis is conducted on the \texttt{Groceries} retail dataset from the \texttt{arules} package~\cite{hahsler2005arules}, comprising $N = 9{,}835$ point-of-sale transactions across $m = 169$ named product items. Unlike anonymized datasets such as \texttt{Retail}, explicit product names in \texttt{Groceries} allow direct domain interpretation. Each receipt is converted into an SPMF-formatted transaction accompanied by \texttt{@ITEM=id=name} metadata lines; \texttt{read\_spmf} ignores metadata directives during mining and maps item codes back to product names for rule interpretation.
+\subsubsection{Đặt bài toán và Phân tích biến đổi dữ liệu}
+Bài toán phân tích giỏ hàng (\emph{Market Basket Analysis}) được thực hiện trên tập dữ liệu bán lẻ thực \texttt{Groceries} từ gói \texttt{arules}~\cite{hahsler2005arules}, gồm $N = 9.835$ hóa đơn siêu thị trên $m = 169$ mặt hàng có tên rõ ràng. Khác với tập ẩn danh như \texttt{Retail}, tên sản phẩm tường minh giúp diễn giải trực tiếp ý nghĩa kinh doanh. Mỗi hóa đơn được chuyển sang định dạng SPMF kèm siêu dữ liệu \texttt{@ITEM=id=name}; hàm \texttt{read\_spmf} bỏ qua dòng siêu dữ liệu khi khai thác và ánh xạ ngược mã số về tên hàng khi trình bày luật.
 
-To evaluate how transaction granularity affects Eclat's behavior, two transformation schemes are compared at $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) and $\texttt{minconf} = 0.3$: (i) retaining all $169$ fine-grained product items, and (ii) aggregating items into $12$ coarse supermarket categories (such as \texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, and \texttt{meat\_seafood}). Table~\ref{tab:b08_groceries_transform} highlights two key findings:
+Để đánh giá ảnh hưởng của độ chi tiết giao dịch lên Eclat, nhóm so sánh hai phương án biến đổi tại $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) và $\texttt{minconf} = 0{,}3$ (Bảng~\ref{tab:b08_groceries_transform}): (i)~giữ nguyên 169 mặt hàng gốc; và (ii)~gộp thành 12 nhóm hàng cấp cao (\texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, \texttt{meat\_seafood}, \dots).
 \begin{itemize}
-    \item Under the fine-grained $169$-item representation, the average density is $\rho = \bar{L}/m = 2.61\%$, closely approaching the theoretical $1/32 \approx 3.125\%$ crossover threshold between \texttt{Vector\{Int32\}} and \texttt{BitVector} tidset representations in Eclat. With short transactions ($\bar{L} = 4.41$), mining with default variant \texttt{v6} completes in $0.0012$~s and yields $125$ actionable rules.
-    \item Aggregating into $12$ coarse categories increases density nearly tenfold to $25.98\%$, expanding the pattern space from $333$ to $477$ frequent itemsets and causing rule volume to surge to $2{,}232$ overly generic rules (e.g., \emph{dairy $\Rightarrow$ produce}) that offer limited merchandising utility. Consequently, the $169$-item representation is selected.
+    \item Với 169 mặt hàng gốc, mật độ trung bình $\rho = \bar{L}/m = 2{,}61\%$ (sát ngưỡng chuyển đổi lý thuyết $1/32 \approx 3{,}125\%$) và giao dịch ngắn ($\bar{L} = 4{,}41$); \texttt{EclatFIM (v6)} khai thác xong trong $0{,}0012$~s và sinh $125$ luật cụ thể, có giá trị hành động.
+    \item Khi gộp thành 12 nhóm hàng, mật độ tăng gần $10\times$ lên $25{,}98\%$, mở rộng tập phổ biến từ 333 lên 477 và làm bùng nổ lên 2.232 luật quá chung chung (như \emph{sữa/trứng $\Rightarrow$ rau quả}), ít giá trị thực tiễn. Do đó nhóm chọn phương án 169 mặt hàng gốc.
 \end{itemize}
 
-% Data source: results/groceries_b08_transforms.csv
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Quantitative comparison of two Groceries transformation schemes at $\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$ (default variant \texttt{v6}).}
+\caption{So sánh hai phương án biến đổi dữ liệu \texttt{Groceries} tại $\texttt{minsup} = 1\%$, $\texttt{minconf} = 0{,}3$ (biến thể mặc định \texttt{v6}) (Bảng~B08).}
 \label{tab:b08_groceries_transform}
-\small
-\begin{tabular}{lrrrrrr}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Representation Scheme & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Rules & Runtime \\
+Phương án & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Luật & Thời gian \\
 \midrule
-169 original items (selected) & 169 & 4.41 & 2.61\% & 333 & 125 & 0.0012 s \\
-12 coarse product categories & 12 & 3.12 & 25.98\% & 477 & 2,232 & 0.0008 s \\
+169 mặt hàng gốc (chọn) & 169 & 4.41 & 2.61\% & 333 & 125 & 0.0012~s \\
+12 nhóm hàng cấp cao & 12 & 3.12 & 25.98\% & 477 & 2,232 & 0.0008~s \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-\subsubsection{Threshold Sensitivity Analysis}
-Rule sensitivity is evaluated over the parameter grid $\texttt{minsup} \in \{0.5\%, 1\%, 2\%\} \times \texttt{minconf} \in \{0.2, 0.3, 0.5\}$ (\texttt{results/groceries\_grid.csv}). At $\texttt{minsup} = 0.5\%$ ($\sigma_{\min} = 50$), the algorithm produces $1{,}001$ frequent itemsets and up to $893$ rules (at $\texttt{minconf} = 0.2$), introducing numerous low-evidence associations. Conversely, at $\texttt{minsup} = 2\%$ ($\sigma_{\min} = 197$), only $37$ rules remain at $\texttt{minconf} = 0.3$ (and a single rule at $0.5$), pruning specialized purchasing patterns. Selecting $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) and $\texttt{minconf} = 0.3$ yields $125$ rules, striking a balanced trade-off between coverage and interpretability.
+\subsubsection{Phân tích độ nhạy ngưỡng}
+Nhóm khảo sát lưới $\texttt{minsup} \in \{0{,}5\%, 1\%, 2\%\} \times \texttt{minconf} \in \{0{,}2, 0{,}3, 0{,}5\}$ (\texttt{results/groceries\_grid.csv}). Ở $\texttt{minsup} = 0{,}5\%$ ($\sigma_{\min} = 50$), số tập phổ biến tăng lên 1.001 và sinh tới 893 luật (ở $\texttt{minconf} = 0{,}2$), kèm nhiều luật nhiễu bằng chứng yếu. Ngược lại ở $\texttt{minsup} = 2\%$ ($\sigma_{\min} = 197$), chỉ còn 37 luật (ở $0{,}3$) và 1 luật (ở $0{,}5$), bỏ sót các mẫu đặc trưng. Chọn $\texttt{minsup} = 1\%$, $\texttt{minconf} = 0{,}3$ (125 luật) cân bằng tốt giữa độ bao phủ và khả năng diễn giải.
 
-\subsubsection{Primary Results and Business Interpretation}
-Figure~\ref{fig:f11_groceries} maps all $125$ rules across support and confidence, color-coded by lift. Ranking by confidence alone exhibits strong popularity bias: \texttt{whole milk} appears in $2{,}513/9{,}835$ baskets ($25.55\%$), causing top-confidence rules to predominantly feature \texttt{whole milk} as the consequent despite modest lift (e.g., \texttt{curd + yogurt} $\Rightarrow$ \texttt{whole milk} achieves $\text{conf} = 0.582$ with $\text{lift} = 2.279$). Ranking by lift~\cite{brin1997dynamic} adjusts for baseline prevalence and surfaces genuine co-purchasing affinities (Table~\ref{tab:b09_groceries_top10}).
+\subsubsection{Kết quả chính và Ý nghĩa kinh doanh}
+Hình~\ref{fig:f11_groceries} biểu diễn 125 luật trên mặt phẳng support--confidence, tô màu theo lift. Nếu chỉ xếp hạng theo confidence sẽ dính thiên lệch phổ biến: \texttt{whole milk} xuất hiện trong $2.513/9.835$ hóa đơn ($25{,}55\%$), khiến các luật top confidence chủ yếu có vế phải là \texttt{whole milk} dù lift khiêm tốn (ví dụ \texttt{curd + yogurt} $\Rightarrow$ \texttt{whole milk} có $\mathrm{conf} = 0{,}582$, $\mathrm{lift} = 2{,}279$). Xếp hạng theo lift~\cite{brin1997dynamic} hiệu chỉnh theo tần suất nền và làm nổi bật các liên kết mua kèm thực sự (Bảng~\ref{tab:b09_groceries_top10}).
 
-\begin{figure}[!htbp]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.62\textwidth]{F11_groceries_rules.pdf}
-\caption{Distribution of $125$ association rules on the Groceries dataset ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$) across support and confidence, colored by lift; red stars denote the top-3 rules by lift.}
+\includegraphics[width=\columnwidth]{F11_groceries_rules.pdf}
+\caption{Phân bố 125 luật kết hợp trên \texttt{Groceries} ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0{,}3$) theo support và confidence, tô màu theo lift; sao đỏ đánh dấu top-3 luật theo lift (Hình~F11).}
 \label{fig:f11_groceries}
 \end{figure}
 
-% Data source: results/groceries_top10.csv
-\begin{table}[!htbp]
+\begin{table*}[!t]
 \centering
-\caption{Top-10 association rules ranked by lift on the Groceries dataset ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$).}
+\caption{Top-10 luật kết hợp xếp hạng theo lift trên tập \texttt{Groceries} ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0{,}3$) (Bảng~B09).}
 \label{tab:b09_groceries_top10}
-\small
-\begin{tabular}{rllrrrr}
+\scriptsize
+\begin{tabular}{@{}rllrrrr@{}}
 \toprule
-Rank & Antecedent ($X$) & Consequent ($Y$) & $\sigma$ & Support & Confidence & Lift \\
+Hạng & Vế trái ($X$) & Vế phải ($Y$) & $\sigma$ & Support & Confidence & Lift \\
 \midrule
 1 & citrus fruit + other vegetables & root vegetables & 102 & 0.0104 & 0.3592 & 3.295 \\
 2 & other vegetables + tropical fruit & root vegetables & 121 & 0.0123 & 0.3428 & 3.145 \\
@@ -69,46 +67,43 @@ Rank & Antecedent ($X$) & Consequent ($Y$) & $\sigma$ & Support & Confidence & L
 10 & tropical fruit + whole milk & yogurt & 149 & 0.0151 & 0.3582 & 2.568 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-The top rules in Table~\ref{tab:b09_groceries_top10} reveal three actionable consumer clusters:
+Top-10 luật trong Bảng~\ref{tab:b09_groceries_top10} cho thấy ba cụm hành vi tiêu dùng rõ nét:
 \begin{itemize}
-    \item \textbf{Home-Cooking Ingredients (Rank~3):} Customers purchasing \texttt{beef} buy \texttt{root vegetables} at $3.04\times$ the baseline rate ($\sigma = 171$), reflecting meal-preparation habits (e.g., stews and soups). Placing fresh root vegetables adjacent to the meat counter or offering bundled meal kits directly leverages this affinity.
-    \item \textbf{Fresh Produce Cluster (Ranks~1, 2, 4, 5):} \texttt{citrus fruit}, \texttt{tropical fruit}, \texttt{other vegetables}, and \texttt{root vegetables} exhibit strong mutual reinforcement ($\text{lift} > 3.0$), supporting contiguous produce layouts and multi-item produce promotions.
-    \item \textbf{Dairy Cluster (Ranks~7, 10):} \texttt{curd + whole milk} $\Rightarrow$ \texttt{yogurt} ($\text{lift} = 2.761$) supports cross-promotional placement within refrigerated dairy aisles.
+    \item \textbf{Nhóm nguyên liệu nấu ăn tại nhà (Hạng~3):} Khách mua \texttt{beef} có xu hướng mua kèm \texttt{root vegetables} cao gấp $3{,}04\times$ mức nền ($\sigma = 171$), phản ánh thói quen nấu súp/hầm. Siêu thị có thể trưng bày rau củ cạnh quầy thịt tươi hoặc bán gói nguyên liệu nấu sẵn (\emph{meal kits}).
+    \item \textbf{Cụm rau củ -- trái cây tươi (Hạng~1, 2, 4, 5):} \texttt{citrus fruit}, \texttt{tropical fruit}, \texttt{other vegetables} và \texttt{root vegetables} liên kết chặt ($\mathrm{lift} > 3{,}0$), ủng hộ bố trí quầy nông sản liền kề và khuyến mãi mua kèm nhiều loại rau quả.
+    \item \textbf{Cụm chế phẩm từ sữa (Hạng~7, 10):} \texttt{curd + whole milk} $\Rightarrow$ \texttt{yogurt} ($\mathrm{lift} = 2{,}761$) gợi ý chiến dịch bán chéo ngay trong tủ lạnh ngành hàng sữa.
 \end{itemize}
 
-\subsubsection{Out-of-Sample Stability Evaluation (80/20 Split)}
-Rule generalizability is assessed via a reproducible $80\%/20\%$ random split (\texttt{seed} $= 42$), yielding $N_{\text{train}} = 7{,}868$ training baskets and $N_{\text{test}} = 1{,}967$ test baskets. The top-10 rules by lift mined on the training split are re-evaluated on the held-out test split (Table~\ref{tab:b10_groceries_stability} in Appendix~\ref{subsec:appendix_b10}). All $10/10$ rules preserve $\text{test\_lift} > 1.5$. Core associations such as Rank~1 ($-4.5\%$ shift), Rank~5 ($-3.4\%$), and Rank~4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, $-8.5\%$) demonstrate high stability, whereas Rank~6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) experiences a $-38.3\%$ drop due to higher sampling variance near the $1\%$ support boundary.
+\subsubsection{Đánh giá độ ổn định ngoài mẫu (Chia tập 80/20)}
+Nhóm chia ngẫu nhiên $80\%/20\%$ (\texttt{seed} $= 42$, $N_{\text{train}} = 7.868$, $N_{\text{test}} = 1.967$) và đánh giá lại top-10 luật của tập huấn luyện trên tập kiểm tra (Bảng~\ref{tab:b10_groceries_stability}, Phụ lục~\ref{subsec:appendix_b10}). Cả $10/10$ luật đều giữ $\mathrm{test\_lift} > 1{,}5$: các luật cốt lõi như Hạng~1 (lệch $-4{,}5\%$), Hạng~5 ($-3{,}4\%$) và Hạng~4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, $-8{,}5\%$) rất bền vững, trong khi Hạng~6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) giảm $-38{,}3\%$ do phương sai lấy mẫu cao khi support nằm sát biên $1\%$.
 
-\subsubsection{Limitations and Practical Extensions}
-Three methodological limitations warrant caution when operationalizing association rules: (i) high-lift rules with support near the minimum threshold rest on limited sample evidence and exhibit higher out-of-sample variance; (ii) lift is symmetric ($\text{lift}(X \Rightarrow Y) = \text{lift}(Y \Rightarrow X)$) and therefore does not identify purchase directionality; and (iii) co-occurrence does not imply causality, as unobserved confounders such as weekend shopping cycles or seasonality may drive joint demand. In practice, stable rules can feed real-time e-commerce basket recommenders or generate hypotheses for controlled A/B shelf-placement experiments.
+\subsubsection{Hạn chế và Hướng mở rộng}
+Ba hạn chế cần lưu ý khi triển khai thực tế: (i)~luật gần biên \texttt{minsup} có phương sai ngoài mẫu cao; (ii)~lift có tính đối xứng ($\mathrm{lift}(X \Rightarrow Y) = \mathrm{lift}(Y \Rightarrow X)$) nên không phản ánh chiều hướng mua trước--sau; (iii)~đồng xuất hiện không đồng nghĩa với quan hệ nhân quả (có thể chịu ảnh hưởng của yếu tố mùa vụ hoặc mua sắm cuối tuần). Trong thực tế, các luật ổn định có thể tích hợp vào hệ gợi ý giỏ hàng trực tuyến hoặc làm giả thuyết cho thử nghiệm A/B bố trí kệ hàng.
 
 % ---------------------------------------------------------------------------
-\subsection{Application 2: Visual Pattern Discovery via Bag of Visual Words}
+\subsection{Ứng dụng 2: Khám phá mẫu trực quan qua Túi từ thị giác (BoVW)}
 \label{subsec:app2_bovw}
 
-\subsubsection{Problem Formulation and Feature Extraction}
+\subsubsection{Đặt bài toán và Trích xuất đặc trưng}
+\textbf{Mục tiêu:} Tìm các tổ hợp chi tiết hình ảnh cục bộ cùng xuất hiện trong một lớp đối tượng để phục vụ hai mục đích: \emph{hiểu và giải thích} dữ liệu ảnh (khoanh vị trí mẫu trực tiếp lên ảnh) và làm \emph{đặc trưng đầu vào} cho bộ phân loại. Toàn bộ quy trình nằm tại \texttt{apps/bovw/} và được tái hiện ở Mục~7 của notebook Colab.
 
-\textbf{Objective.} Find combinations of local image details that recur together within one object category, and use them in two ways: to \emph{understand} the image data (every pattern can be located on the images) and as \emph{features} for a classifier. The full pipeline is in \texttt{apps/bovw/} and is reproduced by Section~7 of the notebook.
+\textbf{Dữ liệu:} Nhóm chọn 4 lớp có hình dạng phân biệt từ \texttt{Caltech-101}~\cite{feifei2004learning} (CC BY 4.0): \emph{airplanes}, \emph{Motorbikes}, \emph{Faces\_easy} và \emph{watch}. Mỗi lớp lấy ngẫu nhiên 100 ảnh (seed $42$) và chia 70\%/30\% theo từng lớp thành 280 ảnh huấn luyện và 120 ảnh kiểm tra.
 
-\textbf{Data.} We use Caltech-101~\cite{feifei2004learning} (CC BY 4.0) and select four categories with clearly different shapes: \emph{airplanes}, \emph{Motorbikes}, \emph{Faces\_easy}, and \emph{watch}. From each category, 100 images are drawn at random (seed $42$) and split 70\%/30\% per class into 280 training and 120 test images.
+\textbf{Từ thị giác (\emph{Visual Words}):} Phần trích đặc trưng và phân cụm được nhóm tự cài đặt (chỉ dùng \texttt{JpegTurbo.jl} giải mã JPEG, \texttt{ColorTypes.jl} chuyển ảnh xám và \texttt{Plots.jl} vẽ hình). Mỗi ảnh được chuyển xám, chuẩn hóa cạnh dài về 256 pixel; trên lưới bước 8, mỗi mảnh $16 \times 16$ được mô tả bằng biểu đồ hướng gradient $4 \times 4$ ô $\times$ 8 hướng (128 chiều) chuẩn hóa kiểu SIFT~\cite{lowe2004distinctive,dalal2005histograms}, giữ 150 mảnh có gradient mạnh nhất mỗi ảnh. Bộ từ điển (\emph{codebook}) gồm $k$ từ thị giác được học bằng $k$-means++~\cite{arthur2007kmeans} \emph{chỉ trên tập huấn luyện} để tránh rò rỉ dữ liệu kiểm tra~\cite{sivic2003video,csurka2004visual}.
 
-\textbf{Visual words.} Feature extraction is implemented by the team; the only external libraries are \texttt{JpegTurbo.jl} (JPEG decoding), \texttt{ColorTypes.jl} (grayscale conversion), and \texttt{Plots.jl} (figures), as documented in the notebook. Each image is converted to grayscale and resized so that its long side is 256 pixels. On a grid with stride 8, every $16 \times 16$ patch is described by a histogram of gradient orientations over $4 \times 4$ cells $\times$ 8 orientations (128 dimensions), normalized as in SIFT~\cite{lowe2004distinctive,dalal2005histograms}; each image keeps its 150 patches with the strongest gradients. A codebook of $k$ visual words is learned with $k$-means++~\cite{arthur2007kmeans} on training descriptors only, so that no information from the test images leaks into the representation, and every patch is assigned to its nearest visual word~\cite{sivic2003video,csurka2004visual}.
+\subsubsection{Phân tích biến đổi dữ liệu ảnh thành giao dịch}
+Mỗi ảnh tương ứng một giao dịch. Nhóm so sánh 4 phép mã hóa trên $k \in \{100, 200, 500\}$ (Bảng~\ref{tab:b11_bovw_transform}): (a)~tập các từ thị giác có mặt; (b)~như (a) nhưng loại bỏ từ xuất hiện trong $>50\%$ ảnh huấn luyện (tương tự từ dừng -- \emph{stop words}); (c)~như (b), thêm mục riêng ``từ $w$ xuất hiện ít nhất 2 lần'' ($w{\times}2$) để giữ thông tin lặp; (d)~như (b) nhưng ghép từ với góc phần tư chứa nó để giữ thông tin vị trí. Phương án cuối được chọn theo độ chính xác thẩm định (\emph{validation accuracy}) trên 72 ảnh tách từ tập huấn luyện; tập 120 ảnh kiểm tra chỉ dùng ở bước cuối cùng.
 
-\subsubsection{Data Transformation Analysis}
-
-Every image becomes one transaction. Four item encodings are compared, each with $k \in \{100, 200, 500\}$ (Table~\ref{tab:b11_bovw_transform}): (a)~the set of visual words present in the image; (b)~as (a), but removing words present in more than 50\% of the training images, analogous to stop-word removal in text; (c)~as (b), plus a separate item ``word $w$ occurs at least twice'', written $w{\times}2$, to retain part of the count information; (d)~as (b), but pairing every word with the image quadrant that contains it, to retain position information. The final scheme is selected by data: the validation accuracy of a classifier that uses itemset features only, measured on 72 images held out from the training set. The test images are used only in the last step.
-
-% Data source: results/bovw_b11_transforms.csv (apps/bovw/analyze.jl)
-\begin{table}[!htbp]
+\begin{table*}[!t]
 \centering
-\caption{Image-to-transaction encodings (Table B11): 280 training images, \texttt{minsup} $= 30\%$, itemsets of at most 4 words; mining time is the minimum of 3 warmed-up runs; validation accuracy with itemset features only.}
+\caption{So sánh 12 phép biến đổi ảnh thành giao dịch (Bảng~B11): 280 ảnh huấn luyện, \texttt{minsup} $= 30\%$, độ dài mẫu $\le 4$; thời gian là nhỏ nhất của 3 lượt chạy đã làm nóng; độ chính xác thẩm định chỉ dùng đặc trưng tập phổ biến.}
 \label{tab:b11_bovw_transform}
-\small
+\scriptsize
 \begin{tabular}{@{}rlrrrrrrr@{}}
 \toprule
-$k$ & Encoding & $m$ & $\bar{L}$ & $\rho$ & Itemsets & \texttt{v3} (ms) & \texttt{v4} (ms) & Val.\ acc. \\
+$k$ & Mã hóa & $m$ & $\bar{L}$ & $\rho$ & Số tập & \texttt{v3} (ms) & \texttt{v4} (ms) & Val.\ acc. \\
 \midrule
 100 & (a) & 100 & 56.0 & 56.0\% & 48,879 & 104.13 & 5.79 & 0.625 \\
 100 & (b) & 25 & 9.4 & 37.6\% & 34 & 0.10 & 0.02 & 0.667 \\
@@ -124,23 +119,21 @@ $k$ & Encoding & $m$ & $\bar{L}$ & $\rho$ & Itemsets & \texttt{v3} (ms) & \textt
 500 & (d) & 1,995 & 115.4 & 5.8\% & 0 & 0.04 & 0.04 & 0.000 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-Table~\ref{tab:b11_bovw_transform} shows that $k$ directly controls the two quantities identified in Section~\ref{subsec:complexity} as decisive for Eclat. With $k = 100$, an image contains on average 56 of the 100 words ($\rho = 56\%$): transactions are long and dense, so the output explodes (48,879 itemsets even with at most 4 words), as predicted by hypothesis H5. At this density, bitset tidsets are 18 times faster than tid lists (\texttt{v4} versus \texttt{v3}), as predicted by H2. Conversely, $k = 500$ or encoding (d) fragments the supports so much that almost no itemset reaches $\texttt{minsup} = 30\%$. Removing stop words at $k = 100$ discards 75 of the 100 words, showing that a small codebook mostly produces generic words. The selected scheme is $k = 200$ with encoding (c): it has the highest validation accuracy (0.708, tied with three other schemes, so the predefined tie-break chooses the smaller $k$ and then the earlier encoding), a moderate output size (171 itemsets), and it keeps repetition information.
+Bảng~\ref{tab:b11_bovw_transform} khẳng định trực tiếp lý thuyết Chương~1: với $k = 100$, giao dịch dài và rất dày ($\rho = 56\%$) nên đầu ra bùng nổ tới 48.879 tập (khớp H5) và bitset (\texttt{v4}) nhanh gấp $18\times$ danh sách tid (\texttt{v3}) (khớp H2). Ngược lại, $k = 500$ hoặc mã hóa vị trí (d) làm phân mảnh độ hỗ trợ khiến hầu như không còn tập nào đạt 30\%. Nhóm chọn \textbf{$k = 200$, mã hóa (c)}: đạt độ chính xác thẩm định cao nhất ($0{,}708$), kích thước đầu ra vừa phải (171 tập) và bảo toàn thông tin lặp lại.
 
-\subsubsection{Discriminative Visual Patterns}
+\subsubsection{Các mẫu trực quan có tính phân biệt}
+Trên phương án đã chọn, ảnh huấn luyện của từng lớp $c$ được khai thác riêng bằng \texttt{EclatFIM} (\texttt{minsup} $= 30\%$ trong lớp, độ dài 2--3 từ) và xếp hạng theo tỉ lệ tăng trưởng $GR_c(X) = s_c(X)/s_{\neg c}(X)$ (Phương trình~\eqref{eq:growth_rate}). Bảng~\ref{tab:b12_bovw_patterns} liệt kê 2 mẫu nổi trội nhất mỗi lớp; Hình~\ref{fig:f12_bovw} vẽ vị trí các mảnh của mẫu hạng nhất lên ảnh kiểm tra, và Hình~\ref{fig:f13_bovw} (Phụ lục~\ref{subsec:appendix_f13}) hiển thị 6 mảnh huấn luyện gần tâm cụm nhất của từng từ thị giác.
 
-With the selected scheme, the training images of each class $c$ are mined separately (\texttt{minsup} $= 30\%$ of the class, itemsets of 2--3 words), and the itemsets are ranked by the growth rate $GR_c(X) = s_c(X)/s_{\neg c}(X)$ of Eq.~\eqref{eq:growth_rate}, i.e.\ as emerging patterns~\cite{dong1999efficient}. $GR = \infty$ means that the itemset occurs in no training image of the other classes. Table~\ref{tab:b12_bovw_patterns} lists the top two patterns of each class. Figure~\ref{fig:f12_bovw} draws the patches of the top pattern on test images, and Figure~\ref{fig:f13_bovw} (Appendix~\ref{subsec:appendix_f13}) shows what each visual word looks like through the 6 training patches closest to its cluster center.
-
-% Data source: results/bovw_b12_patterns.md
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Top two discriminative patterns per class (Table B12). $s_c$, $s_{\neg c}$: fraction of training images containing the pattern in the class and in the other classes; $w{\times}2$: word $w$ occurs at least twice.}
+\caption{Hai mẫu trực quan phân biệt nhất mỗi lớp (Bảng~B12). $s_c, s_{\neg c}$: độ hỗ trợ trong lớp và ngoài lớp; $w{\times}2$: từ $w$ xuất hiện $\ge 2$ lần.}
 \label{tab:b12_bovw_patterns}
-\small
+\scriptsize
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-Class & Visual-word itemset & $s_c$ & $s_{\neg c}$ & $GR$ \\
+Lớp & Tập từ thị giác & $s_c$ & $s_{\neg c}$ & $GR$ \\
 \midrule
 \emph{airplanes} & \{31, 41, 146\} & 0.36 & 0.000 & $\infty$ \\
  & \{31, 146, 171\} & 0.36 & 0.000 & $\infty$ \\
@@ -154,42 +147,39 @@ Class & Visual-word itemset & $s_c$ & $s_{\neg c}$ & $GR$ \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[!htbp]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.78\textwidth]{F12_bovw_patterns_on_images.pdf}
-\caption{The top discriminative pattern of each class (Table~\ref{tab:b12_bovw_patterns}) on test images. Each box is a $16 \times 16$ patch assigned to one word of the pattern; red, blue, and green mark the first, second, and third word. For \emph{airplanes}, word 41 (blue) runs along the fuselage.}
+\includegraphics[width=0.84\textwidth]{F12_bovw_patterns_on_images.pdf}
+\caption{Mẫu trực quan phân biệt hạng nhất của từng lớp (Bảng~\ref{tab:b12_bovw_patterns}) vẽ trên ảnh kiểm tra. Mỗi khung $16 \times 16$ màu đỏ, xanh dương, xanh lá lần lượt đánh dấu từ thứ nhất, thứ hai và thứ ba. Ở \emph{airplanes}, từ 41 (xanh dương) chạy dọc theo thân máy bay (Hình~F12).}
 \label{fig:f12_bovw}
-\end{figure}
+\end{figure*}
 
-\textbf{Interpretation.} Reading Table~\ref{tab:b12_bovw_patterns} together with the two figures shows that each pattern is a \emph{geometric configuration} typical of the class rather than a single detail.
-For \emph{airplanes}, word 31 is a horizontal edge (bright above, dark below), word 41 a dark horizontal band, and word 146 a flat region: the combination describes a long horizontal fuselage against a flat sky or runway, and no training image of the other three classes contains all three words.
-For \emph{Motorbikes}, the words are diagonal edges (63), curved bands such as mudguards, exhaust pipes, and rims (192), and the dense texture of the engine (139).
-For \emph{watch}, the words are repeated diagonal stripes of the metal bracelet; the fact that word 191 occurs at least twice in the top pattern captures exactly the repetition of the bracelet links, which encoding (c) preserves and is the reason it was selected.
-For \emph{Faces\_easy}, word 56 lies near the hairline, but words 73 and 113 are vertical edges located at the image border and in the background: many Caltech-101 face images share similar backgrounds (bookshelves, walls, posters), so the ``face'' pattern partly encodes the background. This is a dataset bias that frequent patterns expose in a readable way, whereas a black-box classifier would not reveal it.
+\textbf{Diễn giải:} Mỗi mẫu phổ biến là một \emph{cấu hình hình học} đặc trưng chứ không phải một chi tiết rời rạc:
+\begin{itemize}
+    \item \emph{airplanes} (\{31, 41, 146\}): từ 31 là cạnh ngang (trên sáng dưới tối), từ 41 là dải tối ngang (thân máy bay), từ 146 là vùng phẳng (bầu trời/đường băng) -- đạt $GR = \infty$.
+    \item \emph{Motorbikes} (\{63, 139, 192\}): kết hợp cạnh chéo (63), viền cong chắn bùn/ống xả/vành xe (192) và kết cấu dày của động cơ (139).
+    \item \emph{watch} (\{44, 72, 191$\times$2\}): nắm bắt các sọc chéo lặp lại của mắt dây kim loại nhờ mục lặp $191{\times}2$ của mã hóa (c).
+    \item \emph{Faces\_easy} (\{56, 73, 113\}): từ 56 nằm gần đường chân tóc, nhưng từ 73 và 113 là các cạnh đứng ở rìa ảnh và phông nền (tường, kệ sách). Tập phổ biến đã \emph{phơi bày thiên lệch dữ liệu} (\emph{dataset bias}) của Caltech-101 một cách minh bạch -- điều mà bộ phân loại hộp đen không cho thấy.
+\end{itemize}
 
-\subsubsection{Patterns as Classifier Features}
+\subsubsection{Sử dụng mẫu làm đặc trưng phân loại}
+Mỗi ảnh được biểu diễn bởi vector nhị phân 80 chiều (chứa/không chứa top-20 mẫu của mỗi lớp) và đưa vào mô hình hồi quy logistic đa lớp điều chuẩn L2 (nhóm tự cài đặt). Bảng~\ref{tab:b13_bovw_classification} cho thấy riêng 80 đặc trưng mẫu đạt \textbf{75,8\%} độ chính xác trên 120 ảnh kiểm tra (so với ngẫu nhiên 25\%), khẳng định các mẫu mang thông tin phân biệt thực sự. Kết hợp cùng histogram BoVW 200 chiều đạt \textbf{86,7\%} (tăng thêm 1 ảnh đúng so với histogram đơn lẻ). Giá trị lớn nhất của đặc trưng mẫu là tính giải thích trực quan; ma trận nhầm lẫn cho thấy \emph{watch} khó nhất (16/30 đúng; 7 ảnh nhầm sang \emph{Motorbikes} do cùng nhiều chi tiết kim loại cong) và \emph{airplanes} dễ nhất (29/30 đúng).
 
-Each image is represented by the binary vector ``does the image contain pattern $X$'' over the top 20 patterns of each class (80 dimensions), and a multinomial logistic regression with L2 regularization (implemented by the team) is trained on it. Table~\ref{tab:b13_bovw_classification} compares this representation with the standard bag-of-visual-words histogram.
-
-% Data source: results/bovw_b13_classification.md
-\begin{table}[!htbp]
+\begin{table}[!t]
 \centering
-\caption{Four-class classification of the 120 test images with logistic regression (Table B13).}
+\caption{Phân loại 4 lớp trên 120 ảnh kiểm tra bằng hồi quy logistic (Bảng~B13).}
 \label{tab:b13_bovw_classification}
-\small
+\scriptsize
 \begin{tabular}{@{}lrr@{}}
 \toprule
-Features & Dimensions & Test accuracy \\
+Đặc trưng & Số chiều & Độ chính xác test \\
 \midrule
-Bag-of-visual-words histogram ($k = 200$) & 200 & 0.858 \\
-Contains discriminative pattern (20 per class) & 80 & 0.758 \\
-Both combined & 280 & \textbf{0.867} \\
+Histogram túi từ thị giác ($k = 200$) & 200 & 0.858 \\
+Chứa mẫu phân biệt (20 mẫu/lớp) & 80 & 0.758 \\
+Kết hợp cả hai & 280 & \textbf{0.867} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The 80 pattern features alone classify 75.8\% of the test images correctly, against a chance level of 25\%, so the patterns carry genuine class information. They remain below the 200-dimensional histogram, because a single pattern covers only about 30\% of the images of its class and ignores the words that belong to no pattern. Combining both representations adds 0.9 percentage points, i.e.\ one more correct image out of 120, which is not enough to claim a real improvement. The main value of the patterns is that every feature can be read and checked visually, as shown above. The confusion matrix of the pattern features shows that \emph{watch} is the hardest class (16 of 30 test images correct; 7 are confused with \emph{Motorbikes}, plausibly because both contain many curved edges and metallic surfaces), while \emph{airplanes} is the easiest (29 of 30).
-
-\subsubsection{Limitations and Practical Extensions}
-
-The bag-of-words representation discards almost all position and count information; encoding (d), which keeps position, fragments the supports until no pattern remains. The codebook depends on the training images and on the $k$-means seed. With 70 training images per class, $\texttt{minsup} = 30\%$ corresponds to 21 images, so $GR = \infty$ only means that the pattern is absent from the 210 training images of the other classes, which may not hold on a larger collection. Natural extensions are using patterns as filters to detect mislabeled or out-of-category images, and using the words of a pattern as attention regions for an object detector.
+\subsubsection{Hạn chế và Hướng mở rộng}
+Mô hình BoVW bỏ qua phần lớn thông tin vị trí và tần suất; mã hóa vị trí (d) lại làm phân mảnh độ hỗ trợ. Bộ từ điển phụ thuộc dữ liệu huấn luyện và hạt giống $k$-means; với 70 ảnh/lớp, $GR = \infty$ chỉ đảm bảo mẫu vắng mặt trong 210 ảnh huấn luyện lớp khác. Hướng mở rộng tự nhiên là dùng mẫu để phát hiện ảnh gán nhãn sai/ngoại lai và làm vùng chú ý (\emph{attention regions}) cho bài toán phát hiện vật thể.

@@ -27,7 +27,7 @@ This repository provides a from-scratch Julia implementation of the **Eclat** al
 
 - **Reproducible Google Colab Notebook:** https://colab.research.google.com/github/24127226/16-FIM-DATA-MINING/blob/main/notebooks/demo.ipynb
 - **Public Dataset Repository (Hugging Face, no login required):** https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining
-- **Project Report (LaTeX source & PDF):** [`docs/report/`](docs/report/)
+- **Project Report (IEEE Conference Format PDF & LaTeX source):** [`docs/Report.pdf`](docs/Report.pdf) ([LaTeX source](docs/report/))
 
 ---
 
@@ -147,7 +147,8 @@ julia --project=apps scripts/plots_a.jl          # Figures F08, F10 from the E7/
 ├── notebooks/
 │   └── demo.ipynb                # Reproducible Google Colab notebook
 └── docs/
-    └── report/                   # LaTeX report source (HCMUS template) and compiled PDF
+    ├── Report.pdf                # Final compiled report (IEEE conference format, Vietnamese)
+    └── report/                   # LaTeX source (IEEEtran) and figures
 ```
 
 *Note:* The test directory is named `test/` (rather than `tests/`) to match the required test command `julia --project test/runtests.jl`.
@@ -156,8 +157,8 @@ julia --project=apps scripts/plots_a.jl          # Figures F08, F10 from the E7/
 
 ## Data Sources & Reference Binary
 
-- **Benchmark datasets** (`chess`, `mushroom` FIMI 8,124-transaction version, `retail`, `accidents`, `T10I4D100K`) and `groceries.csv` are mirrored publicly at https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining with full provenance and SHA-256 checksums recorded in [`data/benchmark/README.md`](data/benchmark/README.md).
-- **SPMF reference implementation:** `spmf.jar` (Eclat `v2.65`, SHA-256: `2cc2d89e39909230ea0455da4a1c79b389dc98ca04b0670befb63e679b5e2ea0`), executed strictly as a black-box oracle.
+- **Benchmark & application datasets** (`chess`, `mushroom` FIMI 8,124-transaction version, `retail`, `accidents`, `T10I4D100K`, `groceries.csv`, and `caltech-101.zip`) are mirrored publicly at https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining with full provenance and SHA-256 checksums recorded in [`data/benchmark/README.md`](data/benchmark/README.md).
+- **SPMF reference implementation:** `spmf.jar` (Eclat `v2.65`, SHA-256: `bb371b99b3bfd58fbce6b92e0ea3ccda5f9d1fd173bfe8e40f177672117159ba`), executed strictly as a black-box oracle.
 
 ---
 
