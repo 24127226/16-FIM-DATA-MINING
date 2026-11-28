@@ -225,10 +225,10 @@ Tính đúng đắn được kiểm chứng độc lập bằng hệ thống ki�
     \item \textbf{Tầng 2 -- Tập chuẩn, trường hợp biên và I/O:} Kiểm tra \texttt{pasquier99.txt} (\texttt{minsup} $= 40\%$, 15 tập), \texttt{bookstore.txt}~\cite{zaki2000scalable} ($50\%$, 19 tập), các trường hợp biên (rỗng, 1 giao dịch, giao dịch trùng nhau, \texttt{minsup} $= 100\%$, mã mục lớn), 10 ca biên dấu phẩy động của \texttt{minsup\_count}, và bộ kiểm thử luật kết hợp (\texttt{test\_rules.jl}).
     \item \textbf{Tầng 3 -- Đối chiếu quy mô lớn với SPMF:} Công cụ \texttt{scripts/compare\_spmf.jl} định nghĩa tỉ lệ khớp chính xác giữa $\mathcal{F}_{\text{nhóm}}$ và $\mathcal{F}_{\text{SPMF}}$:
     \begin{equation}
-    \begin{aligned}
+    {\small\begin{aligned}
         &\text{Tỉ lệ khớp} = \\
         &\frac{\left|\{X \in \mathcal{F}_{\text{nhóm}} \cap \mathcal{F}_{\text{SPMF}} : \sigma_{\text{nhóm}}(X) = \sigma_{\text{SPMF}}(X)\}\right|}{\left|\mathcal{F}_{\text{nhóm}} \cup \mathcal{F}_{\text{SPMF}}\right|} \times 100\%.
-    \end{aligned}
+    \end{aligned}}
     \end{equation}
     Với đầu ra vượt $5 \times 10^6$ tập, công cụ tự chuyển sang chế độ dấu vân tay bất biến thứ tự (cộng dồn 64 bit đầu mã băm SHA-256 theo modulo $2^{64}$).
 \end{enumerate}
