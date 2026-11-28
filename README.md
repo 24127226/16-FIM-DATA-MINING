@@ -105,6 +105,19 @@ julia --project=. apps/groceries/run_groceries.jl
 # Generate PDF vector & PNG figures directly from CSV results
 julia --project=scripts -e "using Pkg; Pkg.instantiate()"
 julia --project=scripts scripts/plots.jl
+
+# Optimization experiments: E8 ablation v0-v6 (Tables B03, B04), E7 bitset vs. tid list by density, E10 memory trace
+julia --project=. scripts/bench_ablation.jl
+julia --project=. scripts/bench_density.jl
+julia --project=. scripts/bench_memory_trace.jl
+
+# Application 2: Visual Pattern Discovery via Bag of Visual Words on Caltech-101 (Tables B11-B13, Figures F12-F13)
+julia --project=apps -e "using Pkg; Pkg.instantiate()"
+julia --project=. scripts/fetch_data.jl caltech
+julia --project=apps apps/bovw/prepare.jl
+julia --project=apps apps/bovw/analyze.jl
+julia --project=apps apps/bovw/figures.jl
+julia --project=apps scripts/plots_a.jl          # Figures F08, F10 from the E7/E10 CSV files
 ```
 
 ---
@@ -127,7 +140,9 @@ julia --project=scripts scripts/plots.jl
 │   └── benchmark/                # Sources, statistics, and SHA-256 checksums (large files hosted on HF)
 ├── scripts/                      # Data fetching, SPMF comparator, benchmarking, synthetic/subsample generators, plotting
 ├── apps/
-│   └── groceries/                # Application 1: Market Basket Analysis on Groceries
+│   ├── Project.toml, Manifest.toml  # Application environment (JpegTurbo, ColorTypes, Plots) for Application 2
+│   ├── groceries/                # Application 1: Market Basket Analysis on Groceries
+│   └── bovw/                     # Application 2: Bag of Visual Words on Caltech-101
 ├── results/                      # Raw CSV results, summary tables, and generated figures
 ├── notebooks/
 │   └── demo.ipynb                # Reproducible Google Colab notebook
