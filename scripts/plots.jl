@@ -199,14 +199,16 @@ function plot_f05_memory(; csv_path = joinpath(RESULTS_DIR, "e4_memory.csv"))
     rss_v0 = [max(0.1, Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v0", jdf).delta_rss_mb))) for d in datasets]
     rss_v6 = [max(0.1, Float64(first(filter(r -> string(r.dataset) == d && string(r.variant) == "v6", jdf).delta_rss_mb))) for d in datasets]
 
-    p1 = bar(x .- w/2, tid_v0; bar_width = w, label = "EclatFIM (v0)", color = :deepskyblue,
+    p1 = bar(x .- w/2, tid_v0; bar_width = w, fillrange = 10.0, label = "EclatFIM (v0)", color = :deepskyblue,
              xticks = (x, datasets), ylabel = "Peak Live Tidset (KiB)", title = "Peak Tidset Memory (EclatStats)",
-             yscale = :log10, legend = :topright)
-    bar!(p1, x .+ w/2, tid_v6; bar_width = w, label = "EclatFIM (v6)", color = :navy)
+             yscale = :log10, ylims = (10.0, 15000.0),
+             yticks = ([10.0, 100.0, 1000.0, 10000.0], ["10", "100", "1,000", "10,000"]),
+             legend = :topleft)
+    bar!(p1, x .+ w/2, tid_v6; bar_width = w, fillrange = 10.0, label = "EclatFIM (v6)", color = :navy)
 
     p2 = bar(x .- w/2, rss_v0; bar_width = w, label = "EclatFIM (v0)", color = :deepskyblue,
              xticks = (x, datasets), ylabel = "Process Delta RSS (MiB)", title = "Added Process Memory (RSS - Baseline)",
-             legend = :topright)
+             ylims = (0.0, 185.0), legend = :topleft)
     bar!(p2, x .+ w/2, rss_v6; bar_width = w, label = "EclatFIM (v6)", color = :navy)
 
     plt = plot(p1, p2; layout = (1, 2), size = (920, 360), margin = 4Plots.mm)
