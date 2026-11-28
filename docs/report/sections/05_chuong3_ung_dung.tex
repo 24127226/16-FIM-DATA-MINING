@@ -14,21 +14,22 @@ Market basket analysis is conducted on the \texttt{Groceries} retail dataset fro
 
 To evaluate how transaction granularity affects Eclat's behavior, two transformation schemes are compared at $\texttt{minsup} = 1\%$ ($\sigma_{\min} = 99$) and $\texttt{minconf} = 0.3$: (i) retaining all $169$ fine-grained product items, and (ii) aggregating items into $12$ coarse supermarket categories (such as \texttt{dairy\_eggs}, \texttt{produce}, \texttt{bakery}, and \texttt{meat\_seafood}). Table~\ref{tab:b08_groceries_transform} highlights two key findings:
 \begin{itemize}
-    \item Under the fine-grained $169$-item representation, the average density is $\rho = \bar{L}/m = 2.61\%$, closely approaching the theoretical $1/32 \approx 3.125\%$ crossover threshold between \texttt{Vector\{Int32\}} and \texttt{BitVector} tidset representations in Eclat. With short transactions ($\bar{L} = 4.41$), mining completes in $0.0256$~s and yields $125$ actionable rules.
+    \item Under the fine-grained $169$-item representation, the average density is $\rho = \bar{L}/m = 2.61\%$, closely approaching the theoretical $1/32 \approx 3.125\%$ crossover threshold between \texttt{Vector\{Int32\}} and \texttt{BitVector} tidset representations in Eclat. With short transactions ($\bar{L} = 4.41$), mining with default variant \texttt{v6} completes in $0.0012$~s and yields $125$ actionable rules.
     \item Aggregating into $12$ coarse categories increases density nearly tenfold to $25.98\%$, expanding the pattern space from $333$ to $477$ frequent itemsets and causing rule volume to surge to $2{,}232$ overly generic rules (e.g., \emph{dairy $\Rightarrow$ produce}) that offer limited merchandising utility. Consequently, the $169$-item representation is selected.
 \end{itemize}
 
 % Data source: results/groceries_b08_transforms.csv
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
-\caption{Quantitative comparison of two Groceries transformation schemes at $\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$ (variant \texttt{v1}).}
+\caption{Quantitative comparison of two Groceries transformation schemes at $\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$ (default variant \texttt{v6}).}
 \label{tab:b08_groceries_transform}
+\small
 \begin{tabular}{lrrrrrr}
 \toprule
 Representation Scheme & $m$ & $\bar{L}$ & $\rho$ & $|\mathcal{F}|$ & Rules & Runtime \\
 \midrule
-169 original items (selected) & 169 & 4.41 & 2.61\% & 333 & 125 & 0.0256 s \\
-12 coarse product categories & 12 & 3.12 & 25.98\% & 477 & 2,232 & 0.0024 s \\
+169 original items (selected) & 169 & 4.41 & 2.61\% & 333 & 125 & 0.0012 s \\
+12 coarse product categories & 12 & 3.12 & 25.98\% & 477 & 2,232 & 0.0008 s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -39,18 +40,19 @@ Rule sensitivity is evaluated over the parameter grid $\texttt{minsup} \in \{0.5
 \subsubsection{Primary Results and Business Interpretation}
 Figure~\ref{fig:f11_groceries} maps all $125$ rules across support and confidence, color-coded by lift. Ranking by confidence alone exhibits strong popularity bias: \texttt{whole milk} appears in $2{,}513/9{,}835$ baskets ($25.55\%$), causing top-confidence rules to predominantly feature \texttt{whole milk} as the consequent despite modest lift (e.g., \texttt{curd + yogurt} $\Rightarrow$ \texttt{whole milk} achieves $\text{conf} = 0.582$ with $\text{lift} = 2.279$). Ranking by lift~\cite{brin1997dynamic} adjusts for baseline prevalence and surfaces genuine co-purchasing affinities (Table~\ref{tab:b09_groceries_top10}).
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.88\textwidth]{F11_groceries_rules.pdf}
+\includegraphics[width=0.62\textwidth]{F11_groceries_rules.pdf}
 \caption{Distribution of $125$ association rules on the Groceries dataset ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$) across support and confidence, colored by lift; red stars denote the top-3 rules by lift.}
 \label{fig:f11_groceries}
 \end{figure}
 
 % Data source: results/groceries_top10.csv
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Top-10 association rules ranked by lift on the Groceries dataset ($\texttt{minsup} = 1\%$, $\texttt{minconf} = 0.3$).}
 \label{tab:b09_groceries_top10}
+\small
 \begin{tabular}{rllrrrr}
 \toprule
 Rank & Antecedent ($X$) & Consequent ($Y$) & $\sigma$ & Support & Confidence & Lift \\
@@ -77,30 +79,7 @@ The top rules in Table~\ref{tab:b09_groceries_top10} reveal three actionable con
 \end{itemize}
 
 \subsubsection{Out-of-Sample Stability Evaluation (80/20 Split)}
-Rule generalizability is assessed via a reproducible $80\%/20\%$ random split (\texttt{seed} $= 42$), yielding $N_{\text{train}} = 7{,}868$ training baskets and $N_{\text{test}} = 1{,}967$ test baskets. The top-10 rules by lift mined on the training split are re-evaluated on the held-out test split (Table~\ref{tab:b10_groceries_stability}). All $10/10$ rules preserve $\text{test\_lift} > 1.5$. Core associations such as Rank~1 ($-4.5\%$ shift), Rank~5 ($-3.4\%$), and Rank~4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, $-8.5\%$) demonstrate high stability, whereas Rank~6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) experiences a $-38.3\%$ drop due to higher sampling variance near the $1\%$ support boundary.
-
-% Data source: results/groceries_stability.csv
-\begin{table}[H]
-\centering
-\caption{Stability evaluation of top-10 training rules by lift on an $80/20$ split (\texttt{seed} $= 42$, $N_{\text{train}} = 7{,}868$, $N_{\text{test}} = 1{,}967$).}
-\label{tab:b10_groceries_stability}
-\begin{tabular}{rlrrr}
-\toprule
-Rank & Rule ($X \Rightarrow Y$) & Train Lift & Test Lift & Shift \\
-\midrule
-1 & citrus fruit + other vegetables $\Rightarrow$ root vegetables & 3.325 & 3.175 & $-4.5\%$ \\
-2 & other vegetables + tropical fruit $\Rightarrow$ root vegetables & 3.242 & 2.734 & $-15.7\%$ \\
-3 & citrus fruit + root vegetables $\Rightarrow$ other vegetables & 3.159 & 2.568 & $-18.7\%$ \\
-4 & beef $\Rightarrow$ root vegetables & 3.093 & 2.831 & $-8.5\%$ \\
-5 & root vegetables + tropical fruit $\Rightarrow$ other vegetables & 3.040 & 2.935 & $-3.4\%$ \\
-6 & whipped/sour cream + whole milk $\Rightarrow$ root vegetables & 2.925 & 1.805 & $-38.3\%$ \\
-7 & other vegetables + yogurt $\Rightarrow$ root vegetables & 2.864 & 2.203 & $-23.1\%$ \\
-8 & other vegetables + whole milk $\Rightarrow$ root vegetables & 2.787 & 3.072 & $+10.2\%$ \\
-9 & other vegetables + whipped/sour cream $\Rightarrow$ yogurt & 2.612 & 2.214 & $-15.3\%$ \\
-10 & rolls/buns + root vegetables $\Rightarrow$ other vegetables & 2.588 & 2.628 & $+1.5\%$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+Rule generalizability is assessed via a reproducible $80\%/20\%$ random split (\texttt{seed} $= 42$), yielding $N_{\text{train}} = 7{,}868$ training baskets and $N_{\text{test}} = 1{,}967$ test baskets. The top-10 rules by lift mined on the training split are re-evaluated on the held-out test split (Table~\ref{tab:b10_groceries_stability} in Appendix~\ref{subsec:appendix_b10}). All $10/10$ rules preserve $\text{test\_lift} > 1.5$. Core associations such as Rank~1 ($-4.5\%$ shift), Rank~5 ($-3.4\%$), and Rank~4 (\texttt{beef} $\Rightarrow$ \texttt{root vegetables}, $-8.5\%$) demonstrate high stability, whereas Rank~6 (\texttt{whipped/sour cream + whole milk} $\Rightarrow$ \texttt{root vegetables}) experiences a $-38.3\%$ drop due to higher sampling variance near the $1\%$ support boundary.
 
 \subsubsection{Limitations and Practical Extensions}
 Three methodological limitations warrant caution when operationalizing association rules: (i) high-lift rules with support near the minimum threshold rest on limited sample evidence and exhibit higher out-of-sample variance; (ii) lift is symmetric ($\text{lift}(X \Rightarrow Y) = \text{lift}(Y \Rightarrow X)$) and therefore does not identify purchase directionality; and (iii) co-occurrence does not imply causality, as unobserved confounders such as weekend shopping cycles or seasonality may drive joint demand. In practice, stable rules can feed real-time e-commerce basket recommenders or generate hypotheses for controlled A/B shelf-placement experiments.
@@ -122,10 +101,11 @@ Three methodological limitations warrant caution when operationalizing associati
 Every image becomes one transaction. Four item encodings are compared, each with $k \in \{100, 200, 500\}$ (Table~\ref{tab:b11_bovw_transform}): (a)~the set of visual words present in the image; (b)~as (a), but removing words present in more than 50\% of the training images, analogous to stop-word removal in text; (c)~as (b), plus a separate item ``word $w$ occurs at least twice'', written $w{\times}2$, to retain part of the count information; (d)~as (b), but pairing every word with the image quadrant that contains it, to retain position information. The final scheme is selected by data: the validation accuracy of a classifier that uses itemset features only, measured on 72 images held out from the training set. The test images are used only in the last step.
 
 % Data source: results/bovw_b11_transforms.csv (apps/bovw/analyze.jl)
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Image-to-transaction encodings (Table B11): 280 training images, \texttt{minsup} $= 30\%$, itemsets of at most 4 words; mining time is the minimum of 3 warmed-up runs; validation accuracy with itemset features only.}
 \label{tab:b11_bovw_transform}
+\small
 \begin{tabular}{@{}rlrrrrrrr@{}}
 \toprule
 $k$ & Encoding & $m$ & $\bar{L}$ & $\rho$ & Itemsets & \texttt{v3} (ms) & \texttt{v4} (ms) & Val.\ acc. \\
@@ -150,13 +130,14 @@ Table~\ref{tab:b11_bovw_transform} shows that $k$ directly controls the two quan
 
 \subsubsection{Discriminative Visual Patterns}
 
-With the selected scheme, the training images of each class $c$ are mined separately (\texttt{minsup} $= 30\%$ of the class, itemsets of 2--3 words), and the itemsets are ranked by the growth rate $GR_c(X) = s_c(X)/s_{\neg c}(X)$ of Eq.~\eqref{eq:growth_rate}, i.e.\ as emerging patterns~\cite{dong1999efficient}. $GR = \infty$ means that the itemset occurs in no training image of the other classes. Table~\ref{tab:b12_bovw_patterns} lists the top two patterns of each class. Figure~\ref{fig:f12_bovw} draws the patches of the top pattern on test images, and Figure~\ref{fig:f13_bovw} shows what each visual word looks like through the 6 training patches closest to its cluster center.
+With the selected scheme, the training images of each class $c$ are mined separately (\texttt{minsup} $= 30\%$ of the class, itemsets of 2--3 words), and the itemsets are ranked by the growth rate $GR_c(X) = s_c(X)/s_{\neg c}(X)$ of Eq.~\eqref{eq:growth_rate}, i.e.\ as emerging patterns~\cite{dong1999efficient}. $GR = \infty$ means that the itemset occurs in no training image of the other classes. Table~\ref{tab:b12_bovw_patterns} lists the top two patterns of each class. Figure~\ref{fig:f12_bovw} draws the patches of the top pattern on test images, and Figure~\ref{fig:f13_bovw} (Appendix~\ref{subsec:appendix_f13}) shows what each visual word looks like through the 6 training patches closest to its cluster center.
 
 % Data source: results/bovw_b12_patterns.md
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Top two discriminative patterns per class (Table B12). $s_c$, $s_{\neg c}$: fraction of training images containing the pattern in the class and in the other classes; $w{\times}2$: word $w$ occurs at least twice.}
 \label{tab:b12_bovw_patterns}
+\small
 \begin{tabular}{@{}llrrr@{}}
 \toprule
 Class & Visual-word itemset & $s_c$ & $s_{\neg c}$ & $GR$ \\
@@ -173,18 +154,11 @@ Class & Visual-word itemset & $s_c$ & $s_{\neg c}$ & $GR$ \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=\textwidth]{F12_bovw_patterns_on_images.pdf}
+\includegraphics[width=0.78\textwidth]{F12_bovw_patterns_on_images.pdf}
 \caption{The top discriminative pattern of each class (Table~\ref{tab:b12_bovw_patterns}) on test images. Each box is a $16 \times 16$ patch assigned to one word of the pattern; red, blue, and green mark the first, second, and third word. For \emph{airplanes}, word 41 (blue) runs along the fuselage.}
 \label{fig:f12_bovw}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.92\textwidth]{F13_bovw_visual_words.pdf}
-\caption{``Portraits'' of the visual words in the top pattern of each class: the 6 training patches closest to the cluster center.}
-\label{fig:f13_bovw}
 \end{figure}
 
 \textbf{Interpretation.} Reading Table~\ref{tab:b12_bovw_patterns} together with the two figures shows that each pattern is a \emph{geometric configuration} typical of the class rather than a single detail.
@@ -198,10 +172,11 @@ For \emph{Faces\_easy}, word 56 lies near the hairline, but words 73 and 113 are
 Each image is represented by the binary vector ``does the image contain pattern $X$'' over the top 20 patterns of each class (80 dimensions), and a multinomial logistic regression with L2 regularization (implemented by the team) is trained on it. Table~\ref{tab:b13_bovw_classification} compares this representation with the standard bag-of-visual-words histogram.
 
 % Data source: results/bovw_b13_classification.md
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Four-class classification of the 120 test images with logistic regression (Table B13).}
 \label{tab:b13_bovw_classification}
+\small
 \begin{tabular}{@{}lrr@{}}
 \toprule
 Features & Dimensions & Test accuracy \\

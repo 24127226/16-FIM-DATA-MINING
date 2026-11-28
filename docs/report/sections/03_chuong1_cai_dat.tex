@@ -20,7 +20,7 @@ The tidsets of the single items therefore suffice to compute the support of ever
 
 \emph{Bottom-up search} (§4.3 and Fig.~12 of~\cite{zaki2000scalable}). Inside a class, the tidsets of every pair of atoms $A_i, A_j$ with $i < j$ are intersected; each pair that reaches $\sigma_{\min}$ becomes an atom of the child class $[A_i]$, which is then solved recursively. Restricting the pairs to $i < j$ guarantees that every itemset is generated exactly once. Algorithm~\ref{alg:eclat} is the project's realization of these three ideas, and Figure~\ref{fig:f01} runs it on the bookstore example of the paper.
 
-\begin{algorithm}[H]
+\begin{algorithm}[!htbp]
 \caption{Eclat: depth-first search over prefix classes}
 \label{alg:eclat}
 \begin{algorithmic}[1]
@@ -46,9 +46,9 @@ The tidsets of the single items therefore suffice to compute the support of ever
 \end{algorithmic}
 \end{algorithm}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\begin{tikzpicture}[font=\footnotesize, x=1.25cm, y=1.1cm,
+\begin{tikzpicture}[font=\footnotesize, x=1.20cm, y=0.95cm,
   nodeset/.style={draw, rounded corners=1pt, align=center, inner sep=2pt, minimum width=1.15cm},
   nodepruned/.style={nodeset, densely dashed, draw=gray, text=gray},
   >={Stealth[length=4pt]}]
@@ -96,11 +96,12 @@ As in the paper, candidates are not checked against their subsets before interse
 
 Let $m_f = |\mathcal{F}_1|$ be the number of frequent items, $\ell$ the length of the longest frequent itemset, $w = 64$ the machine word size, and $\rho(X) = \sigma(X)/N$ the \emph{density} of a tidset. Table~\ref{tab:complexity} summarizes the cost of the main operations; Chapter~2 uses it to predict and explain the measurements.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Cost of the main operations of Eclat.}
 \label{tab:complexity}
-\renewcommand{\arraystretch}{1.15}
+\small
+\renewcommand{\arraystretch}{1.10}
 \begin{tabular}{@{}p{4.6cm}p{11.0cm}@{}}
 \toprule
 Operation & Cost \\
@@ -130,9 +131,9 @@ Live tidset memory during the search & $\sum_{d=1}^{\ell} \sum_{X \in [P_d]} \ma
 
 The system is structured as a standalone Julia package, \texttt{EclatFIM} (Julia~1.11.4), partitioned into three isolated dependency environments: a minimal root package (depending solely on \texttt{DataStructures.jl} and the standard library) for the command-line interface and automated test suite; an experimental environment (\texttt{scripts/}) for benchmarking and figure generation; and an application environment for Chapter~3. Figure~\ref{fig:f02_arch} illustrates the modular architecture and end-to-end data flow of the package.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{F02_architecture.pdf}
+\includegraphics[width=0.70\textwidth]{F02_architecture.pdf}
 \caption{Modular architecture and data flow of \texttt{EclatFIM}, separating SPMF-compliant I/O, the interface contract (\texttt{EclatConfig}), the core Eclat mining engine, and downstream verification, benchmarking, and application layers.}
 \label{fig:f02_arch}
 \end{figure}
@@ -159,10 +160,11 @@ The command-line interface \texttt{demo.jl} is implemented without external depe
 Seven variants \texttt{v0}--\texttt{v6} share a single code base. Each variant adds \emph{exactly one} change to the previous one (Table~\ref{tab:b01_variants}), so the difference between two consecutive variants measures the contribution of that single change (an \emph{ablation study}). A variant is a value of \texttt{EclatConfig}; the mining code selects the intersection routine from the \emph{type} of the configuration option (\texttt{Val\{:merge\}} or \texttt{Val\{:adaptive\}}) through multiple dispatch, so the choice is resolved at compile time and the hot loop contains no branch on the configuration. The \texttt{EclatStats} counters use the same mechanism: when counting is disabled, the counter argument has type \texttt{Nothing} and every counting call is compiled away, so timing runs are not slowed down by instrumentation.
 
 % Data source: src/structures.jl (VARIANTS)
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{The seven variants (Table B01). Each row adds exactly one change to the row above; the right column lists the \texttt{EclatConfig} field that differs.}
 \label{tab:b01_variants}
+\small
 \begin{tabular}{@{}lp{10.6cm}l@{}}
 \toprule
 Variant & Change & Field \\
@@ -190,10 +192,10 @@ Variant & Change & Field \\
 
 \emph{v6, hybrid representation.} The root class uses bitsets if the average density of the frequent items is at least $1/32$. When the child class of atom $A_i$ is built, the support of every itemset in that class is bounded by $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; if this bound is below $N/32$, the child class is built directly as tid lists (by extracting the positions of the set bits of the AND), and every deeper class keeps using tid lists. Dense data thus uses bitsets near the root, while tidsets that have shrunk deeper in the search switch to the more compact form. On sparse data (root density below $1/32$, as in \texttt{retail} and \texttt{T10I4D100K}), \texttt{v6} uses tid lists from the start, i.e.\ it equals \texttt{v3} plus the triangular array.
 
-\textbf{Measured improvement (E8).} Every variant is measured at the median and at the lowest \texttt{minsup} of the Chapter~2 grid for each benchmark (\texttt{scripts/bench\_ablation.jl}; protocol in Section~\ref{subsec:exp_e8}). Table~\ref{tab:b03_ablation_time} reports the mining-plus-writing time (file reading is identical for all variants and excluded), and Table~\ref{tab:b04_ablation_counters} the internal counters that explain the changes. All variants return exactly the same frequent itemsets.
+\textbf{Measured improvement (E8).} Every variant is measured at the median and at the lowest \texttt{minsup} of the Chapter~2 grid for each benchmark (\texttt{scripts/bench\_ablation.jl}; protocol in Section~\ref{subsec:exp_e8}). Table~\ref{tab:b03_ablation_time} reports the mining-plus-writing time (file reading is identical for all variants and excluded), while Table~\ref{tab:b04_ablation_counters} in Appendix~\ref{subsec:appendix_e8_counters} provides the internal counters that explain each step. All variants return exactly the same frequent itemsets.
 
 % Data source: results/e8_ablation.csv, results/e8_ablation_low.csv (machine: results/ENV_A.md)
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Ablation \texttt{v0} $\to$ \texttt{v6} (Table B03): mining and writing time in milliseconds (median of 3 runs, or 5 runs below one second). Bold: fastest variant per column. Last row: speedup of the fastest variant over \texttt{v0}.}
 \label{tab:b03_ablation_time}
@@ -218,36 +220,6 @@ Speedup & $36.7\times$ & $32.3\times$ & $4.5\times$ & $47.5\times$ & $38.0\times
 \end{tabular}
 \end{table}
 
-% Data source: results/e8_counters_low.csv (lowest minsup)
-\begin{table}[H]
-\centering
-\caption{Internal counters of E8 at the lowest \texttt{minsup} (Table B04): number of tidset intersections (in parentheses: fraction whose result falls below $\sigma_{\min}$), level-2 pairs skipped by the triangular array, time spent building 2-itemsets, and peak live tidset memory. Only the rows where a counter changes are shown; the full tables are in \texttt{results/e8\_B04\_low.md} and \texttt{results/e8\_B04.md}.}
-\label{tab:b04_ablation_counters}
-\begin{tabular}{@{}llrrrr@{}}
-\toprule
-Dataset & Variant & Intersections (failed) & Pairs skipped & Level-2 time & Peak tidset \\
-\midrule
-\texttt{chess} 65\% & \texttt{v0} & 140,742 (21.0\%) & 0 & 4.3~ms & 1.48~MiB \\
- & \texttt{v1} & 114,007 (2.5\%) & 0 & 9.2~ms & 1.09~MiB \\
- & \texttt{v4} & 114,007 (2.5\%) & 0 & 0.0~ms & 0.04~MiB \\
- & \texttt{v5} & 113,908 (2.4\%) & 98 & 2.0~ms & 0.04~MiB \\
-\texttt{mushroom} 18\% & \texttt{v0} & 65,010 (11.8\%) & 0 & 30.6~ms & 1.73~MiB \\
- & \texttt{v1} & 58,730 (2.3\%) & 0 & 42.8~ms & 1.36~MiB \\
- & \texttt{v4} & 58,730 (2.3\%) & 0 & 0.2~ms & 0.15~MiB \\
-\texttt{retail} 0.1\% & \texttt{v0} & 3,932,582 (99.9\%) & 0 & 6317~ms & 4.19~MiB \\
- & \texttt{v1} & 2,244,719 (99.8\%) & 0 & 5557~ms & 2.66~MiB \\
- & \texttt{v3} & 2,244,719 (99.8\%) & 0 & 2896~ms & 2.66~MiB \\
- & \texttt{v4} & 2,244,719 (99.8\%) & 0 & 3665~ms & 22.45~MiB \\
- & \texttt{v5} & 8,038 (33.9\%) & 2,236,526 & 74~ms & 22.45~MiB \\
- & \texttt{v6} & 8,038 (33.9\%) & 2,236,526 & 124~ms & 2.66~MiB \\
-\texttt{T10I4D100K} 0.2\% & \texttt{v3} & 292,768 (95.7\%) & 0 & 2777~ms & 3.85~MiB \\
- & \texttt{v4} & 292,768 (95.7\%) & 0 & 324~ms & 9.34~MiB \\
- & \texttt{v5} & 22,430 (44.4\%) & 270,297 & 34~ms & 9.34~MiB \\
- & \texttt{v6} & 22,430 (44.4\%) & 270,297 & 136~ms & 3.85~MiB \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 At the lowest \texttt{minsup}, the fastest variant is $36$--$65\times$ faster than \texttt{v0} on every benchmark, and $4.5$--$48\times$ at the median \texttt{minsup}. No single variant is fastest everywhere: \texttt{v4} wins on the dense datasets and \texttt{v5} on the sparse ones. On the dense datasets \texttt{v6} stays within 15\% of the fastest variant at the lowest \texttt{minsup} (and within 2~ms at the median \texttt{minsup}, where every run takes only a few milliseconds), and it never needs more tidset memory than the more compact representation, which is why it is the default of the command-line interface. Section~\ref{subsec:exp_e8} compares each step with its hypothesis. In addition, the test suite asserts that the intersection routines allocate no memory and are type-stable (\texttt{@allocated} $= 0$, \texttt{@inferred}; Table~\ref{tab:b02_tests}).
 
 % ---------------------------------------------------------------------------
@@ -268,10 +240,11 @@ Correctness is verified independently of the core algorithm author through a thr
 Continuous Integration (GitHub Actions) executes the entire test suite on a clean Julia~1.11.4 environment under both default settings and \texttt{--check-bounds=yes} to verify array-bounds safety for \texttt{@inbounds}-annotated loops. Table~\ref{tab:b02_tests} summarizes the automated verification results across unit tests and four benchmark datasets (\texttt{chess}, \texttt{mushroom}, \texttt{retail}, \texttt{T10I4D100K}).
 
 % Data source: `julia --project=. test/runtests.jl` (commit ba256aa, all variants v0-v6; per-file counts from the same run)
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{Summary of automated test suite execution (\texttt{test/runtests.jl}) for all seven variants \texttt{v0}--\texttt{v6} under default and \texttt{--check-bounds=yes} modes.}
 \label{tab:b02_tests}
+\small
 \begin{tabular}{llrr}
 \toprule
 Test Group & Source File & Assertions & Pass Rate \\

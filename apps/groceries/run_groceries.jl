@@ -110,8 +110,8 @@ function evaluate_stability(db::TransactionDB, id_to_name::Dict{Int64,String},
 end
 
 function main()
-    # Chọn phiên bản tốt nhất đã được cài đặt (hiện tại v1 nhanh hơn v0)
-    cfg = VARIANTS["v1"]
+    # Sử dụng phiên bản mặc định tốt nhất (DEFAULT_CONFIG = v6)
+    cfg = DEFAULT_CONFIG
 
     println("1. Chuẩn bị dữ liệu Groceries (2 phương án biến đổi)...")
     prep = prepare_all_groceries(GROCERIES_CSV, GROCERIES_DIR)
@@ -205,7 +205,7 @@ function main()
     open(summary_path, "w") do io
         println(io, "# Kết quả Ứng dụng 1: Phân tích giỏ hàng (Groceries)\n")
         println(io, "Sinh bởi `apps/groceries/run_groceries.jl` ngày ", Dates.format(today(), "yyyy-mm-dd"),
-                " bằng `EclatFIM` (`v1`, seed = ", SEED, ").\n")
+                " bằng `EclatFIM` (`$(DEFAULT_VARIANT)`, seed = ", SEED, ").\n")
 
         println(io, "## 1. So sánh phương án biến đổi dữ liệu (Bảng B08)\n")
         println(io, "| Phương án | N | m | L̄ | Mật độ ρ | Tập phổ biến (1%) | Luật (conf ≥ 0,3) | Thời gian (s) |")
