@@ -189,7 +189,7 @@ Bản & Thay đổi so với bản trước & Trường \\
 
 \emph{\texttt{v6} -- Biểu diễn lai:} Lớp gốc dùng bitset nếu mật độ trung bình các mục phổ biến $\ge 1/32$. Khi xây lớp con của $A_i$, chặn trên độ hỗ trợ của lớp con là $\min(\sigma(A_i), \max_{j > i} \sigma(A_j))$; nếu nhỏ hơn $N/32$, lớp con (và mọi lớp sâu hơn) chuyển thẳng sang danh sách tid. Trên dữ liệu thưa (\texttt{retail}, \texttt{T10I4D100K}), \texttt{v6} dùng danh sách tid ngay từ đầu kết hợp mảng tam giác.
 
-\textbf{Mức cải thiện đo được (E8).} Bảng~\ref{tab:b03_ablation_time} báo cáo thời gian khai thác và ghi đĩa của cả 7 biến thể tại \texttt{minsup} trung bình và thấp nhất trên bốn tập chuẩn (bảng bộ đếm nội bộ B04 đặt tại Phụ lục~\ref{subsec:appendix_e8_counters}). Ở \texttt{minsup} thấp nhất, biến thể nhanh nhất tăng tốc \textbf{$36$--$65\times$} so với \texttt{v0}. Không có một biến thể duy nhất thắng tuyệt đối mọi nơi (\texttt{v4} nhanh nhất trên dữ liệu dày, \texttt{v5} nhanh nhất trên dữ liệu thưa), nhưng \texttt{v6} bám sát bản nhanh nhất trên dữ liệu dày (chênh $<15\%$) và không bao giờ tốn bộ nhớ hơn biểu diễn gọn hơn, nên được chọn làm mặc định.
+\textbf{Mức cải thiện đo được (E8).} Bảng~\ref{tab:b03_ablation_time} báo cáo thời gian khai thác và ghi đĩa của cả 7 biến thể tại \texttt{minsup} trung bình và thấp nhất trên bốn tập chuẩn (bảng bộ đếm nội bộ B04 đặt tại Phụ lục~\ref{subsec:appendix_e8_counters}). Ở \texttt{minsup} thấp nhất, biến thể nhanh nhất tăng tốc \textbf{$34$--$92\times$} so với \texttt{v0}, riêng \texttt{v6} tăng tốc $25$--$65\times$. Không có một biến thể duy nhất thắng tuyệt đối mọi nơi (\texttt{v4} nhanh nhất trên dữ liệu dày, \texttt{v5} nhanh nhất trên dữ liệu thưa ở \texttt{minsup} thấp nhất). Ở \texttt{minsup} thấp nhất, \texttt{v6} chênh bản nhanh nhất $7$--$20\%$ trên dữ liệu dày; nhanh nhất trên \texttt{T10I4D100K} 1\%, và không bao giờ tốn bộ nhớ hơn biểu diễn gọn hơn, nên được chọn làm mặc định. Mỗi lượt đo E8 ghi cả thời gian biên dịch JIT nằm trong lượt đo (\texttt{t\_compile\_s}); giá trị này bằng 0 ở cả 250 lượt (Phụ lục~\ref{subsec:appendix_jit}).
 
 \begin{table*}[!t]
 \centering
@@ -202,15 +202,15 @@ Bản & Thay đổi so với bản trước & Trường \\
 \cmidrule(lr){2-5}\cmidrule(l){6-9}
 Biến thể & \texttt{chess} (80\%) & \texttt{mushroom} (35\%) & \texttt{retail} (1\%) & \texttt{T10I4D100K} (1\%) & \texttt{chess} (65\%) & \texttt{mushroom} (18\%) & \texttt{retail} (0.1\%) & \texttt{T10I4D100K} (0.2\%) \\
 \midrule
-\texttt{v0} & 143.0 & 64.6 & 91.8 & 1940.0 & 1615.8 & 880.9 & 10251.6 & 4388.7 \\
-\texttt{v1} & 117.4 & 35.1 & 75.0 & 1892.0 & 1573.9 & 705.5 & 6292.3 & 4373.7 \\
-\texttt{v2} & 35.7 & 19.2 & 75.2 & 1625.3 & 453.1 & 207.7 & 5752.7 & 4149.9 \\
-\texttt{v3} & 56.2 & 18.8 & 39.6 & 836.0 & 754.2 & 285.3 & 2211.9 & 2938.9 \\
-\texttt{v4} & \textbf{3.9} & \textbf{2.0} & \textbf{20.5} & 96.1 & \textbf{42.5} & \textbf{24.5} & 3848.5 & 364.5 \\
-\texttt{v5} & 5.8 & 3.9 & 34.0 & \textbf{40.8} & 47.2 & 28.1 & \textbf{157.4} & \textbf{85.8} \\
-\texttt{v6} & 4.9 & 4.0 & 27.2 & 197.0 & 44.7 & 28.1 & 382.3 & 310.0 \\
+\texttt{v0} & 176.9 & 56.2 & 84.9 & 1983.0 & 1510.1 & 976.5 & 8908.9 & 4210.7 \\
+\texttt{v1} & 134.7 & 33.9 & 77.2 & 2090.9 & 1422.6 & 665.6 & 5447.2 & 4295.4 \\
+\texttt{v2} & 34.8 & 20.9 & 82.0 & 1766.2 & 404.6 & 207.2 & 5668.6 & 3674.9 \\
+\texttt{v3} & 50.2 & 19.6 & 35.0 & 670.5 & 800.1 & 274.5 & 2052.8 & 2775.9 \\
+\texttt{v4} & \textbf{3.9} & \textbf{2.4} & \textbf{13.8} & 81.3 & \textbf{43.9} & \textbf{25.5} & 2445.4 & 352.4 \\
+\texttt{v5} & 4.8 & 4.2 & 17.9 & 37.3 & 44.5 & 28.2 & \textbf{96.5} & \textbf{83.7} \\
+\texttt{v6} & 4.8 & 4.0 & 19.0 & \textbf{33.5} & 46.9 & 30.7 & 136.3 & 170.7 \\
 \midrule
-Tăng tốc & $36.7\times$ & $32.3\times$ & $4.5\times$ & $47.5\times$ & $38.0\times$ & $36.0\times$ & $65.1\times$ & $51.2\times$ \\
+Tăng tốc & $45.0\times$ & $23.5\times$ & $6.2\times$ & $59.2\times$ & $34.4\times$ & $38.3\times$ & $92.3\times$ & $50.3\times$ \\
 \bottomrule
 \end{tabular}
 \end{table*}
