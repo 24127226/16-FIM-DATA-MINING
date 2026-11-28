@@ -39,7 +39,8 @@ function ours_tmp(input, ms, variant; kw...)   # đo với file kết quả tạ
 end
 
 const HEADER_RUN = ["experiment", "dataset", "kind", "minsup", "sigma", "variant", "repeat", "status",   # cột của e8_ablation*.csv
-                    "n_itemsets", "t_read_s", "t_algo_s", "t_wall_s", "maxrss_mb", "commit", "machine", "date"]   # (tiếp)
+                    "n_itemsets", "t_read_s", "t_algo_s", "t_wall_s", "maxrss_mb", "commit", "machine", "date",   # (tiếp)
+                    "t_compile_s"]   # thời gian biên dịch JIT nằm trong lần đo (đúng giao thức thì = 0); thêm ở cuối để không đổi vị trí các cột cũ
 
 """Ghi một lần đo vào CSV."""
 function record_ours!(path, exp, ds, ms, variant, rep, r)   # ghi một lần đo
@@ -47,7 +48,8 @@ function record_ours!(path, exp, ds, ms, variant, rep, r)   # ghi một lần đ
     ok = r["status"] == "ok"   # lần đo thành công?
     append_csv(path, HEADER_RUN, [exp, ds, dataset_kind(ds), ms, get(r, "sigma", ""), variant, rep, r["status"],   # một dòng CSV
         ok ? r["n"] : "", ok ? r["t_read"] : "", ok ? r["t_mine"] : "", r["wall"],   # số tập, thời gian đọc, khai thác, cả tiến trình
-        ok ? round(parse(Int, r["maxrss"]) / 2^20; digits = 1) : "", p.commit, p.machine, p.date])   # RAM đỉnh (MiB) và nguồn gốc
+        ok ? round(parse(Int, r["maxrss"]) / 2^20; digits = 1) : "", p.commit, p.machine, p.date,   # RAM đỉnh (MiB) và nguồn gốc
+        ok ? get(r, "t_compile", "") : ""])   # thời gian biên dịch trong lần đo (run_one.jl in ra)
 end
 
 """

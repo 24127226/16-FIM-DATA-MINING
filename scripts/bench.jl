@@ -2,7 +2,9 @@
 #
 # Giao thức đo đạc:
 #   - Mỗi lượt đo thực thi trong một tiến trình độc lập.
-#   - Tiến trình Julia thực hiện pha khởi động (warm-up) trên tập nhỏ trước khi đo bằng time_ns().
+#   - Tiến trình Julia khởi động (warm-up) bằng CÙNG hàm `_mine_write` sẽ đo, trên pasquier99 và 2 CSDL của
+#     scripts/warmup.jl, rồi mới đo bằng time_ns(). Hai CSDL này đi qua mọi nhánh code, kể cả nhánh dữ liệu thưa
+#     của v6, nên t_algo_s không chứa thời gian biên dịch JIT (sửa ngày 28/11).
 #   - Tắt bộ đếm nội bộ EclatStats trong quá trình đo thời gian (quyết định D20).
 #   - Đo bộ nhớ đỉnh bằng `/usr/bin/time -v` (Linux/WSL2) hoặc `Sys.maxrss()` (Julia) / JVM heap (SPMF).
 #   - Xuất dữ liệu CSV chuẩn 17 cột và cập nhật nhật ký `results/LOG.md`.
@@ -15,6 +17,7 @@
 using Dates
 include(joinpath(@__DIR__, "common.jl"))
 include(joinpath(@__DIR__, "config.jl"))
+include(joinpath(@__DIR__, "warmup.jl"))   # write_warmup_dbs, WARMUP_MINSUP: dữ liệu khởi động dùng chung với run_one.jl
 
 const CSV_HEADER = "dataset,n_tx,minsup,minsup_count,impl,variant,repeat,t_read_s,t_build_s,t_mine_write_s,t_algo_s,t_wall_s,peak_rss_mb,n_itemsets,commit,machine,date"
 const HAS_GNU_TIME = Sys.isunix() && isfile("/usr/bin/time")
@@ -43,6 +46,25 @@ end
 # Chế độ worker: chạy trong tiến trình Julia mới để đo đúng 1 lần (có warm-up)
 # ---------------------------------------------------------------------------
 
+# [VẤN ĐÁP] _mine_write — một hàm dùng chung cho pha khởi động và pha đo
+# LÀM GÌ    : khai thác `db` với ngưỡng σ, ghi kết quả SPMF ra `out_path`, trả về số tập đã ghi.
+# VÌ SAO    : Julia biên dịch eclat! riêng cho từng KIỂU của hàm sink, và mỗi biểu thức lambda trong mã nguồn là một
+#             kiểu riêng. Bản trước 28/11 viết hai lambda giống hệt nhau ở pha khởi động và pha đo, nên eclat! bị biên
+#             dịch lại ngay trong lần đo được bấm giờ. Khi dùng chung một hàm, lambda bên trong có cùng kiểu ở cả hai pha.
+# BẰNG CHỨNG: máy i5-6200U, chess 95%: lần đo theo bản cũ chứa 48 ms biên dịch với v0 và 283 ms với v6. Thời gian khai thác
+#             thật (đã biên dịch xong) chỉ là 1,7 ms với v0 và 0,7 ms với v6.
+"""Khai thác `db` với ngưỡng `σ` (số đếm) và ghi kết quả SPMF ra `out_path`; trả về số tập đã ghi."""
+function _mine_write(db, σ, cfg, out_path)
+    open(out_path, "w") do io                                   # mở file kết quả
+        w = SPMFWriter(io, db)                                  # bộ ghi có đệm, đổi mã nội bộ → mã gốc
+        if n_transactions(db) > 0                               # CSDL rỗng: chỉ tạo file rỗng
+            eclat!((items, sup) -> write_itemset!(w, items, sup), db, σ, cfg)   # ghi từng tập ngay khi tìm được
+        end
+        close_writer!(w)                                        # ghi phần còn lại trong đệm ra file
+        return w.count                                          # số tập đã ghi
+    end
+end
+
 function run_julia_worker(args::Vector{String})
     length(args) == 4 || error("Worker cần 4 tham số: <input> <minsup> <variant> <output>")
     input_path, minsup_str, variant, out_path = args
@@ -52,16 +74,19 @@ function run_julia_worker(args::Vector{String})
     cfg = Base.invokelatest(() -> VARIANTS[variant])
     toy_path = rootpath("data", "toy", "pasquier99.txt")
 
-    # 1. Warm-up trên dữ liệu toy (loại bỏ thời gian biên dịch JIT khỏi t_algo_s)
+    # 1. Warm-up bằng CÙNG hàm `_mine_write` sẽ đo, trên pasquier99 và 2 CSDL của warmup.jl. Mọi nhánh code (kể cả
+    #    nhánh dữ liệu thưa của v6) được biên dịch trước khi bấm giờ, nên t_algo_s không chứa thời gian JIT.
     Base.invokelatest() do
-        toy_db = read_spmf(toy_path)
-        tmp = tempname()
-        open(tmp, "w") do io
-            w = SPMFWriter(io, toy_db)
-            eclat!((items, sup) -> write_itemset!(w, items, sup), toy_db, 2, cfg)
-            close_writer!(w)
+        mktempdir() do dir                                      # thư mục tạm, tự xóa khi khối do kết thúc
+            out = joinpath(dir, "out.txt")                      # file kết quả tạm
+            dbs = [(toy_path, 2)]                               # pasquier99 (5 giao dịch), σ = 2
+            append!(dbs, [(p, WARMUP_MINSUP) for p in write_warmup_dbs(dir)])   # thêm 2 CSDL đi qua nhánh dữ liệu thưa
+            for (path, σ) in dbs                                # từng CSDL khởi động
+                db = read_spmf(path)                            # chạy thử bộ đọc file
+                minsup_count(minsup_str, n_transactions(db))    # chạy thử phép đổi minsup → số đếm (pha đo cũng gọi)
+                _mine_write(db, σ, cfg, out)                    # chạy thử khai thác + ghi bằng CÙNG hàm sẽ đo
+            end
         end
-        isfile(tmp) && rm(tmp)
     end
 
     # 2. Đo thật trên dữ liệu mục tiêu
@@ -72,18 +97,10 @@ function run_julia_worker(args::Vector{String})
 
         n_tx = n_transactions(db)
         sigma_min = minsup_count(minsup_str, n_tx)
-        n_found = 0
 
         mkpath(dirname(out_path))
         t1 = time_ns()
-        open(out_path, "w") do io
-            w = SPMFWriter(io, db)
-            if n_tx > 0
-                eclat!((items, sup) -> write_itemset!(w, items, sup), db, sigma_min, cfg)
-            end
-            close_writer!(w)
-            n_found = w.count
-        end
+        n_found = _mine_write(db, sigma_min, cfg, out_path)    # CÙNG hàm đã chạy ở pha khởi động
         t_mine_write_s = (time_ns() - t1) / 1e9
         rss_mb = Sys.maxrss() / 2^20
         return (n_tx = n_tx, sigma_min = sigma_min, n_found = n_found,

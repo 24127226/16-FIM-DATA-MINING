@@ -82,8 +82,10 @@ end
 # [VẤN ĐÁP] E8 — nghiên cứu loại bỏ (ablation study)
 # LÀM GÌ    : đo 7 phiên bản tại một mức minsup của mỗi bộ; mỗi lần đo là một tiến trình Julia mới (run_one.jl).
 # VÌ SAO    : hai phiên bản liền nhau khác đúng một kỹ thuật → chênh lệch là đóng góp riêng của kỹ thuật đó.
-#             Tiến trình mới + khởi động trên dữ liệu toy: mọi phiên bản cùng điều kiện, không lẫn thời gian biên dịch JIT.
-# BẰNG CHỨNG: minsup thấp nhất: bản nhanh nhất nhanh hơn v0 36–65 lần; v4 thắng chess, mushroom; v5 thắng retail, T10I4D100K.
+#             Tiến trình mới, và khởi động trên dữ liệu toy cùng 2 CSDL của warmup.jl: mọi phiên bản cùng điều kiện,
+#             không lẫn thời gian biên dịch JIT (cột t_compile_s = 0 ở mọi lần đo).
+# BẰNG CHỨNG: minsup thấp nhất (đo lại 28/11): bản nhanh nhất nhanh hơn v0 34–92 lần, riêng v6 nhanh hơn 25–65 lần.
+#             v4 thắng chess, mushroom; v5 thắng retail, T10I4D100K; v6 thắng T10I4D100K 1%.
 # HỎI–ĐÁP   : H: Vì sao đo cả minsup giữa và thấp nhất? Đ: ở minsup giữa nhiều lần chạy chỉ vài ms, sai số tương đối lớn;
 #             ở minsup thấp nhất khối lượng lớn nên số đo ổn định hơn. Hai mức cho cùng kết luận về từng kỹ thuật.
 #             H: Máy đo khác Chương 2 có sao không? Đ: báo cáo chỉ so sánh các số đo trên CÙNG một máy (ghi ở ENV_A.md).
