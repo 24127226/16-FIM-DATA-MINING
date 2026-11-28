@@ -107,7 +107,8 @@ julia --project=scripts -e "using Pkg; Pkg.instantiate()"
 julia --project=scripts scripts/plots.jl
 
 # Thí nghiệm tối ưu hóa: E8 phân rã v0--v6 (Bảng B03, B04), E7 mật độ bitset/tid list, E10 diễn biến bộ nhớ
-julia --project=. scripts/bench_ablation.jl
+julia --project=. scripts/bench_ablation.jl --level median
+julia --project=. scripts/bench_ablation.jl --level low
 julia --project=. scripts/bench_density.jl
 julia --project=. scripts/bench_memory_trace.jl
 
@@ -158,7 +159,11 @@ julia --project=apps scripts/plots_a.jl          # Hình F08, F10 từ kết qu�
 ## Nguồn dữ liệu và Tệp tham chiếu SPMF
 
 - **Dữ liệu benchmark & ứng dụng** (`chess`, `mushroom` bản FIMI 8.124 giao dịch, `retail`, `accidents`, `T10I4D100K`, `groceries.csv` và `caltech-101.zip`) được lưu trữ công khai tại https://huggingface.co/datasets/cuongnguyen0794/16-fim-data-mining kèm đầy đủ nguồn gốc và mã kiểm tra SHA-256 trong [`data/benchmark/README.md`](data/benchmark/README.md).
-- **Cài đặt tham chiếu SPMF:** `spmf.jar` (Eclat `v2.65`, SHA-256: `bb371b99b3bfd58fbce6b92e0ea3ccda5f9d1fd173bfe8e40f177672117159ba`), chỉ sử dụng như hộp đen để kiểm chứng kết quả và đo so sánh.
+- **Cài đặt tham chiếu SPMF:** `spmf.jar` (Eclat `v2.65`), chỉ sử dụng như hộp đen để kiểm chứng kết quả và đo so sánh. Trang SPMF thay file jar theo thời gian, nên nhóm đã dùng hai bản (cả hai đều cần Java ≥ 25):
+  - SHA-256 `bb371b99b3bfd58fbce6b92e0ea3ccda5f9d1fd173bfe8e40f177672117159ba`: máy B (`results/ENV.md`) và Colab;
+  - SHA-256 `2cc2d89e39909230ea0455da4a1c79b389dc98ca04b0670befb63e679b5e2ea0`: máy A (`results/ENV_A.md`).
+
+  `scripts/fetch_spmf.jl` chấp nhận cả hai bản.
 
 ---
 
